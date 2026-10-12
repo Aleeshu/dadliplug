@@ -1,0 +1,46 @@
+target/
+build/
+.dart_tool/
+.flutter-plugins
+.flutter-plugins-dependencies
+.packages
+pubspec.lock
+
+# IDE
+.idea/
+.vscode/
+*.iml
+
+# OS
+.DS_Store
+Thumbs.db
+
+# Secrets
+*.jks
+*.keystore
+!example.keystore
+*.p12
+*.mobileprovision
+service-account*.json
+.env
+.env.*
+firebase-service-account.json
+key.properties
+
+# Supabase. The service_role key bypasses Row Level Security entirely and must
+# never be committed or shipped in the app.
+supabase/.temp/
+.env
+.env.supabase
+service_role*.json
+
+# Local tooling
+node_modules/
+coverage/
+*.log
+
+# Compiled APKs and iOS builds. Never in the repo.
+builds/
+*.apk
+*.ipa
+*.aab

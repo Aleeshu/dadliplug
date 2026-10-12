@@ -1,0 +1,36 @@
+analyzer:
+  exclude:
+    - build/**
+    - android/**
+    - ios/**
+    - web/**
+    - windows/**
+include: package:very_good_analysis/analysis_options.9.0.0.yaml
+
+linter:
+  rules:
+    # The design is deliberately original. Generated widget trees everywhere
+    # makes the codebase hard to read for four people.
+    always_specify_types: false
+    avoid_dynamic_calls: false
+
+    # Doc comments on every field is noise for a four-person team. The rules
+    # that catch real mistakes stay on.
+    public_member_api_docs: false
+    always_use_package_imports: true
+    eol_at_end_of_file: true
+
+    # Cosmetic, and actively unhelpful here: pubspec groups are commented on
+    # purpose, and the formatter owns import order.
+    sort_pub_dependencies: false
+    directives_ordering: false
+    lines_longer_than_80_chars: false
+
+    # Fights the type system here: `math.min(1, <double>)` needs the literal to
+    # be a double, and the rule rewrites it to an int.
+    prefer_int_literals: false
+
+    # The auth service catches bare on purpose: a dropped connection throws a
+    # SocketException or TimeoutException, not an AuthException, and those need
+    # mapping to "network unavailable" rather than crashing the screen.
+    avoid_catches_without_on_clauses: false

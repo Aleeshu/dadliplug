@@ -1,0 +1,55 @@
+name: antigua_business_map
+description: "Map of Antigua businesses, kept current. Paid placement, real reviews."
+publish_to: 'none'
+version: 0.1.0+1
+
+environment:
+  sdk: ^3.13.3
+
+dependencies:
+  flutter:
+    sdk: flutter
+
+  # Maps — MapLibre GL against OpenFreeMap tiles.
+  #
+  # OpenFreeMap needs no API key and no signup, which matters for a project
+  # without budget for a Google Maps key. It is vector data from OpenStreetMap,
+  # so the island is legible at street level rather than a raster blur.
+  maplibre_gl: ^0.27.1
+
+  # Geocoding and device location, used by the listing editor and "near me".
+  geocoding: ^4.0.0
+  geolocator: ^14.0.2
+
+  # Backend — Supabase
+  supabase_flutter: ^2.10.0
+  google_sign_in: ^7.2.0
+
+  # State
+  flutter_riverpod: ^3.0.3
+
+  # Routing
+  go_router: ^16.2.4
+
+  # Utilities
+  cached_network_image: ^3.4.1
+  image_picker: ^1.2.0
+  intl: ^0.20.2
+  shared_preferences: ^2.5.4
+  url_launcher: ^6.3.2
+
+  riverpod: any
+dev_dependencies:
+  flutter_lints: ^6.0.0
+  flutter_test:
+    sdk: flutter
+
+  build_runner: ^2.7.1
+  very_good_analysis: ^9.0.0
+
+flutter:
+  uses-material-design: true
+
+  assets:
+    - assets/images/
+    - assets/icons/
