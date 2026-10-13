@@ -2,10 +2,11 @@ import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/features/auth/auth_widgets.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
-import 'package:antigua_business_map/models/review.dart';
 import 'package:antigua_business_map/models/user.dart';
 import 'package:antigua_business_map/services/auth_session.dart';
+import 'package:antigua_business_map/services/user_places_repository.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 
 /// The user's own account screen.
@@ -13,24 +14,27 @@ import 'package:go_router/go_router.dart';
 /// Holds visit history and their review requests. Visit history is what makes
 /// "you have to have used the business to review it" enforceable and visible
 /// rather than a hidden rule.
-class ProfileScreen extends StatelessWidget {
+class ProfileScreen extends ConsumerWidget {
   const ProfileScreen({
     required this.session,
-    this.visits = const [],
-    this.requests = const [],
     super.key,
   });
 
   final AuthSession session;
 
-  /// Passed in rather than fetched. The visit store lands with the Supabase
-  /// layer in Phase 5; until then this renders empty, which is honest.
-  final List<Visit> visits;
-  final List<Review> requests;
-
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final user = session.user;
+
+    // Read from Supabase rather than being handed lists. These were
+    // constructor arguments defaulting to empty, which rendered as "0 visits,
+    // nothing requested" forever — indistinguishable from a user who really
+    // had no history. Worse, the rows rendered a raw business UUID where the
+    // name should be, which only surfaced once real data arrived.
+    final placesAsync = ref.watch(userPlacesProvider);
+    final requestsAsync = ref.watch(reviewRequestsProvider);
+    final places = placesAsync.value ?? const <UserPlace>[];
+    final requests = requestsAsync.value ?? const <ReviewRequestSummary>[];
 
     return Scaffold(
       appBar: AppBar(
@@ -55,14 +59,14 @@ class ProfileScreen extends StatelessWidget {
                 if (!session.isSignedIn)
                   const AuthPrompt()
                 else ...[
-                  _Stats(visits: visits, requests: requests),
+                  _Stats(places: places, requests: requests),
                   const SizedBox(height: Insets.giant),
                   _PlacesSection(
                     title: 'Places you visited',
                     emptyLabel:
                         'Nothing yet. Open a business and tap '
                         '"I was here" to add it.',
-                    visits: visits,
+                    places: places,
                   ),
                   const SizedBox(height: Insets.giant),
                   _RequestsSection(requests: requests),
@@ -155,24 +159,29 @@ class _Identity extends StatelessWidget {
 }
 
 class _Stats extends StatelessWidget {
-  const _Stats({required this.visits, required this.requests});
+  const _Stats({required this.places, required this.requests});
 
-  final List<Visit> visits;
-  final List<Review> requests;
+  final List<UserPlace> places;
+  final List<ReviewRequestSummary> requests;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
     final pending = requests
-        .where((r) => r.status == ReviewStatus.pending)
+        .where((r) => r.status == ReviewRequestStatus.pending)
         .length;
-    final written = requests.where((r) => !r.isRequestOnly).length;
+    // A request is "approved" once the business confirmed the visit, which is
+    // when a review becomes possible. Nothing here counts a review as written
+    // because reviews themselves land in Phase 6.
+    final approved = requests
+        .where((r) => r.status == ReviewRequestStatus.approved)
+        .length;
 
     return Row(
       children: [
-        _StatTile(label: 'Visits', value: visits.length, palette: palette),
+        _StatTile(label: 'Visits', value: places.length, palette: palette),
         const SizedBox(width: Insets.md),
-        _StatTile(label: 'Reviews', value: written, palette: palette),
+        _StatTile(label: 'Approved', value: approved, palette: palette),
         const SizedBox(width: Insets.md),
         _StatTile(
           label: 'Pending',
@@ -238,18 +247,18 @@ class _PlacesSection extends StatelessWidget {
   const _PlacesSection({
     required this.title,
     required this.emptyLabel,
-    required this.visits,
+    required this.places,
   });
 
   final String title;
   final String emptyLabel;
-  final List<Visit> visits;
+  final List<UserPlace> places;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
 
-    if (visits.isEmpty) {
+    if (places.isEmpty) {
       return _EmptyState(label: emptyLabel, palette: palette);
     }
 
@@ -258,16 +267,16 @@ class _PlacesSection extends StatelessWidget {
       children: [
         Text(title.toUpperCase(), style: AppText.sectionLabel),
         const SizedBox(height: Insets.md),
-        for (final visit in visits) _PlaceRow(visit: visit, palette: palette),
+        for (final place in places) _PlaceRow(place: place, palette: palette),
       ],
     );
   }
 }
 
 class _PlaceRow extends StatelessWidget {
-  const _PlaceRow({required this.visit, required this.palette});
+  const _PlaceRow({required this.place, required this.palette});
 
-  final Visit visit;
+  final UserPlace place;
   final AppPalette palette;
 
   @override
@@ -285,12 +294,14 @@ class _PlaceRow extends StatelessWidget {
           Icon(Icons.place_outlined, size: 18, color: palette.red),
           const SizedBox(width: Insets.md),
           Expanded(
+            // The business name, not the id. Showing a raw UUID here is how a
+            // user finds out nobody has ever opened this screen.
             child: Text(
-              visit.businessId,
+              place.businessName,
               style: AppText.titleMedium.copyWith(color: palette.ink),
             ),
           ),
-          if (visit.confirmedByBusiness)
+          if (place.confirmedByBusiness)
             Icon(Icons.verified_outlined, size: 16, color: palette.good),
         ],
       ),
@@ -301,7 +312,7 @@ class _PlaceRow extends StatelessWidget {
 class _RequestsSection extends StatelessWidget {
   const _RequestsSection({required this.requests});
 
-  final List<Review> requests;
+  final List<ReviewRequestSummary> requests;
 
   @override
   Widget build(BuildContext context) {
@@ -339,7 +350,7 @@ class _RequestsSection extends StatelessWidget {
                   const SizedBox(width: Insets.md),
                   Expanded(
                     child: Text(
-                      request.businessId,
+                      request.businessName,
                       style: AppText.titleMedium.copyWith(color: palette.ink),
                     ),
                   ),
@@ -355,18 +366,19 @@ class _RequestsSection extends StatelessWidget {
     );
   }
 
-  static IconData _statusIcon(ReviewStatus status) => switch (status) {
-    ReviewStatus.pending => Icons.hourglass_empty,
-    ReviewStatus.verified => Icons.check_circle_outline,
-    ReviewStatus.locked => Icons.lock_outline,
-    ReviewStatus.removed => Icons.block_outlined,
+  // These describe a review *request*, not a review, so they use the request
+  // vocabulary. Mapping them onto ReviewStatus would imply a verification the
+  // business has not performed.
+  static IconData _statusIcon(ReviewRequestStatus status) => switch (status) {
+    ReviewRequestStatus.pending => Icons.hourglass_empty,
+    ReviewRequestStatus.approved => Icons.check_circle_outline,
+    ReviewRequestStatus.declined => Icons.block_outlined,
   };
 
-  static String _statusLabel(ReviewStatus status) => switch (status) {
-    ReviewStatus.pending => 'Waiting on business',
-    ReviewStatus.verified => 'Verified',
-    ReviewStatus.locked => 'Not verified',
-    ReviewStatus.removed => 'Removed',
+  static String _statusLabel(ReviewRequestStatus status) => switch (status) {
+    ReviewRequestStatus.pending => 'Waiting on business',
+    ReviewRequestStatus.approved => 'Approved',
+    ReviewRequestStatus.declined => 'Declined',
   };
 }
 
