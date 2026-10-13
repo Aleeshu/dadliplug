@@ -15,36 +15,55 @@ class AppTab {
   final IconData icon;
 }
 
-/// Bottom tab sets, per the prototype's `TABS`.
+/// Bottom tab sets, per section 6a of plan.md.
 ///
-/// The tabs change with the role, because the three roles have genuinely
-/// different jobs. A user browsing for dinner should not see a Billing tab,
-/// and a business owner should not scroll past Moderation.
+/// **Customers** get Home, Bookmarks, Calendar, Announcements.
+/// **Businesses** get Home, Profile, Reviews, Announcements, Ads.
+///
+/// The split is structural, not cosmetic. A business owner is managing a
+/// listing; a customer is choosing where to eat. Cramming both into one bar
+/// makes the business tabs noise to a customer and buries the owner's own
+/// profile under browse tools.
 ///
 /// Hiding a tab is not access control. `app_router.dart` also redirects anyone
 /// who reaches a guarded path without the role, and RLS is the real enforcement.
 abstract final class AppTabs {
+  /// Customer navigation.
   static const List<AppTab> user = [
-    AppTab(path: '/', label: 'Map', icon: Icons.place_outlined),
-    AppTab(path: '/explore', label: 'Explore', icon: Icons.search_outlined),
-    AppTab(path: '/places', label: 'Your places', icon: Icons.bookmark_border),
+    AppTab(path: '/', label: 'Home', icon: Icons.place_outlined),
+    AppTab(path: '/bookmarks', label: 'Bookmarks', icon: Icons.bookmark_border),
+    AppTab(path: '/events', label: 'Calendar', icon: Icons.event_outlined),
+    AppTab(path: '/announcements', label: 'Notices', icon: Icons.notifications_none),
   ];
 
+  /// Business navigation.
+  ///
+  /// Five tabs is the most a bottom bar holds comfortably at this label size.
   static const List<AppTab> businessAdmin = [
     AppTab(
       path: '/business',
-      label: 'Dashboard',
+      label: 'Home',
       icon: Icons.bar_chart_outlined,
     ),
     AppTab(
       path: '/business/listing',
-      label: 'Listing',
-      icon: Icons.edit_outlined,
+      label: 'Profile',
+      icon: Icons.storefront_outlined,
     ),
     AppTab(
       path: '/business/reviews',
       label: 'Reviews',
       icon: Icons.chat_bubble_outline,
+    ),
+    AppTab(
+      path: '/business/announcements',
+      label: 'Notices',
+      icon: Icons.notifications_none,
+    ),
+    AppTab(
+      path: '/business/ads',
+      label: 'Ads',
+      icon: Icons.campaign_outlined,
     ),
   ];
 

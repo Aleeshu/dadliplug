@@ -32,14 +32,17 @@ void main() {
     expect(find.text('Open now'), findsOneWidget);
   });
 
-  testWidgets('user tabs render three items', (tester) async {
+  testWidgets('customer tabs match the navigation in plan.md 6a', (tester) async {
     final built = buildApp();
     await tester.pumpWidget(built.app);
     await tester.pumpAndSettle();
 
-    expect(find.text('Map'), findsOneWidget);
-    expect(find.text('Explore'), findsOneWidget);
-    expect(find.text('Your places'), findsOneWidget);
+    // Home, Bookmarks, Calendar, Announcements. These names are the spec, not a
+    // placeholder set, so a change here is a change to the product.
+    expect(find.text('Home'), findsOneWidget);
+    expect(find.text('Bookmarks'), findsOneWidget);
+    expect(find.text('Calendar'), findsOneWidget);
+    expect(find.text('Notices'), findsOneWidget);
   });
 
   testWidgets('creating an account signs the user in', (tester) async {

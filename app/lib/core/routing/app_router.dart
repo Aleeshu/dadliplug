@@ -1,11 +1,15 @@
 import 'package:antigua_business_map/core/routing/app_tabs.dart';
+import 'package:antigua_business_map/features/auth/choose_role_screen.dart';
 import 'package:antigua_business_map/features/auth/profile_screen.dart';
 import 'package:antigua_business_map/features/auth/sign_in_screen.dart';
 import 'package:antigua_business_map/features/auth/sign_up_screen.dart';
 import 'package:antigua_business_map/features/business_admin/business_dashboard_screen.dart';
 import 'package:antigua_business_map/features/business_admin/business_listing_screen.dart';
 import 'package:antigua_business_map/features/business_admin/business_reviews_screen.dart';
+import 'package:antigua_business_map/features/discovery/bookmarks_screen.dart';
+import 'package:antigua_business_map/features/discovery/business_content_screens.dart';
 import 'package:antigua_business_map/features/discovery/explore_screen.dart';
+import 'package:antigua_business_map/features/discovery/leaderboard_screen.dart';
 import 'package:antigua_business_map/features/discovery/your_places_screen.dart';
 import 'package:antigua_business_map/features/listing/listing_screen.dart';
 import 'package:antigua_business_map/features/map/map_screen.dart';
@@ -26,11 +30,17 @@ abstract final class Routes {
   static const String map = '/';
   static const String explore = '/explore';
   static const String places = '/places';
+  static const String bookmarks = '/bookmarks';
+  static const String events = '/events';
+  static const String announcements = '/announcements';
+  static const String leaderboard = '/leaderboard';
 
   // Business admin
   static const String businessDashboard = '/business';
   static const String businessListing = '/business/listing';
   static const String businessReviews = '/business/reviews';
+  static const String businessAnnouncements = '/business/announcements';
+  static const String businessAds = '/business/ads';
 
   // Team admin
   static const String teamDashboard = '/team';
@@ -46,6 +56,7 @@ abstract final class Routes {
   static const String signIn = '/sign-in';
   static const String signUp = '/sign-up';
   static const String profile = '/profile';
+  static const String chooseRole = '/choose-role';
 
   /// Where a signed-out user is sent when they hit a guarded route.
   static const String signedOutLanding = Routes.signIn;
@@ -116,6 +127,22 @@ GoRouter buildRouter({
           path: Routes.places,
           builder: (c, s) => YourPlacesScreen(session: session),
         ),
+        GoRoute(
+          path: Routes.bookmarks,
+          builder: (c, s) => BookmarksScreen(isSignedIn: session.isSignedIn),
+        ),
+        GoRoute(
+          path: Routes.events,
+          builder: (c, s) => const EventsCalendarScreen(),
+        ),
+        GoRoute(
+          path: Routes.announcements,
+          builder: (c, s) => const AnnouncementsScreen(),
+        ),
+        GoRoute(
+          path: Routes.leaderboard,
+          builder: (c, s) => const LeaderboardScreen(),
+        ),
 
         GoRoute(
           path: Routes.businessDashboard,
@@ -128,6 +155,16 @@ GoRouter buildRouter({
         GoRoute(
           path: Routes.businessReviews,
           builder: (c, s) => const BusinessReviewsScreen(),
+        ),
+        GoRoute(
+          path: Routes.businessAnnouncements,
+          builder: (c, s) => const AnnouncementsScreen(),
+        ),
+        GoRoute(
+          path: Routes.businessAds,
+          builder: (c, s) => BusinessAdsScreen(
+            businessId: s.uri.queryParameters['business'] ?? '',
+          ),
         ),
 
         GoRoute(
@@ -152,6 +189,20 @@ GoRouter buildRouter({
     GoRoute(
       path: Routes.signUp,
       builder: (c, s) => SignUpScreen(session: session),
+    ),
+    GoRoute(
+      path: Routes.chooseRole,
+      builder: (context, state) => ChooseRoleScreen(
+        onChosen: (audience) {
+          // Businesses need an account to run a listing; customers can go
+          // straight to browsing, because guest access is a real state.
+          if (audience == Audience.business) {
+            context.push(Routes.signUp);
+          } else {
+            context.go(Routes.map);
+          }
+        },
+      ),
     ),
     GoRoute(
       path: Routes.profile,
