@@ -202,7 +202,7 @@ class IslandAdsMapState extends State<IslandAdsMap> {
   }
 
   static int _pinColorFor(Business b) => switch (b.tier) {
-    SubscriptionTier.premium => MapPinColors.premium.toARGB32(),
+    SubscriptionTier.featured => MapPinColors.premium.toARGB32(),
     SubscriptionTier.trial => MapPinColors.trial.toARGB32(),
     _ => MapPinColors.basic.toARGB32(),
   };

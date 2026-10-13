@@ -56,7 +56,7 @@ void main() {
     id: 'test-1',
     name: 'Beach Shack Grill',
     category: BusinessCategory.food,
-    tier: SubscriptionTier.premium,
+    tier: SubscriptionTier.featured,
     area: 'Dickenson Bay',
     description: 'Fresh grilled fish and cold drinks on the beach.',
     address: 'Dickenson Bay Main Road',

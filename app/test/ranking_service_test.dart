@@ -100,7 +100,7 @@ void main() {
       );
       final premium = makeBusiness(
         id: 'p',
-        tier: SubscriptionTier.premium,
+        tier: SubscriptionTier.featured,
         seededRating: 4.2,
         seededReviewCount: 30,
       );
@@ -152,7 +152,7 @@ void main() {
       15,
       (i) => makeBusiness(
         id: 'b$i',
-        tier: SubscriptionTier.premium,
+        tier: SubscriptionTier.featured,
         lastSpotlightWeek: i < 10 ? 1 : -1,
       ),
     );

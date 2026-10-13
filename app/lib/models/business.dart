@@ -2,40 +2,70 @@ import 'package:antigua_business_map/models/business_category.dart';
 import 'package:antigua_business_map/models/review.dart';
 
 /// How a business pays us.
+///
+/// Prices are Eastern Caribbean dollars. Growing and Basic sit at or below
+/// what comparable platforms charge locally, on purpose: Antiguan businesses
+/// do not yet see marketing as necessary, so affordability is part of the pitch
+/// rather than a concession.
 enum SubscriptionTier {
-  /// $50/mo — map pin and listing
+  /// EC$25/mo — map pin and listing, default pin only. Aimed at small and
+  /// online-only businesses that want presence without a commitment.
+  growing,
+
+  /// EC$50/mo — everything in growing, plus a customisable movable pin, views
+  /// analytics and monthly reports.
   basic,
 
-  /// $100/mo — everything in basic plus a Featured slot
-  premium,
+  /// EC$200/mo — everything in basic, plus a place on the Featured page and a
+  /// verified badge. Four times basic, so the jump has to buy real visibility.
+  featured,
 
-  /// 3-day trial. Does not convert, so the listing is removed.
+  /// 3-day trial with every paid tool unlocked, so a business can see what it
+  /// would be paying for. On expiry the listing is held for 7 days before
+  /// anything is terminated.
   trial,
 
-  /// Grace period: paid, then lapsed. Listing still up, business sees a
-  /// warning in their dashboard.
+  /// Paid, then lapsed. Still up, with a 7-day window to pay before the data
+  /// goes. Business sees a warning in their dashboard.
   overdue,
 
-  /// Not paying. Kept in the database for history, hidden in the app.
+  /// Not paying, past the hold. Kept in the database for history, hidden in
+  /// the app.
   delisted,
 }
 
 extension SubscriptionTierX on SubscriptionTier {
   String get label => switch (this) {
+    SubscriptionTier.growing => 'Growing',
     SubscriptionTier.basic => 'Basic',
-    SubscriptionTier.premium => 'Premium',
+    SubscriptionTier.featured => 'Featured',
     SubscriptionTier.trial => 'Trial',
     SubscriptionTier.overdue => 'Overdue',
     SubscriptionTier.delisted => 'Delisted',
   };
 
-  /// What the business pays per month.
-  int get monthlyPrice => this == SubscriptionTier.premium ? 100 : 50;
+  /// What the business pays per month, in EC dollars.
+  int get monthlyPrice => switch (this) {
+    SubscriptionTier.growing => 25,
+    SubscriptionTier.basic => 50,
+    SubscriptionTier.featured => 200,
+    SubscriptionTier.trial => 0,
+    SubscriptionTier.overdue => 0,
+    SubscriptionTier.delisted => 0,
+  };
 
-  /// Premium buys the Featured slot. Trial gets one too — a business needs to
+  /// Featured buys the Featured page. Trial gets it too — a business needs to
   /// see what they are paying for during the three days.
   bool get holdsFeaturedSlot =>
-      this == SubscriptionTier.premium || this == SubscriptionTier.trial;
+      this == SubscriptionTier.featured || this == SubscriptionTier.trial;
+
+  /// Whether the listing carries the verified badge.
+  ///
+  /// Only Featured, plus Trial so the badge can be previewed during the free
+  /// trial. This says the business pays for a listing. It is never a statement
+  /// that their reviews are good, and must not be presented as one.
+  bool get isVerified =>
+      this == SubscriptionTier.featured || this == SubscriptionTier.trial;
 
   /// Whether a listing in this state appears in the app at all. Overdue does,
   /// because we warn before we delist.
@@ -175,6 +205,7 @@ class Business {
     this.tags = const [],
     this.isClosedToday = false,
     this.lastVerifiedAt,
+    this.createdAt,
   });
 
   final String id;
@@ -242,9 +273,42 @@ class Business {
   /// Timestamp when the listing details were last verified by team or owner.
   final DateTime? lastVerifiedAt;
 
+  /// When the listing was created.
+  ///
+  /// Load-bearing for the leaderboard: a business needs a month of reviews and
+  /// views before it has any score at all, so a new listing is held back rather
+  /// than published at the bottom of the table. Null when the column is absent,
+  /// which treats that listing as brand new and therefore still in grace.
+  final DateTime? createdAt;
+
   bool get hasLocation => latitude != null && longitude != null;
   bool get hasOffer => offer != null && offer!.isNotEmpty;
-  bool get isPremium => tier == SubscriptionTier.premium;
+  bool get isPremium => tier == SubscriptionTier.featured;
+
+  /// Whether this listing is inside its one-month leaderboard grace period.
+  ///
+  /// A new listing has no reviews and no views, so ranked honestly it would sit
+  /// dead last and the board would really be measuring who signed up first.
+  /// A listing whose creation date is missing counts as new, because its age
+  /// has not been established.
+  bool isNewListing(
+    DateTime now, {
+    Duration grace = const Duration(days: 30),
+  }) {
+    final created = createdAt;
+    if (created == null) return true;
+    return now.toUtc().difference(created.toUtc()).inDays < grace.inDays;
+  }
+
+  /// When this listing becomes eligible for the leaderboard.
+  DateTime leaderboardEligibleFrom(
+    DateTime now, {
+    Duration grace = const Duration(days: 30),
+  }) {
+    final created = createdAt;
+    if (created == null) return now.add(grace);
+    return created.toUtc().add(grace);
+  }
 
   /// Engagement weighted toward intent. A tap is a stronger signal than a
   /// view, and a call stronger still.
@@ -286,6 +350,7 @@ class Business {
     List<String>? tags,
     bool? isClosedToday,
     DateTime? lastVerifiedAt,
+    DateTime? createdAt,
   }) => Business(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -317,6 +382,7 @@ class Business {
     tags: tags ?? this.tags,
     isClosedToday: isClosedToday ?? this.isClosedToday,
     lastVerifiedAt: lastVerifiedAt ?? this.lastVerifiedAt,
+    createdAt: createdAt ?? this.createdAt,
   );
 }
 

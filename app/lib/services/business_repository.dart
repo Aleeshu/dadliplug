@@ -247,6 +247,7 @@ class SupabaseBusinessRepository implements BusinessRepository {
       tags: _parseTags(map['tags']),
       isClosedToday: (map['is_closed_today'] as bool?) ?? false,
       lastVerifiedAt: _parseDateTime(map['last_verified_at']),
+      createdAt: _parseDateTime(map['created_at']),
     );
   }
 
