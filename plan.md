@@ -20,6 +20,28 @@ international promotion with personalized marketing.
 
 ## 2. Decisions made
 
+### Currency — read this first
+
+All prices in this document are in **US dollars**, which is how we have been
+discussing them. Antigua trades in **EC$**, pegged at 2.7 to 1 USD.
+
+| | US$ | EC$ |
+| --- | --- | --- |
+| Basic | $50 | **EC$135** |
+| Premium | $100 | **EC$270** |
+| Typical small business ad (external estimate) | — | EC$10–25 |
+| Typical monthly subscription (external estimate) | ~$18–37 | **EC$49–99** |
+
+**Our pricing is roughly 3–5x the range a comparable platform would charge
+locally.** That is not necessarily wrong — a managed directory where the team
+maintains the listing is worth more than a self-serve ad post, and the local
+market may simply support it. But it is the single largest unvalidated
+assumption in the plan, and it is cheap to test: ask five business owners what
+they currently pay Facebook for, and what they would pay. If the answer is
+EC$50 a month, we are priced for a different customer.
+
+Decide before Phase 9, when the first real conversations happen.
+
 | Area | Decision |
 | --- | --- |
 | Name | IslandAds |
@@ -329,6 +351,17 @@ previous runs on a real phone.
 - Recomputed on a schedule, not per request
 - Drives Featured order and search priority
 
+### Phase 13 — Validate the business model (before Phase 9)
+- Twenty conversations with business owners: how do they advertise today, what
+  frustrates them, what do they pay, what would they pay us.
+- Test pricing in EC$ against the real answer, not against our assumption.
+- Confirm whether owners want the team maintaining their listing or want to
+  edit it themselves.
+- Only then: finish Phase 9's onboarding model and Phase 10's store submission.
+
+Doing this after Phase 10 means launching with pricing and positioning already
+set in stone and unvalidated.
+
 ### Phase 9 — Seed content and field testing (weeks 16–17)
 - Onboard the first 5–10 businesses; verify listings in person
 - **Pre-built listings for the sales pipeline**
@@ -350,6 +383,33 @@ previous runs on a real phone.
 - The section 14 backlog, in order
 
 ## 14. Post-launch backlog
+
+### 14a. Adjacent markets
+
+External advice suggests these follow naturally once business advertising works.
+All are plausible; none are committed.
+
+| Market | Why it fits | Watch out for |
+| --- | --- | --- |
+| Local events | Carnival, Sailing Week, Sunday at Shirley Heights. Gives businesses a reason to post around real dates. | Needs a calendar someone maintains. |
+| Jobs and recruitment | Recruiters post repeatedly, so revenue is recurring. High competition from Facebook groups. | Moderation burden; scam postings. |
+| Property rentals | Antigua has heavy turnover; listings expire fast. | Same. |
+| Classifieds | Sell, services, things. Broadens beyond "businesses". | Dilutes the map. Needs its own tab or it buries the core. |
+
+**Do not add these on day one.** Each needs its own moderation process, and
+moderation is the scarce resource, not code.
+
+### 14b. "What's happening today" feed
+
+A single answer to "what's on in Antigua today", assembled from business offers,
+events, and the curated collections in section 14. This is the strongest
+retention idea in the external advice, because it is the only version that
+gives a *user* a reason to open the app on a day when no business is advertising.
+
+It depends on listings actually being current, which makes it a strong forcing
+function for the whole "we maintain the accuracy" promise.
+
+### 14c. Everything else from section 14
 
 **Add before launch** (the ones not already in the phases)
 - Storm banner: team-run notice during hurricane season, linking to the
@@ -378,6 +438,46 @@ previous runs on a real phone.
 
 ## 15. Open decisions
 
+### Conflicts worth deciding on purpose
+
+Three points where the external write-up disagrees with what we have already
+chosen. None are accidents; each was decided at some point, and each deserves
+a second look rather than a quiet drift.
+
+**1. Who writes the listing?**
+
+The advice is that businesses should post their own ads — upload a photo, pick
+a category, publish. Our plan is different: the business submits what it wants
+said, **the team implements it**, and the business can then self-edit.
+
+We keep the team step because it is the product. The pitch is "we keep your
+information up to date", and a self-serve editor hands that back to the
+business and lets it rot. It also lets us fix things businesses will never fix
+themselves. The cost is that we are a bottleneck for onboarding.
+
+If onboarding becomes the constraint that stops growth, revisit — but do not
+drift into it, because the accuracy promise is what is being sold.
+
+**2. Free first, charge later?**
+
+The advice is to make listings free and introduce payment once businesses see
+value. We charge from day one, with a 3-day trial.
+
+Free-first maximises sign-ups and delays the only hard problem we have —
+whether businesses will pay — which is exactly the thing we need to learn early.
+Charging early gets that answer in week one. Keep charging.
+
+**3. Build a website first to prove demand?**
+
+The advice is to prove the idea with a simple site before investing in an app.
+
+We are past that point and the app is largely built. The underlying question is
+still live though: **have we asked twenty business owners anything?** Until we
+have, we are building ahead of demand rather than ahead of it. That is a real
+risk and it is cheap to retire. See section 16.
+
+### Unresolved
+
 - **The essentials layer is a real contradiction.** The current promise is that
   the app only shows paying businesses, which is part of why a listing is worth
   paying for. A free essentials layer gives locals a daily reason to open the
@@ -385,19 +485,36 @@ previous runs on a real phone.
   position on purpose: either it is a small, clearly-labelled "essential
   places" set, or it does not happen. Do not let it grow by accident until paid
   businesses ask why they pay for a listing next to free ones.
-- **QR verification method.** Customer scans, or staff scans the customer's
+- **QR verification method.** Customer scans, or staff scan the customer's
   code. Decide before Phase 6 (section 8).
-- **Hand-drawn SVG map or real Google Maps tiles?** The prototype hand-draws the
-  island. It looks distinctive but cannot pan, zoom, or show a user.
-- Custom map pins, or hue-tinted default markers?
+- Hand-drawn SVG map or MapLibre tiles? MapLibre is in and working; the
+  hand-drawn option in the prototype cannot pan or zoom.
 - Bundle the three prototype fonts, or accept system fallbacks?
 - Revenue split: equal, but who covers refunds, bad debt, and the chasing?
 - Who holds the Apple and Google credentials?
-- App store billing was dropped in favour of transfer, so someone marks
-  subscriptions active by hand. Automate from a bank feed or accept the manual
-  step, and name who owns it.
 - Public web pages: which host, and does the domain go on them or on the app
   download page?
+
+## 16. The thing we have not done
+
+Every phase so far has been engineering. Not one has been a conversation with
+a business owner.
+
+The external advice puts this first, and it is right. The largest risks in this
+plan are all commercial, and none of them are technical:
+
+- Will a barber on Dickenson Bay pay EC$135 a month?
+- Do they trust us to keep their listing right, or do they expect to control it?
+- What do they pay Facebook today, and what would they pay us instead?
+- Who verifies a business is real, and who pays for that check?
+
+Phase 9 plans to onboard five to ten businesses, and pre-built listings are on
+the list so a pitch can open with "this is already yours". Both presuppose
+someone to pitch. Getting twenty conversations in before Phase 9 costs a week
+and would reshape the pricing question in section 2, the onboarding model in
+section 9, and possibly the whole proposition.
+
+**This is the highest-value next step, and it is not a code task.**
 
 ## 16. Principles
 
