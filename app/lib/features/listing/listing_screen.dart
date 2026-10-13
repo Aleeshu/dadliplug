@@ -4,6 +4,7 @@ import 'package:antigua_business_map/core/theme/app_text.dart';
 import 'package:antigua_business_map/features/listing/widgets/report_wrong_info_sheet.dart';
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/models/business_category.dart';
+import 'package:antigua_business_map/services/business_content_repository.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
@@ -47,6 +48,26 @@ class ListingScreen extends ConsumerWidget {
     final palette = context.palette;
     final businessAsync = ref.watch(singleBusinessProvider(businessId));
 
+    // The listing's own content. Read here rather than inside the content
+    // widget, which is a StatefulWidget for the photo carousel and cannot
+    // watch providers.
+    //
+    // Failures degrade to empty rather than taking the listing down. A business
+    // with a broken ads query still has an address and hours, and hiding those
+    // behind an error would be a worse outcome than omitting its adverts.
+    final ads = ref.watch(businessAdsProvider(businessId)).value ?? const [];
+    final allAnnouncements =
+        ref.watch(announcementsProvider).value ?? const [];
+    final allEvents = ref.watch(upcomingEventsProvider).value ?? const [];
+
+    final now = DateTime.now();
+    final liveAds = ads.where((a) => a.isLiveAt(now)).toList(growable: false);
+    final latestAnnouncement = allAnnouncements
+        .where((a) => a.businessId == businessId)
+        .firstOrNull;
+    final upcomingEvents =
+        allEvents.where((e) => e.businessId == businessId).toList(growable: false);
+
     return Scaffold(
       backgroundColor: palette.app,
       body: businessAsync.when(
@@ -54,7 +75,13 @@ class ListingScreen extends ConsumerWidget {
           if (business == null) {
             return _NotFoundView(palette: palette);
           }
-          return _ListingContent(business: business);
+          return _ListingContent(
+            business: business,
+            ads: liveAds,
+            latestAnnouncement: latestAnnouncement,
+            upcomingEvents: upcomingEvents,
+            socials: _socialsFor(business),
+          );
         },
         loading: () => Center(
           child: CircularProgressIndicator(color: palette.red),
@@ -66,12 +93,85 @@ class ListingScreen extends ConsumerWidget {
       ),
     );
   }
+
+  /// Builds the tappable social links for a listing.
+  ///
+  /// Only links the business actually supplied. No placeholders: an "Instagram"
+  /// button that opens nothing is worse than no button, because it tells the
+  /// customer the business is reachable there when it is not.
+  static List<SocialLink> _socialsFor(Business b) => [
+        if (b.website?.isNotEmpty ?? false)
+          SocialLink(
+            label: 'Website',
+            handle: b.website!,
+            icon: Icons.language_outlined,
+            url: Uri.tryParse(
+              b.website!.startsWith('http')
+                  ? b.website!
+                  : 'https://${b.website}',
+            ),
+          ),
+        if (b.instagram?.isNotEmpty ?? false)
+          SocialLink(
+            label: 'Instagram',
+            handle: '@${b.instagram}',
+            icon: Icons.camera_alt_outlined,
+            url: Uri.tryParse('https://instagram.com/${b.instagram}'),
+          ),
+        if (b.facebook?.isNotEmpty ?? false)
+          SocialLink(
+            label: 'Facebook',
+            handle: b.facebook!,
+            icon: Icons.thumb_up_outlined,
+            url: Uri.tryParse(
+              b.facebook!.startsWith('http')
+                  ? b.facebook!
+                  : 'https://facebook.com/${b.facebook}',
+            ),
+          ),
+        if (b.tiktok?.isNotEmpty ?? false)
+          SocialLink(
+            label: 'TikTok',
+            handle: '@${b.tiktok}',
+            icon: Icons.music_note_outlined,
+            url: Uri.tryParse('https://tiktok.com/@${b.tiktok}'),
+          ),
+      ];
+}
+
+/// One tappable social account.
+class SocialLink {
+  const SocialLink({
+    required this.label,
+    required this.handle,
+    required this.icon,
+    required this.url,
+  });
+
+  final String label;
+  final String handle;
+  final IconData icon;
+
+  /// Null when the stored value could not be parsed into a URL. Such a link is
+  /// rendered but not tappable, rather than being hidden: the customer should
+  /// still see that the business has an account there.
+  final Uri? url;
 }
 
 class _ListingContent extends StatefulWidget {
-  const _ListingContent({required this.business});
+  const _ListingContent({
+    required this.business,
+    this.ads = const [],
+    this.latestAnnouncement,
+    this.upcomingEvents = const [],
+    this.socials = const [],
+  });
 
   final Business business;
+  final List<BusinessAd> ads;
+  final Announcement? latestAnnouncement;
+  final List<BusinessEvent> upcomingEvents;
+  final List<SocialLink> socials;
 
   @override
   State<_ListingContent> createState() => _ListingContentState();
@@ -83,6 +183,10 @@ class _ListingContentState extends State<_ListingContent> {
   @override
   Widget build(BuildContext context) {
     final b = widget.business;
+    final liveAds = widget.ads;
+    final latestAnnouncement = widget.latestAnnouncement;
+    final upcomingEvents = widget.upcomingEvents;
+    final socials = widget.socials;
     final palette = context.palette;
     final status = openInfo(b);
 
@@ -299,6 +403,28 @@ class _ListingContentState extends State<_ListingContent> {
                   const SizedBox(height: Insets.xl),
                 ],
 
+                // Running advertisements. Above everything else, because an
+                // advertisement is the reason a business is on the app and
+                // burying it under the address would defeat the pitch.
+                if (liveAds.isNotEmpty) ...[
+                  _SectionHeader(title: 'Advertisements', palette: palette),
+                  const SizedBox(height: Insets.sm),
+                  for (final ad in liveAds)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Insets.sm),
+                      child: _AdCard(ad: ad),
+                    ),
+                  const SizedBox(height: Insets.lg),
+                ],
+
+                // Latest announcement, if there is one. Only the most recent:
+                // a wall of notices buries the business details, and older ones
+                // live on the Notices tab.
+                if (latestAnnouncement case final announcement?) ...[
+                  _AnnouncementCard(announcement: announcement),
+                  const SizedBox(height: Insets.xl),
+                ],
+
                 // Description / About
                 if (b.description.isNotEmpty) ...[
                   _SectionHeader(title: 'About', palette: palette),
@@ -380,6 +506,28 @@ class _ListingContentState extends State<_ListingContent> {
                   ),
                   const SizedBox(height: Insets.sm),
                   _buildMenuCard(b, palette),
+                  const SizedBox(height: Insets.xl),
+                ],
+
+                // Upcoming events. Only ones still to happen: a listing showing
+                // last month's events reads as unmaintained.
+                if (upcomingEvents.isNotEmpty) ...[
+                  _SectionHeader(title: 'Coming up', palette: palette),
+                  const SizedBox(height: Insets.sm),
+                  for (final event in upcomingEvents)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Insets.sm),
+                      child: _EventRow(event: event),
+                    ),
+                  const SizedBox(height: Insets.lg),
+                ],
+
+                // Social accounts. Where most Antigua businesses are actually
+                // reachable, so this sits above the address rather than below.
+                if (socials.isNotEmpty) ...[
+                  _SectionHeader(title: 'Find them online', palette: palette),
+                  const SizedBox(height: Insets.sm),
+                  _SocialRow(links: socials),
                   const SizedBox(height: Insets.xl),
                 ],
 
@@ -864,6 +1012,246 @@ class _ListingContentState extends State<_ListingContent> {
         content: Text('Sharing ${b.name} on IslandAds'),
         duration: const Duration(seconds: 2),
       ),
+    );
+  }
+}
+
+/// One running advertisement on the listing.
+///
+/// The view count is deliberately not shown here. It is the business's number,
+/// not the customer's, and putting "412 views" on the public listing would be
+/// competitive information the owner did not agree to publish.
+class _AdCard extends StatelessWidget {
+  const _AdCard({required this.ad});
+
+  final BusinessAd ad;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Insets.md),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.md),
+        border: Border.all(color: palette.red.withValues(alpha: 0.35)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(Icons.campaign_outlined, size: 16, color: palette.red),
+              const SizedBox(width: Insets.xs),
+              Text(
+                'ADVERTISEMENT',
+                style: AppText.sectionLabel.copyWith(color: palette.red),
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.sm),
+          Text(
+            ad.title,
+            style: AppText.titleMedium.copyWith(color: palette.ink),
+          ),
+          if (ad.body.isNotEmpty) ...[
+            const SizedBox(height: Insets.xs),
+            Text(
+              ad.body,
+              style: AppText.bodyMedium.copyWith(color: palette.ink),
+            ),
+          ],
+          if (ad.linkUrl?.isNotEmpty ?? false) ...[
+            const SizedBox(height: Insets.sm),
+            InkWell(
+              // Only opens when the stored value parses. A malformed URL is
+              // shown as plain text rather than as a button that does nothing.
+              onTap: ad.linkUrl == null
+                  ? null
+                  : () => launchUrl(
+                        Uri.parse(ad.linkUrl!),
+                        mode: LaunchMode.externalApplication,
+                      ),
+              child: Text(
+                ad.linkUrl!,
+                style: AppText.bodyMedium.copyWith(
+                  color: ad.linkUrl == null ? palette.muted : palette.red,
+                ),
+              ),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+/// The most recent announcement, surfaced on the listing so a closure notice
+/// is visible to someone who never opens the Notices tab.
+class _AnnouncementCard extends StatelessWidget {
+  const _AnnouncementCard({required this.announcement});
+
+  final Announcement announcement;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Insets.md),
+      decoration: BoxDecoration(
+        color: palette.goldBg,
+        borderRadius: BorderRadius.circular(Corners.md),
+        border: Border.all(color: palette.gold),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(Icons.campaign_outlined, size: 18, color: palette.goldInk),
+          const SizedBox(width: Insets.sm),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  announcement.title,
+                  style: AppText.titleMedium.copyWith(color: palette.goldInk),
+                ),
+                if (announcement.body.isNotEmpty) ...[
+                  const SizedBox(height: Insets.xs),
+                  Text(
+                    announcement.body,
+                    style: AppText.bodyMedium.copyWith(color: palette.ink),
+                  ),
+                ],
+                const SizedBox(height: Insets.xs),
+                Text(
+                  DateFormat.MMMd().format(announcement.createdAt.toLocal()),
+                  style: AppText.caption.copyWith(color: palette.muted),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// An upcoming event on the listing.
+class _EventRow extends StatelessWidget {
+  const _EventRow({required this.event});
+
+  final BusinessEvent event;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final local = event.startsAt.toLocal();
+
+    return Container(
+      padding: const EdgeInsets.all(Insets.md),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.md),
+        border: Border.all(color: palette.line),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            width: 48,
+            padding: const EdgeInsets.symmetric(vertical: Insets.xs),
+            decoration: BoxDecoration(
+              color: palette.app,
+              borderRadius: BorderRadius.circular(Corners.sm),
+              border: Border.all(color: palette.line),
+            ),
+            child: Column(
+              children: [
+                Text(
+                  DateFormat.MMM().format(local).toUpperCase(),
+                  style: AppText.sectionLabel.copyWith(color: palette.red),
+                ),
+                Text(
+                  '${local.day}',
+                  style: AppText.numericLarge.copyWith(color: palette.ink),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: Insets.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  event.title,
+                  style: AppText.titleMedium.copyWith(color: palette.ink),
+                ),
+                if (event.locationNote?.isNotEmpty ?? false) ...[
+                  const SizedBox(height: Insets.xxs),
+                  Text(
+                    event.locationNote!,
+                    style: AppText.caption.copyWith(color: palette.muted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The business's social accounts.
+class _SocialRow extends StatelessWidget {
+  const _SocialRow({required this.links});
+
+  final List<SocialLink> links;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Wrap(
+      spacing: Insets.sm,
+      runSpacing: Insets.sm,
+      children: [
+        for (final link in links)
+          InkWell(
+            onTap: link.url == null
+                ? null
+                : () => launchUrl(
+                      link.url!,
+                      mode: LaunchMode.externalApplication,
+                    ),
+            borderRadius: BorderRadius.circular(Corners.md),
+            child: Container(
+              padding: const EdgeInsets.all(Insets.md),
+              decoration: BoxDecoration(
+                color: palette.surface,
+                borderRadius: BorderRadius.circular(Corners.md),
+                border: Border.all(color: palette.line),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  Icon(link.icon, size: 18, color: palette.red),
+                  const SizedBox(width: Insets.sm),
+                  Text(
+                    link.label,
+                    style: AppText.labelMedium.copyWith(color: palette.ink),
+                  ),
+                ],
+              ),
+            ),
+          ),
+      ],
     );
   }
 }

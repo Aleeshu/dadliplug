@@ -248,6 +248,10 @@ class SupabaseBusinessRepository implements BusinessRepository {
       isClosedToday: (map['is_closed_today'] as bool?) ?? false,
       lastVerifiedAt: _parseDateTime(map['last_verified_at']),
       createdAt: _parseDateTime(map['created_at']),
+      instagram: _blankToNull(map['instagram']),
+      facebook: _blankToNull(map['facebook']),
+      tiktok: _blankToNull(map['tiktok']),
+      whatsappBusiness: _blankToNull(map['whatsapp_business']),
     );
   }
 
@@ -261,6 +265,17 @@ class SupabaseBusinessRepository implements BusinessRepository {
     if (raw is DateTime) return raw;
     if (raw is String) return DateTime.tryParse(raw);
     return null;
+  }
+
+  /// Treats an empty string as absent.
+  ///
+  /// A hand-written row or a cleared form field stores `''` rather than null,
+  /// and an empty social handle would otherwise render as a dead, tappable
+  /// link on the listing.
+  static String? _blankToNull(Object? raw) {
+    if (raw is! String) return null;
+    final trimmed = raw.trim();
+    return trimmed.isEmpty ? null : trimmed;
   }
 
   /// Resolves which subscription state a listing is actually in.

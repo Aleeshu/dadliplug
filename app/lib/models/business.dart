@@ -206,6 +206,10 @@ class Business {
     this.isClosedToday = false,
     this.lastVerifiedAt,
     this.createdAt,
+    this.instagram,
+    this.facebook,
+    this.tiktok,
+    this.whatsappBusiness,
   });
 
   final String id;
@@ -281,6 +285,19 @@ class Business {
   /// which treats that listing as brand new and therefore still in grace.
   final DateTime? createdAt;
 
+  /// Social handles, stored bare (no @, no scheme).
+  ///
+  /// Separate nullable fields rather than a map, because they are edited
+  /// individually, filtered by the team, and rendered in a fixed order. A
+  /// jsonb bag would make all three of those harder for no gain at this size.
+  final String? instagram;
+  final String? facebook;
+  final String? tiktok;
+
+  /// The line a customer messages about a booking or event. Distinct from
+  /// [whatsapp], which is where the business advertises itself.
+  final String? whatsappBusiness;
+
   bool get hasLocation => latitude != null && longitude != null;
   bool get hasOffer => offer != null && offer!.isNotEmpty;
   bool get isPremium => tier == SubscriptionTier.featured;
@@ -351,6 +368,10 @@ class Business {
     bool? isClosedToday,
     DateTime? lastVerifiedAt,
     DateTime? createdAt,
+    String? instagram,
+    String? facebook,
+    String? tiktok,
+    String? whatsappBusiness,
   }) => Business(
     id: id ?? this.id,
     name: name ?? this.name,
@@ -383,6 +404,10 @@ class Business {
     isClosedToday: isClosedToday ?? this.isClosedToday,
     lastVerifiedAt: lastVerifiedAt ?? this.lastVerifiedAt,
     createdAt: createdAt ?? this.createdAt,
+    instagram: instagram ?? this.instagram,
+    facebook: facebook ?? this.facebook,
+    tiktok: tiktok ?? this.tiktok,
+    whatsappBusiness: whatsappBusiness ?? this.whatsappBusiness,
   );
 }
 
