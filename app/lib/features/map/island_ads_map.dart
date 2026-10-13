@@ -98,18 +98,11 @@ class IslandAdsMapState extends State<IslandAdsMap> {
         MapConfig.cameraMinZoom,
         MapConfig.cameraMaxZoom,
       ),
-      cameraTargetBounds: CameraTargetBounds(
-        LatLngBounds(
-          southwest: const LatLng(
-            MapConfig.southWestLatitude,
-            MapConfig.southWestLongitude,
-          ),
-          northeast: const LatLng(
-            MapConfig.northEastLatitude,
-            MapConfig.northEastLongitude,
-          ),
-        ),
-      ),
+      // Bounds removed: the original 0.25° latitude span triggered a known
+      // MapLibre Android bug on tall screens at zoom 11.5 — the camera clamps
+      // and tile requests are never issued, producing a blank map. Min/max zoom
+      // already prevents zooming out to the whole Caribbean.
+      cameraTargetBounds: CameraTargetBounds.unbounded,
       // OpenStreetMap data is ODbL-licensed and requires visible attribution.
       // Hiding it is a licence violation, not a style choice.
       logoEnabled: true,
