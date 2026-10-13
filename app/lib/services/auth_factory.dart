@@ -16,14 +16,11 @@ import 'package:antigua_business_map/services/supabase_auth_service.dart';
 /// string comparison away from any other. Better to fail at startup than to
 /// publish that.
 AuthService createAuthService({required bool isRelease}) {
-  const url = AppConfig.supabaseUrl;
-  const key = AppConfig.supabaseAnonKey;
-
-  if (url.isEmpty || key.isEmpty) {
+  if (!AppConfig.supabaseConfigured) {
     if (isRelease) {
       throw StateError(
         'SUPABASE_URL and SUPABASE_ANON_KEY are required in release builds. '
-        'Pass them with --dart-define. Refusing to run with mock auth.',
+        '${AppConfig.supabaseMissingBuildHint}',
       );
     }
     return MockAuthService();

@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/core/config/app_config.dart';
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/models/business_category.dart';
 import 'package:flutter/foundation.dart';
@@ -73,8 +74,14 @@ class SupabaseBusinessRepository implements BusinessRepository {
   SupabaseClient get _require {
     final client = _client;
     if (client != null) return client;
-    // Throws if Supabase was never initialised, which is the correct outcome:
-    // a build with no backend should fail visibly, not quietly show nothing.
+    // A build with no credentials must fail loudly, not quietly show nothing.
+    // But it must also say *why*. Reaching for `Supabase.instance` here raises
+    // a bare `_isInitialized` assertion from deep inside the SDK, which reaches
+    // the user as an unexplained "Could not load businesses" and costs hours to
+    // trace back to a missing dart-define.
+    if (!AppConfig.supabaseConfigured) {
+      throw StateError(AppConfig.supabaseMissingBuildHint);
+    }
     return Supabase.instance.client;
   }
 

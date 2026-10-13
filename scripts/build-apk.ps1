@@ -7,12 +7,20 @@
 #   .\scripts\build-apk.ps1                  debug build to builds\
 #   .\scripts\build-apk.ps1 -Release         release build (needs key.properties)
 #   .\scripts\build-apk.ps1 -Install          build, then install on the emulator
+#   .\scripts\build-apk.ps1 -Mirror C:\antigua-app   build via a space-free path
 #
 # Requires PUB_CACHE set to a path with no spaces. See docs/build-environment.md.
+#
+# Always use this script rather than calling `flutter build` directly. The
+# dart-defines come from .env and nothing tells you they are missing: a build
+# without them compiles cleanly, runs, and silently falls back to mock auth and
+# a dead business repository. That produced a day of debugging a build that was
+# never talking to Supabase at all. See the mirror warning below.
 
 param(
   [switch]$Release,
-  [switch]$Install
+  [switch]$Install,
+  [string]$Mirror = ''
 )
 
 $ErrorActionPreference = 'Stop'
@@ -51,17 +59,34 @@ foreach ($key in $defines.Keys) {
   $args += "--dart-define=$key=$($defines[$key])"
 }
 
-Set-Location (Join-Path $root 'app')
+# Gradle and the Dart native toolchain fail on the spaces in this repo's path.
+# So when a space-free mirror is given, mirror the app source there and build
+# there instead. The dart-defines are passed on the command line, so the mirror
+# deliberately does not receive .env — it is a build directory, not a second
+# checkout, and copying keys into it would only widen where they live.
+$buildRoot = Join-Path $root 'app'
+if ($Mirror) {
+  $appDir = Join-Path $root 'app'
+  New-Item -ItemType Directory -Path $Mirror -Force | Out-Null
+  Write-Host "Mirroring app/ -> $Mirror ..."
+  & robocopy $appDir $Mirror /MIR /NFL /NDL /NJH /NJS /NP /XD build .dart_tool /XF '*.lock' | Out-Null
+  if ($LASTEXITCODE -ge 8) {
+    Write-Error "robocopy failed with exit code $LASTEXITCODE"
+  }
+  $buildRoot = $Mirror
+}
 
-Write-Host "Building IslandAds..."
+Set-Location $buildRoot
+
+Write-Host "Building IslandAds in $buildRoot ..."
 & flutter @args
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $mode = if ($Release) { 'release' } else { 'debug' }
-$apk = Join-Path $root "app\build\app\outputs\flutter-apk\app-$mode.apk"
+$apk = Join-Path $buildRoot "build\app\outputs\flutter-apk\app-$mode.apk"
 $dest = Join-Path $root 'builds'
 New-Item -ItemType Directory -Path $dest -Force | Out-Null
-Copy-Item $apk (Join-Path $dest 'islandads-$mode.apk') -Force
+Copy-Item $apk (Join-Path $dest "islandads-$mode.apk") -Force
 
 Write-Host "APK: $dest\islandads-$mode.apk"
 

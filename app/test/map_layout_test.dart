@@ -229,6 +229,46 @@ void main() {
       );
     });
 
+    testWidgets('the empty state does not replace the map', (tester) async {
+      tester.view.physicalSize = tallPhone;
+      tester.view.devicePixelRatio = 1;
+      addTearDown(tester.view.reset);
+
+      await tester.pumpWidget(_app(const []));
+      await tester.pump();
+
+      // Hiding the map behind the empty state made a working map look broken
+      // and gave no sense of where businesses would appear. Both have to be
+      // present at once.
+      expect(find.byKey(const Key('fake_map_surface')), findsOneWidget);
+      expect(find.text('No businesses listed yet'), findsOneWidget);
+
+      // The scrim must be partial, or the map is hidden again and the change
+      // achieves nothing.
+      final scrim = tester.widget<DecoratedBox>(
+        find
+            .ancestor(
+              of: find.text('No businesses listed yet'),
+              matching: find.byType(DecoratedBox),
+            )
+            .first,
+      );
+      final gradient = scrim.decoration as BoxDecoration;
+      final colors = gradient.gradient!.colors;
+      expect(
+        colors.first.a,
+        lessThan(0.1),
+        reason: 'The top of the scrim must stay transparent so the map is '
+            'visible above the empty-state copy.',
+      );
+      expect(
+        colors[1].a,
+        greaterThan(0.85),
+        reason: 'The middle must be opaque enough to read the copy against '
+            'map tiles.',
+      );
+    });
+
     testWidgets('renders without overflow when a business is selected', (
       tester,
     ) async {

@@ -26,27 +26,46 @@ class _EmptyListings extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Center(
-      child: Padding(
-        padding: const EdgeInsets.all(Insets.giant),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(Icons.storefront_outlined, size: 44, color: palette.line),
-            const SizedBox(height: Insets.xl),
-            Text(
-              'No businesses listed yet',
-              textAlign: TextAlign.center,
-              style: AppText.displayMedium.copyWith(color: palette.ink),
-            ),
-            const SizedBox(height: Insets.md),
-            Text(
-              'IslandAds is new to Antigua. If you run a business, get in '
-              'touch and be one of the first to appear.',
-              textAlign: TextAlign.center,
-              style: AppText.bodyMedium.copyWith(color: palette.muted),
-            ),
+    return DecoratedBox(
+      // Sits over a live map now, so the text needs its own ground to sit on.
+      // A full-bleed opaque scrim would hide the island again, which is what
+      // this change was meant to fix. A soft vertical fade keeps the middle of
+      // the screen readable and leaves the map visible top and bottom.
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          begin: Alignment.topCenter,
+          end: Alignment.bottomCenter,
+          colors: [
+            palette.app.withValues(alpha: 0.0),
+            palette.app.withValues(alpha: 0.92),
+            palette.app.withValues(alpha: 0.92),
+            palette.app.withValues(alpha: 0.0),
           ],
+          stops: const [0.0, 0.28, 0.72, 1.0],
+        ),
+      ),
+      child: Center(
+        child: Padding(
+          padding: const EdgeInsets.all(Insets.giant),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Icon(Icons.storefront_outlined, size: 44, color: palette.muted),
+              const SizedBox(height: Insets.xl),
+              Text(
+                'No businesses listed yet',
+                textAlign: TextAlign.center,
+                style: AppText.displayMedium.copyWith(color: palette.ink),
+              ),
+              const SizedBox(height: Insets.md),
+              Text(
+                'IslandAds is new to Antigua. If you run a business, get in '
+                'touch and be one of the first to appear.',
+                textAlign: TextAlign.center,
+                style: AppText.bodyMedium.copyWith(color: palette.muted),
+              ),
+            ],
+          ),
         ),
       ),
     );
@@ -161,21 +180,31 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // Empty and error are different states with different messages. A
           // database that is down must not read as "no businesses yet", because
           // that hides a real outage behind a plausible-looking screen.
+          //
+          // The map renders in BOTH the empty and populated cases. Replacing it
+          // with the empty state hid the island entirely, which made a working
+          // map look broken and gave no context for where those businesses
+          // would be. The empty state now sits on top of a real map.
           businessesAsync.when(
-            data: (businesses) => businesses.isEmpty
-                ? Positioned.fill(child: _EmptyListings(palette: palette))
+            data: (businesses) => Stack(
+              fit: StackFit.expand,
+              children: [
                 // Positioned.fill is not optional. A Stack passes loose
                 // constraints to non-positioned children, and the MapLibre
                 // surface does not expand to fill them — so the map collapsed
                 // to nothing while the overlays drew over the top. That is
                 // what left a blank map with no error anywhere.
-                : Positioned.fill(
-                    child: _buildMap(
-                      businesses,
-                      selectedBusiness,
-                      palette,
-                    ),
+                Positioned.fill(
+                  child: _buildMap(
+                    businesses,
+                    selectedBusiness,
+                    palette,
                   ),
+                ),
+                if (businesses.isEmpty)
+                  Positioned.fill(child: _EmptyListings(palette: palette)),
+              ],
+            ),
             loading: () => Center(
               child: CircularProgressIndicator(color: palette.red),
             ),

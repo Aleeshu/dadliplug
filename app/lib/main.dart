@@ -25,9 +25,7 @@ Future<void> main() async {
   // This only bites when keys are actually supplied. Without them the factory
   // returns the mock, which needs no client, so the misordering hides until the
   // day someone builds with real keys.
-  final hasSupabase =
-      AppConfig.supabaseUrl.isNotEmpty && AppConfig.supabaseAnonKey.isNotEmpty;
-  if (hasSupabase) {
+  if (AppConfig.supabaseConfigured) {
     await Supabase.initialize(
       url: AppConfig.supabaseUrl,
       // Supabase renamed `anonKey` to `publishableKey`. Same value, same

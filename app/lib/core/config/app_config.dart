@@ -26,6 +26,23 @@ abstract final class AppConfig {
     'SUPABASE_ANON_KEY_DEV',
   );
 
+  /// Whether this build was given the credentials it needs to reach Supabase.
+  ///
+  /// Single source of truth, so `main`, the auth factory and the business
+  /// repository cannot disagree about it. When they did, a build with no keys
+  /// booted on the mock auth service while the repository still reached for
+  /// `Supabase.instance`, and the resulting assertion surfaced to the user as an
+  /// unexplained "Could not load businesses".
+  static bool get supabaseConfigured =>
+      supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
+
+  /// Actionable description of a missing-credentials build.
+  static const String supabaseMissingBuildHint =
+      'This build has no Supabase credentials, so it cannot load data. Build '
+      'with scripts/build-apk.ps1, which passes the dart-defines from .env. '
+      'Do not call `flutter build` directly — it succeeds and produces an app '
+      'that talks to nothing.';
+
   /// Google Maps SDK key. Must be restricted by bundle id and package name in
   /// Google Cloud before release.
   static const String googleMapsApiKey = String.fromEnvironment(
