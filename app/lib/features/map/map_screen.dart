@@ -112,6 +112,12 @@ class MapScreen extends ConsumerStatefulWidget {
   final AuthSession session;
   final RoleSwitcherController roleSwitcher;
 
+  /// Layout-test seam. Swaps the native MapLibre surface for an equivalent
+  /// widget so the chrome around it can be measured without a device.
+  /// Null in every real code path.
+  @visibleForTesting
+  static Widget? debugMapSurfaceOverride;
+
   @override
   ConsumerState<MapScreen> createState() => _MapScreenState();
 }
@@ -138,6 +144,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     return Scaffold(
       backgroundColor: palette.app,
       body: Stack(
+        // StackFit.expand is load-bearing, and its absence caused every layout
+        // fault on this screen at once. Scaffold hands its body *loose*
+        // constraints, so a default Stack shrink-wraps to its largest
+        // non-positioned child. The only such child here was the header-and-
+        // chips column, which made the whole Stack about 111px tall. The map
+        // then filled 111px instead of the screen, the recentre button sat at
+        // the top over the filter chips, and the empty state stacked behind
+        // them. Positioned.fill on the map could not fix this, because fill
+        // expands to the Stack's size, and the Stack was already the wrong
+        // size. Fix it here, once.
+        fit: StackFit.expand,
         children: [
           // 1. Map View (Google Maps on Mobile, Interactive Fallback on Desktop/Web)
           //
@@ -243,6 +260,14 @@ class _MapScreenState extends ConsumerState<MapScreen> {
         onSelectBusiness: _selectBusiness,
         palette: palette,
       );
+    }
+
+    // MapLibre is a PlatformView whose native surface does not exist in the
+    // test environment, and disposing it throws a LateInitializationError that
+    // masks the real assertions. Layout tests substitute a plain box of the
+    // same geometry so the surrounding chrome can be measured honestly.
+    if (MapScreen.debugMapSurfaceOverride case final Widget surface?) {
+      return surface;
     }
 
     return IslandAdsMap(
