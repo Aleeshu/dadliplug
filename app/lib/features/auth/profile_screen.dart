@@ -1,4 +1,5 @@
 import 'package:antigua_business_map/core/theme/app_colors.dart';
+import 'package:antigua_business_map/features/auth/auth_widgets.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
 import 'package:antigua_business_map/models/review.dart';
@@ -68,7 +69,7 @@ class ProfileScreen extends StatelessWidget {
                 ],
 
                 const SizedBox(height: Insets.giant),
-                const _RoleExplainer(),
+                _RoleExplainer(session: session),
               ],
             ),
     );
@@ -446,12 +447,43 @@ class AuthPrompt extends StatelessWidget {
   }
 }
 
-class _RoleExplainer extends StatelessWidget {
-  const _RoleExplainer();
+class _RoleExplainer extends StatefulWidget {
+  const _RoleExplainer({required this.session});
+
+  final AuthSession session;
+
+  @override
+  State<_RoleExplainer> createState() => _RoleExplainerState();
+}
+
+class _RoleExplainerState extends State<_RoleExplainer> {
+  bool _claiming = false;
+  String? _claimError;
+
+  Future<void> _claim() async {
+    if (_claiming) return;
+    setState(() {
+      _claiming = true;
+      _claimError = null;
+    });
+
+    final claimed = await widget.session.claimTeamAdmin();
+    if (!mounted) return;
+
+    setState(() {
+      _claiming = false;
+      if (!claimed) {
+        _claimError =
+            'Someone else already claimed this, or your profile could not be '
+            'found. A team admin can set it from the database instead.';
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    final role = widget.session.role;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
@@ -475,27 +507,51 @@ class _RoleExplainer extends StatelessWidget {
               const SizedBox(width: Insets.md),
               Expanded(
                 child: Text(
-                  _roleLabel(context),
+                  _roleLabel(role),
                   style: AppText.bodyMedium.copyWith(color: palette.ink),
                 ),
               ),
             ],
           ),
         ),
+
+        // Only offered to someone who is not already an admin. The database
+        // refuses it once an admin exists, so this is a convenience rather
+        // than the gate — but a button that silently does nothing is worse
+        // than no button, hence the error message below.
+        if (role == UserRole.user) ...[
+          const SizedBox(height: Insets.lg),
+          OutlinedButton.icon(
+            onPressed: _claiming ? null : _claim,
+            icon: _claiming
+                ? const SizedBox(
+                    width: 14,
+                    height: 14,
+                    child: CircularProgressIndicator(strokeWidth: 2),
+                  )
+                : const Icon(Icons.shield_outlined, size: 18),
+            label: Text(_claiming ? 'Claiming' : 'Become a team admin'),
+          ),
+          const SizedBox(height: Insets.sm),
+          Text(
+            'One-time setup, so the island is not locked out of its own '
+            'moderation tools. It stops working as soon as an admin exists.',
+            style: AppText.caption.copyWith(color: palette.muted),
+          ),
+          if (_claimError != null) ...[
+            const SizedBox(height: Insets.md),
+            AuthErrorBanner(message: _claimError!),
+          ],
+        ],
       ],
     );
   }
 
-  static String _roleLabel(BuildContext context) => switch (context
-      .findAncestorWidgetOfExactType<ProfileScreen>()
-      ?.session
-      .role) {
+  static String _roleLabel(UserRole role) => switch (role) {
     UserRole.businessAdmin =>
-      'Business admin. You can edit your listing '
-          'and confirm customers.',
+      'Business admin. You can edit your listing and confirm customers.',
     UserRole.teamAdmin =>
-      'Team admin. You can moderate reviews and manage '
-          'subscriptions.',
-    _ => 'Regular user. You can browse, visit and review.',
+      'Team admin. You can moderate reviews and manage subscriptions.',
+    UserRole.user => 'Regular user. You can browse, visit and review.',
   };
 }

@@ -129,6 +129,23 @@ class MockAuthService implements AuthService {
     _controller.add(_current);
   }
 
+  /// Mirrors the database rule: the first caller wins, everyone after is
+  /// denied. Without this the mock would let every account promote itself,
+  /// which is the thing the real database is careful about.
+  @override
+  Future<bool> claimTeamAdmin() async {
+    final user = _current;
+    if (user == null) return false;
+    if (_accounts.values.any((a) => a.user.role == UserRole.teamAdmin)) {
+      return false;
+    }
+    await setRole(UserRole.teamAdmin);
+    return true;
+  }
+
+  @override
+  Future<AppUser?> reloadUser() async => _current;
+
   AuthResult _emit(AppUser user) {
     _current = user;
     _controller.add(user);

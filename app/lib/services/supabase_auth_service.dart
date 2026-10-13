@@ -1,6 +1,7 @@
 import 'package:antigua_business_map/core/config/app_config.dart';
 import 'package:antigua_business_map/models/user.dart';
 import 'package:antigua_business_map/services/auth_service.dart';
+import 'package:flutter/foundation.dart';
 import 'package:google_sign_in/google_sign_in.dart';
 import 'package:supabase_flutter/supabase_flutter.dart';
 
@@ -143,6 +144,21 @@ class SupabaseAuthService implements AuthService {
   @override
   Future<void> signOut() => _db.auth.signOut();
 
+  /// Promotes the caller to team admin while the window is open.
+  ///
+  /// The window is closed in the database, not here — this only reports what
+  /// the function decided. If it returns false, someone already claimed it or
+  /// the profile row is missing, and neither is worth retrying.
+  @override
+  Future<bool> claimTeamAdmin() async {
+    try {
+      return await _db.rpc<bool>('claim_team_admin').timeout(_timeout);
+    } catch (error) {
+      debugPrint('claim_team_admin failed: $error');
+      return false;
+    }
+  }
+
   /// Intentionally does nothing.
   ///
   /// Roles come from the `profiles` table and are granted by the team. A
@@ -151,6 +167,13 @@ class SupabaseAuthService implements AuthService {
   /// would hide a real permission problem.
   @override
   Future<void> setRole(UserRole role) async {}
+
+  @override
+  Future<AppUser?> reloadUser() async {
+    final id = _db.auth.currentUser?.id;
+    if (id == null) return null;
+    return _loadUser(id);
+  }
 
   GoogleSignIn _ensureGoogleSignIn() {
     return _googleSignIn ??= GoogleSignIn.instance;

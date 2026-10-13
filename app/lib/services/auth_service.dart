@@ -94,6 +94,17 @@ abstract interface class AuthService {
 
   Future<void> signOut();
 
+  /// Promotes the signed-in user to team admin, but only while the island has
+  /// none at all.
+  ///
+  /// Without this the first team member is locked out permanently: the role
+  /// trigger correctly refuses any non-admin from changing a role, so someone
+  /// has to be an admin before anyone can become one. The database function
+  /// closes the window the moment the first admin exists.
+  ///
+  /// Returns false once an admin exists, or if it could not promote.
+  Future<bool> claimTeamAdmin() async => false;
+
   /// Changes the signed-in user's role.
   ///
   /// Only the mock service implements this. Roles are granted by the team
@@ -102,6 +113,14 @@ abstract interface class AuthService {
   /// Part of the interface so `AuthSession` does not need to know which one it
   /// is holding.
   Future<void> setRole(UserRole role) async {}
+
+  /// Re-reads the signed-in user from the backend.
+  ///
+  /// Needed after anything that changes the stored profile — a role promotion,
+  /// or an admin being assigned a business. Without it the app keeps showing
+  /// whatever role it last saw until a restart, which looks like the change did
+  /// not work.
+  Future<AppUser?> reloadUser() async => currentUser;
 
   /// True once the service has finished checking for an existing session.
   /// Guards against briefly showing the sign-in screen to a signed-in user.

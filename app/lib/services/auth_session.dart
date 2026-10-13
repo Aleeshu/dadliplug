@@ -96,6 +96,19 @@ class AuthSession {
     _setUser(null);
   }
 
+  /// Promotes this user to team admin while the island has none.
+  ///
+  /// Re-reads the session afterwards, because the role lives in the database
+  /// and this screen's copy of the user is otherwise unchanged — the tab bar
+  /// would keep showing the user tabs until a restart.
+  Future<bool> claimTeamAdmin() async {
+    final claimed = await _service.claimTeamAdmin();
+    if (!claimed) return false;
+
+    _setUser(await _service.reloadUser());
+    return true;
+  }
+
   void _setUser(AppUser? user) {
     if (_user?.id == user?.id && _user?.role == user?.role) return;
     _user = user;

@@ -40,7 +40,7 @@ assumption in the plan, and it is cheap to test: ask five business owners what
 they currently pay Facebook for, and what they would pay. If the answer is
 EC$50 a month, we are priced for a different customer.
 
-Decide before Phase 9, when the first real conversations happen.
+Decide during Phase 9, where the first real conversations happen.
 
 | Area | Decision |
 | --- | --- |
@@ -351,31 +351,33 @@ previous runs on a real phone.
 - Recomputed on a schedule, not per request
 - Drives Featured order and search priority
 
-### Phase 13 — Validate the business model (before Phase 9)
+### Phase 9 — Validate the business model (week 16)
 - Twenty conversations with business owners: how do they advertise today, what
   frustrates them, what do they pay, what would they pay us.
 - Test pricing in EC$ against the real answer, not against our assumption.
 - Confirm whether owners want the team maintaining their listing or want to
   edit it themselves.
-- Only then: finish Phase 9's onboarding model and Phase 10's store submission.
+- Decide the essentials-layer question (section 15) with real reactions rather
+  than on paper.
 
-Doing this after Phase 10 means launching with pricing and positioning already
-set in stone and unvalidated.
+Placed here deliberately. Every phase before it has been engineering, and not
+one has been commercial. Launching at Phase 10 with pricing and positioning
+already fixed and unvalidated is the risk this phase exists to remove.
 
-### Phase 9 — Seed content and field testing (weeks 16–17)
+### Phase 10 — Seed content and field testing (week 17)
 - Onboard the first 5–10 businesses; verify listings in person
 - **Pre-built listings for the sales pipeline**
 - **WhatsApp intake**: a number businesses text for hours changes and closures
 - 3-day trials with the seed businesses
 - Bulk import for the first listings; photo cleanup on upload
 
-### Phase 10 — Release (weeks 18–19)
+### Phase 11 — Release (weeks 18–19)
 - TestFlight beta, Play Store internal testing
 - Privacy policy and store assets
 - Store submission; plan for review delays
 - Soft launch
 
-### Phase 11 — Public launch and growth (post-launch)
+### Phase 12 — Public launch and growth (post-launch)
 - Sales beyond the seed group, industry by industry
 - **Monthly WhatsApp results summary**
 - **Referral reward**
@@ -508,11 +510,10 @@ plan are all commercial, and none of them are technical:
 - What do they pay Facebook today, and what would they pay us instead?
 - Who verifies a business is real, and who pays for that check?
 
-Phase 9 plans to onboard five to ten businesses, and pre-built listings are on
-the list so a pitch can open with "this is already yours". Both presuppose
-someone to pitch. Getting twenty conversations in before Phase 9 costs a week
-and would reshape the pricing question in section 2, the onboarding model in
-section 9, and possibly the whole proposition.
+Phase 9 is those twenty conversations. Phase 10 plans to onboard five to ten
+businesses, and pre-built listings are on the list so a pitch can open with
+"this is already yours" — which presupposes Phase 9 happened first, and a
+conversation worth having rather than a demonstration.
 
 **This is the highest-value next step, and it is not a code task.**
 

@@ -146,8 +146,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // that hides a real outage behind a plausible-looking screen.
           businessesAsync.when(
             data: (businesses) => businesses.isEmpty
-                ? _EmptyListings(palette: palette)
-                : _buildMap(businesses, selectedBusiness, palette),
+                ? Positioned.fill(child: _EmptyListings(palette: palette))
+                // Positioned.fill is not optional. A Stack passes loose
+                // constraints to non-positioned children, and the MapLibre
+                // surface does not expand to fill them — so the map collapsed
+                // to nothing while the overlays drew over the top. That is
+                // what left a blank map with no error anywhere.
+                : Positioned.fill(
+                    child: _buildMap(
+                      businesses,
+                      selectedBusiness,
+                      palette,
+                    ),
+                  ),
             loading: () => Center(
               child: CircularProgressIndicator(color: palette.red),
             ),
