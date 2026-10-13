@@ -5,61 +5,80 @@ post-launch backlog.
 
 ## 1. Concept
 
-A mobile map app of Antigua where businesses are listed, promoted, and kept up
-to date. Built on Google Maps features but made distinct and personal to
-Antigua. The core problem it solves: most Antigua businesses are bad at
-maintaining their own advertising — outdated hours, dead socials, no search
-presence. We own that upkeep for them.
+A mobile map app of Antigua where businesses advertise, are listed, promoted,
+and kept up to date. The core problem it solves: most Antigua businesses are
+bad at maintaining their own advertising — outdated hours, dead socials, no
+search presence. We own that upkeep for them, and they own the content.
+
+**The pitch is advertising, not discovery.** The app exists so businesses can
+get their message out more efficiently than a Facebook post reaches. The map,
+the categories, and the leaderboard are what make that reach land: an
+advertisement only works if people nearby can find it.
+
+Customers and businesses share one app but get different navigation, because
+they are doing different things. Customers browse, search, bookmark, and
+review. Businesses post advertisements and announcements, run events, and read
+their numbers. Customers may browse as guests.
 
 Use case is advertising, not personal live location tracking. Users browse
-places; we do not track individuals.
+places and see what is near them; we do not track individuals.
 
-Primary revenue: businesses pay for placement. Premium subscribers hold a
-Featured slot, ordered by earned popularity rather than by bid. Secondary:
-international promotion with personalized marketing.
+Primary revenue: monthly subscriptions from businesses. Featured subscribers
+hold a Featured slot, ordered by earned popularity rather than by bid.
+Secondary: international promotion with personalized marketing.
 
 ## 2. Decisions made
 
-### Currency — read this first
+### Currency — corrected
 
-All prices in this document are in **US dollars**, which is how we have been
-discussing them. Antigua trades in **EC$**, pegged at 2.7 to 1 USD.
+**All prices in this document are in Eastern Caribbean dollars (EC$).** This was
+previously written as US dollars, which made our pricing look 3–5x the local
+market when it is in fact inside it. Corrected after confirming with the
+business owner that the published figures are EC$.
 
-| | US$ | EC$ |
+| Tier | EC$ | ~US$ |
 | --- | --- | --- |
-| Basic | $50 | **EC$135** |
-| Premium | $100 | **EC$270** |
-| Typical small business ad (external estimate) | — | EC$10–25 |
-| Typical monthly subscription (external estimate) | ~$18–37 | **EC$49–99** |
+| Growing | **EC$25** | ~$9 |
+| Basic | **EC$50** | ~$19 |
+| Featured | **EC$200** | ~$74 |
+| Typical small business ad (external estimate) | EC$10–25 | — |
+| Typical monthly subscription (external estimate) | EC$49–99 | — |
 
-**Our pricing is roughly 3–5x the range a comparable platform would charge
-locally.** That is not necessarily wrong — a managed directory where the team
-maintains the listing is worth more than a self-serve ad post, and the local
-market may simply support it. But it is the single largest unvalidated
-assumption in the plan, and it is cheap to test: ask five business owners what
-they currently pay Facebook for, and what they would pay. If the answer is
-EC$50 a month, we are priced for a different customer.
+Growing and Basic sit deliberately at or below the local range. Featured is
+four times Basic and is the only tier that buys visibility, so the price gap
+does the work of segmenting instead of a feature checklist.
 
-Decide during Phase 9, where the first real conversations happen.
+Note the change in shape: Featured moved from EC$100 to **EC$200**, widening
+the gap from 2x Basic to 4x. That makes the tier jump a real decision for an
+owner rather than an easy upgrade, which is the intent — but it is untested and
+belongs in the Phase 9 conversations.
+
+Revenue logic, in the owner's words: the goal is gross income, not monthly
+income per subscriber. Keep it affordable, keep it negotiable, and the numbers
+add up. That is why pricing sits where it does rather than at a maximum.
+
+Antiguan businesses do not yet see marketing as necessary. Price is therefore
+part of the pitch, not a concession.
 
 | Area | Decision |
 | --- | --- |
-| Name | IslandAds |
+| Name | IslandAds (beta) — *Island Advertisements* is the working name |
 | Platform | Mobile app, both iOS and Android |
 | Geography | Antigua only for now |
-| Pricing | $50/mo basic, $100/mo premium, per business |
-| Featured slot | Reserved for premium subscribers, unlimited capacity, positioned by the ranking system. No bidding. |
-| Free trial | 3 days |
+| Pricing | **EC$25/mo growing, EC$50/mo basic, EC$200/mo featured**, per business. Negotiable. |
+| Featured slot | Reserved for featured subscribers, unlimited capacity, positioned by the ranking system. No bidding. Plus a verified badge. |
+| Free trial | 3 days, every tier, all paid tools unlocked |
+| Trial expiry | Listing is **held for 7 days** before anything is deleted. Owner can pay in that window and pick up exactly where they left off. |
+| Non-payment | Same 7-day hold, then the listing is terminated. Written into the terms. |
 | Sales | Closed in person by a team member |
 | Payment | Business pays by direct transfer. No app store cut. |
-| Non-payment | Delist the business, after a grace period |
 | Industries | All industries open, incl. online-only as its own category |
-| Content flow | Business submits info → team implements → business self-updates via admin role, or texts the team on WhatsApp |
+| Content flow | Business signs in, edits their own listing directly. The team maintains and updates on their behalf as the fallback for owners who will not use the tools. |
 | Reviews | In app, from day one. Signed-in users only. Verified visit required. |
-| Accounts | Required. Personalise reviews, track visits. |
-| Trials | 3 days, both tiers. No conversion → listing removed. |
+| Accounts | Customers may browse as a **guest**. Sign-in is required only to review, bookmark, follow, or run a business. |
+| Onboarding | First screen asks: **are you a business, or a customer?** |
 | Listings | 5–10 target businesses before launch |
-| Map | Google Maps pins |
+| Map | MapLibre with OpenFreeMap tiles (no Google Maps key, no billing dependency) |
 | Backend | Supabase, linked and live |
 | Team | 4 people |
 | Funding | Company bank account; earnings split equally between the four |
@@ -68,42 +87,89 @@ Decide during Phase 9, where the first real conversations happen.
 
 ## 3. Pricing detail
 
-**Basic — $50/mo**
+Three tiers. All prices EC$, per business, per month. All negotiable — see the
+currency note in section 2.
+
+**Growing — EC$25/mo**
 - Map pin and listing
 - Name, category, photos, hours, phone/WhatsApp
 - Reviews
 - Standard map position
+- Social links
+- Bio / menu / facts
+- Announcements and events calendar
+- **No pin customisation.** The default pin only.
 
-**Premium — $100/mo**
-- Everything in basic
-- A spot in the Featured area (unlimited capacity)
+Target: small and online-only businesses that want presence and recognition
+without a commitment. The cheapest rung on the ladder, and the one that makes
+"get in touch and be one of the first to appear" a real offer rather than a
+promise.
+
+**Basic — EC$50/mo**
+- Everything in Growing
+- **Customisable pin image**, to make the pin itself attract a click
+- Pin movable by the business at any time
+- Views analytics
+- Monthly reports
+
+Target: a stable business that is doing fine and wants more customers coming
+through the door. The workhorse tier, and the one most likely to be the default
+in the sales pitch.
+
+**Featured — EC$200/mo**
+- Everything in Basic
+- A place on the separate **Featured page**, filtered out from other results
+  and recommended to customers
+- **Verified badge** next to the business name
 - Promotional banner or highlighted card
 - Offer/deal badge with a redemption code
 - Priority in search
 
-**Featured area**
-- Premium subscribers only. No cap, so no artificial scarcity and no overflow.
+Target: the already-successful business that wants to elevate its marketing and
+talk to its customers directly. At 4x Basic the jump has to be worth it, so
+Featured has to carry visible weight rather than extra list items.
+
+**Featured page**
+- Featured subscribers only, filtered out of other lists so they cannot crowd
+  ordinary results.
 - Order decided by the ranking system, not by bid.
-- Premium buys the slot. Ranking decides the order inside it.
+- The verified badge is the trust signal: it says the business pays for a
+  listing, not that its reviews are clean. Never present it as an endorsement
+  of quality.
 
 **Spotlight board — 10 slots**
 - Second-tier rotating area, 10 slots.
 - Serves the least-recently-featured first. Rotates weekly.
-- Exists because a new premium subscriber scores zero and would sit last.
+- Exists because a new featured subscriber scores zero and would sit last.
 
 **Free trial**
-- 3 days, both tiers. Used as a closing tool.
-- No conversion → listing removed. A demo, not a free listing.
+- 3 days, **every tier**, with all paid tools unlocked. The point is to prove
+  the tools work, not to give away a listing.
+- On expiry the listing is **held for 7 days**, not deleted. The owner can pay
+  at any point in that window and resume with all their data intact.
+- After 7 days the listing and its content are terminated.
+- This rule applies identically to anyone who later misses a payment. It goes
+  in the terms and conditions, stated plainly rather than buried.
 
 ## 4. Feature set
 
-**Core**
-- Map of Antigua, all paying businesses as pins
-- Category filters (8 categories, all industries)
-- Business detail: description, photos, menu or services, hours, price range
+**Consumer-facing**
+- Map of Antigua, all active businesses as pins
+- Category filters (8 categories, all industries, online-only has its own)
+- **Near me** — businesses sorted by the viewer's own location. Not a
+  locator app; it exists so someone standing in Dickenson Bay is told what is
+  around them.
+- Business profile: description/bio, photos, menu or services, hours, price
+  range, phone, email, location, social links, announcements, events, and the
+  advertisements the business has posted
 - Click to call, click to WhatsApp with a prefilled message
 - Open-now calculation, in Antigua time
-- Offers / deals
+- Offers / deals with redemption codes
+- **Bookmarks** — save a business
+- **Follow** a business — get notified when it posts an announcement
+- **Leaderboards** per category — "Top 10 Food businesses by popularity"
+- **Browse as a guest.** No account required to look. Sign-in is only needed to
+  review, bookmark, follow, or run a business.
 
 **Reviews**
 - Star rating and written reviews
@@ -111,15 +177,43 @@ Decide during Phase 9, where the first real conversations happen.
 - Report, dispute, and opt-out
 - Business-verified visits only
 
+**Advertisements**
+- Businesses post advertisements to their own profile: image, text, and a
+  link out
+- Ads are dated, so the team and the business can see whether an ad is still
+  live
+- This is the literal pitch — *"an app solely made for businesses to advertise
+  in Antigua"*. The directory is the top of the funnel; the ads are what a
+  business renews for. Track views per ad, because that is the number in the
+  month-end report.
+
+**Announcements and bulletin board**
+- One-way broadcast from business to customers: notices, closures, offers
+- Customers who follow a business get notified
+- Read receipts, so a business knows an announcement was actually seen
+
+**Events calendar**
+- Businesses post upcoming events
+- A customer-facing calendar aggregating events across businesses
+- Gives locals a reason to open the app on a given week. Carnival, sailing week
+  and Shirley Heights are the obvious first entries.
+
 **Business admin**
 - Claim and verify a listing
-- Edit hours, photos, menu, description, offers, specials, tags
-- Analytics: views, calls, WhatsApp taps, review count
+- Edit everything on the profile: hours, photos, menu, description, socials,
+  offers, specials, tags
+- Move and customise the map pin
+- Post advertisements, announcements, events
+- **Views analytics** — views on the pin, views per advertisement, calls,
+  WhatsApp taps, review count
+- **Monthly report** — issued at the end of each month: views gained per
+  advertisement, and a breakdown of one through five star ratings. Written to
+  show growth over time, not just a total
 - Visit verification queue
 
 **Billing**
 - Direct transfer, tracked internally
-- Lapsed → grace period → removed
+- Lapsed → **7-day hold** → terminated, with the data intact until the end
 
 ## 5. Ranking model
 
@@ -132,22 +226,88 @@ engaged  30%   log(views + 5*(calls + taps) + 1) / log(3001)
 total           100 * (0.45*rating + 0.25*volume + 0.30*engagement)
 ```
 
-Ties break on review count. Premium buys a Featured slot; ranking decides the
+Ties break on review count. Featured buys a Featured slot; ranking decides the
 order inside it. Nobody buys a rating.
 
 Businesses are shown their own position and what would move them — "you're 3rd
 of 9 restaurants, and 4 more reviews would move you up." That keeps the
 paid-versus-earned promise visible and gives owners something to act on.
 
+### Leaderboards — two audiences, same ranking
+
+A per-category leaderboard ("Top 10 Food businesses by popularity") built from
+this same score. Two reasons it exists, and they pull in opposite directions:
+
+- **For customers:** separates the good from the great, using reviews from
+  people who actually went. This is the feature that makes the review gate
+  worth the inconvenience.
+- **For businesses:** shows competitors what they are doing to win customers.
+
+That second audience is the sharp edge. The stated goal is for businesses to
+keep each other honest — inactivity falls behind and competition intensifies.
+But a leaderboard that punishes a new listing for having no reviews yet makes
+the app hostile to exactly the small business Growing targets.
+
+Resolve it the same way as everywhere else in the product: show the score and
+the mechanics, not just the rank. "5 of 9 restaurants" with the inputs visible
+is motivating; a bare "you are 9th" is discouraging and will read as
+discouragement dressed up as meritocracy. Fresh listings get a grace period
+before they appear, or the board needs a "new this month" lane. **Decide
+before building.**
+
 ## 6. Accounts and reviews
 
-- Users sign in. No anonymous accounts.
+- **Customers may browse as a guest.** No account to look at businesses, read
+  profiles, or see the leaderboards.
+- **Sign-in is required to review, bookmark, follow, or run a business.**
+  Guests can read everything and act on nothing, which is the intended
+  incentive to sign up.
+- Sign-in is via Google account.
 - Reviews require a verified visit (section 7).
 - Businesses reply, dispute, and may opt out entirely.
 - Reviews go live immediately, moderated after the fact.
+- **The opening screen asks whether the visitor is a business or a customer**,
+  because the two get entirely different navigation (section 6a). Guessing
+  wrong and landing a customer inside a business dashboard is the worst
+  possible first impression, and most Antigua businesses have never used a
+  directory before.
 
 **Business verification is not a trust guarantee — it is a filter.** See
 section 7; this is the most important design risk in the product.
+
+## 6a. Roles and navigation
+
+Two audiences, two tab sets. This is a structural split, not a preference:
+a business owner manages a listing, a customer browses, and cramming both into
+one tab bar makes both worse.
+
+**Business tabs:** Home · Profile · Reviews · Announcements · Ads
+**Customer tabs:** Home · Bookmarks · Calendar · Announcements
+
+Shared surface (profile, reviews, announcements) behaves differently by role:
+
+| | Business | Customer |
+| --- | --- | --- |
+| Profile | Edit everything | View only |
+| Reviews | Reply, dispute, opt out, read the verification queue | Write a review |
+| Announcements | Post, see read receipts | Read, follow businesses |
+| Ads | Post, see views per ad | View |
+| Billing | Tier, trial countdown, reports | — |
+
+- **Customers can only view what the business shows.** There is no customer
+  edit path onto a business profile.
+- **Paying businesses get an admin role** scoped to *their own listing only*.
+  An admin role that could edit another business's profile would be a
+  trust problem from day one, and RLS should enforce that scope rather than
+  relying on the UI to hide the buttons.
+
+### Trial as onboarding
+
+A new business signs in with Google, picks a tier, and gets 3 days with every
+paid tool unlocked — pin customisation, ads, analytics, the lot. The trial is
+also how the team builds the listing: most trial businesses will not fill in a
+full profile, so the team fills it in and hands it over, which is the fastest
+path to a live listing that does not look empty.
 
 ## 7. Review integrity — the honest problem
 
@@ -300,26 +460,38 @@ previous runs on a real phone.
 - Supabase live: schema, RLS, role-escalation protection verified
 - **Outstanding:** email confirmation blocks sign-up (SMTP rate-limited);
   Google sign-in untested end-to-end; no team admin accounts exist yet
+- **Still to build:** guest browsing (browse with no account, sign in only to
+  act), and the **business/customer opening choice** with its two separate tab
+  sets from section 6a. The current three-tab shell is a placeholder shape and
+  gets replaced.
 
-### Phase 3 — Map core (weeks 4–5)
-- Google Maps SDK, centred on Antigua
+### Phase 3 — Map core (weeks 4–5) ✅
+- MapLibre with OpenFreeMap tiles, centred on Antigua
 - Pins from the database, pan/zoom, tap → preview card
 - Category filters, all 8 categories
 - Open-now calculation
-- Settle the hand-drawn SVG vs real tiles question first
+- Layout verified on device; the map renders behind the empty state rather than
+  being replaced by it
 
 ### Phase 4 — Business listings (weeks 6–7)
-- Listing screen: photos, description, menu/services, hours, price, location
+- Listing screen: photos, description/bio, menu/services, hours, price, location
+- **Social links on the profile**
 - Click to call, click to WhatsApp with prefilled message
 - **Directions button and "how to find us" field**
 - **Tags**: cash only, accepts cards, accepts US$, parking, accessibility
 - **"Closed today" toggle** — hurricane season and Carnival make this urgent
 - **Last verified date, "report wrong info" button**
+- **Business profile is what the customer sees on tap — build it as the
+  complete destination**, including the announcements, events and ads slots even
+  before those features have content
 - Team backend for creating and editing listings
 
 ### Phase 5 — Discovery (week 8)
 - Featured rail on the map screen, order from ranking score
+- **Featured page** and **verified badge**
 - Search and sort
+- **Near me**, using the viewer's own location
+- **Bookmarks and follow**, with notification opt-in
 - Offers section and badges
 - **Offer codes**
 - **Share to WhatsApp**
@@ -336,18 +508,29 @@ previous runs on a real phone.
 
 ### Phase 7 — Business admin and billing (weeks 12–14)
 - Claim and verify a listing
-- Edit hours, photos, menu, description, offers, specials
+- Edit hours, photos, menu, description, offers, specials, socials
+- **Move and customise the map pin** (Growing and above; custom image is Basic+)
+- **Posting advertisements**, with views counted per ad
+- **Announcements**, with read receipts
+- **Events calendar**, per business and aggregated for customers
 - **Daily specials posting**
 - **Request a quote** (trades) and **request a slot** (tours, salons), both
   delivered on WhatsApp
 - Analytics: views, calls, taps, review count
+- **Monthly report**, issued at month end: views per ad plus a 1–5 star breakdown
 - **Rank explainer**: position within category and what would move it
-- Subscription state set by the team when a transfer lands
-- Grace period, then removal
+- **Three-tier subscription state** (Growing / Basic / Featured) set by the team
+  when a transfer lands
+- **3-day trial with a 7-day hold on expiry**, data preserved until the hold ends
 - Spotlight board: 10 rotating slots
 
 ### Phase 8 — Ranking (week 15)
 - Score from rating volume/average and engagement
+- **Per-category leaderboard**, "Top 10 Food businesses by popularity"
+- **Settle the cold-start problem before building** — a fresh listing has no
+  reviews and no views, so a naive board ranks it dead last. Grace period, or a
+  "new this month" lane. Do not ship a leaderboard that punishes the businesses
+  Growing is aimed at.
 - Recomputed on a schedule, not per request
 - Drives Featured order and search priority
 
@@ -505,19 +688,27 @@ a business owner.
 The external advice puts this first, and it is right. The largest risks in this
 plan are all commercial, and none of them are technical:
 
-- Will a barber on Dickenson Bay pay EC$135 a month?
+- Will a barber on Dickenson Bay pay EC$50 a month?
+- Will anyone pay **EC$200** for Featured, when Growing is EC$25? Four times
+  Basic is a big ask for a business that has never been charged for marketing.
 - Do they trust us to keep their listing right, or do they expect to control it?
 - What do they pay Facebook today, and what would they pay us instead?
 - Who verifies a business is real, and who pays for that check?
+- Does anyone actually want to post advertisements here, or do they still
+  advertise on Facebook because that is where their customers are?
 
 Phase 9 is those twenty conversations. Phase 10 plans to onboard five to ten
 businesses, and pre-built listings are on the list so a pitch can open with
 "this is already yours" — which presupposes Phase 9 happened first, and a
 conversation worth having rather than a demonstration.
 
+The pricing correction in section 2 removed the largest *arithmetic* risk. It
+did not remove the commercial one: nobody has confirmed an owner will pay even
+the corrected price. That still needs a human to ask.
+
 **This is the highest-value next step, and it is not a code task.**
 
-## 16. Principles
+## 17. Principles
 
 - Original design, minimal AI-generated look. Local credibility is the product.
 - Listings must be accurate and current — that is the whole pitch.
