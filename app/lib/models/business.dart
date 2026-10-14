@@ -16,8 +16,8 @@ enum SubscriptionTier {
   /// analytics and monthly reports.
   basic,
 
-  /// EC$200/mo — everything in basic, plus a place on the Featured page and a
-  /// verified badge. Four times basic, so the jump has to buy real visibility.
+  /// EC$100/mo — everything in basic, plus a place on the Featured page and a
+  /// verified badge. Twice basic, so the jump has to buy real visibility.
   featured,
 
   /// 3-day trial with every paid tool unlocked, so a business can see what it
@@ -48,7 +48,7 @@ extension SubscriptionTierX on SubscriptionTier {
   int get monthlyPrice => switch (this) {
     SubscriptionTier.growing => 25,
     SubscriptionTier.basic => 50,
-    SubscriptionTier.featured => 200,
+    SubscriptionTier.featured => 100,
     SubscriptionTier.trial => 0,
     SubscriptionTier.overdue => 0,
     SubscriptionTier.delisted => 0,

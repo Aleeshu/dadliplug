@@ -40,17 +40,18 @@ business owner that the published figures are EC$.
 | --- | --- | --- |
 | Growing | **EC$25** | ~$9 |
 | Basic | **EC$50** | ~$19 |
-| Featured | **EC$200** | ~$74 |
+| Featured | **EC$100** | ~$37 |
 | Typical small business ad (external estimate) | EC$10–25 | — |
 | Typical monthly subscription (external estimate) | EC$49–99 | — |
 
 Growing and Basic sit deliberately at or below the local range. Featured is
-four times Basic and is the only tier that buys visibility, so the price gap
-does the work of segmenting instead of a feature checklist.
+twice Basic and is the only tier that buys visibility, so the price gap does
+the work of segmenting instead of a feature checklist.
 
-Note the change in shape: Featured moved from EC$100 to **EC$200**, widening
-the gap from 2x Basic to 4x. That makes the tier jump a real decision for an
-owner rather than an easy upgrade, which is the intent — but it is untested and
+Note the history: Featured was briefly **EC$200** while the tiers were being
+first written out, and has been brought back to **EC$100**. Twice Basic is a
+large enough step to read as a real decision without making the top tier feel
+out of reach for the Antigua businesses this is aimed at. It is untested and
 belongs in the Phase 9 conversations.
 
 Revenue logic, in the owner's words: the goal is gross income, not monthly
@@ -65,7 +66,7 @@ part of the pitch, not a concession.
 | Name | IslandAds (beta) — *Island Advertisements* is the working name |
 | Platform | Mobile app, both iOS and Android |
 | Geography | Antigua only for now |
-| Pricing | **EC$25/mo growing, EC$50/mo basic, EC$200/mo featured**, per business. Negotiable. |
+| Pricing | **EC$25/mo growing, EC$50/mo basic, EC$100/mo featured**, per business. Negotiable. |
 | Featured slot | Reserved for featured subscribers, unlimited capacity, positioned by the ranking system. No bidding. Plus a verified badge. |
 | Free trial | 3 days, every tier, all paid tools unlocked |
 | Trial expiry | Listing is **held for 7 days** before anything is deleted. Owner can pay in that window and pick up exactly where they left off. |
@@ -116,17 +117,16 @@ Target: a stable business that is doing fine and wants more customers coming
 through the door. The workhorse tier, and the one most likely to be the default
 in the sales pitch.
 
-**Featured — EC$200/mo**
+**Featured — EC$100/mo**
 - Everything in Basic
 - A place on the separate **Featured page**, filtered out from other results
   and recommended to customers
 - **Verified badge** next to the business name
 - Promotional banner or highlighted card
 - Offer/deal badge with a redemption code
-- Priority in search
 
 Target: the already-successful business that wants to elevate its marketing and
-talk to its customers directly. At 4x Basic the jump has to be worth it, so
+talk to its customers directly. At 2x Basic the jump has to be worth it, so
 Featured has to carry visible weight rather than extra list items.
 
 **Featured page**
@@ -251,9 +251,8 @@ the app hostile to exactly the small business Growing targets.
 Resolve it the same way as everywhere else in the product: show the score and
 the mechanics, not just the rank. "5 of 9 restaurants" with the inputs visible
 is motivating; a bare "you are 9th" is discouraging and will read as
-discouragement dressed up as meritocracy. Fresh listings get a grace period
-before they appear, or the board needs a "new this month" lane. **Decide
-before building.**
+discouragement dressed up as meritocracy. Fresh listings stay off the board for
+a 30-day grace period (decided; see Phase 8).
 
 ## 6. Accounts and reviews
 
@@ -262,8 +261,8 @@ before building.**
 - **Sign-in is required to review, bookmark, follow, or run a business.**
   Guests can read everything and act on nothing, which is the intended
   incentive to sign up.
-- Sign-in is via Google account.
-- Reviews require a verified visit (section 7).
+- Sign-in is via Google account or email and password (both are built; see Phase 2).
+- Reviews require a verified visit (section 8).
 - Businesses reply, dispute, and may opt out entirely.
 - Reviews go live immediately, moderated after the fact.
 - **The opening screen asks whether the visitor is a business or a customer**,
@@ -464,9 +463,28 @@ previous runs on a real phone.
 - **Opening choice** — first screen asks business or customer, before sign-in.
   Continue stays disabled until something is picked
 - **Two tab sets** per section 6a: customer gets Home/Bookmarks/Calendar/Notices,
-  business gets Home/Profile/Reviews/Notices/Ads
+  business gets Home/Profile/Reviews/Notices/Ads. "Notices" is the in-app label
+  for Announcements
 - **Outstanding:** Google sign-in untested end-to-end; no team admin accounts
   exist yet; email auto-confirmation is still on (see section 15)
+
+**Sign-in verified.** A real account was created through GoTrue signup: signup
+returns a session, sign-in returns valid access and refresh tokens, an
+`auth.identities` row exists (the thing the old SQL-created account lacked), the
+profile trigger fires, and RLS permits the owner to read their own row while
+correctly hiding it from anonymous requests. `claim_team_admin` correctly
+refuses a second user because the bootstrap window closes permanently once a
+team admin exists.
+
+That exercise found a real bug: sign-out called Supabase successfully and
+logged it, but the profile screen went on rendering the signed-in account,
+because `AuthSession` mutated in place and nothing had subscribed to it. The
+session is now a `ChangeNotifier` and the affected screens rebuild. Fixed and
+verified on device.
+
+**Still outstanding:** Google sign-in has never been completed on a device.
+Email sign-in works; the Google account chooser opens and has not been carried
+through to a confirmed session.
 
 ### Phase 3 — Map core (weeks 4–5) ✅
 - MapLibre with OpenFreeMap tiles, centred on Antigua
@@ -493,9 +511,18 @@ previous runs on a real phone.
 - **"Closed today" toggle** — hurricane season and Carnival make this urgent
 - **Last verified date, "report wrong info" button**
 - Team backend for creating and editing listings
-- **Remaining:** posting screens for ads/announcements/events. The read paths
-  and tables exist; a business can see their content but not yet create it.
-  Also the monthly report, which has no surface yet.
+- **Posting screens** for advertisements, announcements and events, with
+  client-side validation so a bad field is named rather than surfacing as a
+  constraint violation. Ending an ad sets an end date rather than deleting it,
+  so its view count survives for the report it feeds
+- **Monthly report**: views per advertisement, listing views, calls, WhatsApp
+  taps, visits, and a one-to-five star breakdown. Month boundaries computed in
+  Antigua time, not device time, so a phone set elsewhere cannot split a month
+  and silently drop a day of a paying customer's numbers. Only verified reviews
+  count
+- **Remaining:** these are built and unit-tested but have never run against a
+  real business, because the businesses table is empty. Seed a test business and
+  walk the whole posting-to-report path before trusting any of it.
 
 ### Phase 5 — Discovery (week 8)
 - Featured rail on the map screen, order from ranking score
@@ -520,7 +547,8 @@ previous runs on a real phone.
 ### Phase 7 — Business admin and billing (weeks 12–14)
 - Claim and verify a listing
 - Edit hours, photos, menu, description, offers, specials, socials
-- **Move and customise the map pin** (Growing and above; custom image is Basic+)
+- **Move and customise the map pin** (Basic and above; Growing keeps the default
+  pin, and the team corrects its position on request)
 - **Posting advertisements**, with views counted per ad
 - **Announcements**, with read receipts
 - **Events calendar**, per business and aggregated for customers
@@ -534,6 +562,10 @@ previous runs on a real phone.
   when a transfer lands
 - **3-day trial with a 7-day hold on expiry**, data preserved until the hold ends
 - Spotlight board: 10 rotating slots
+- **Scope check (proposed, not decided):** this phase carries ads, announcements,
+  events, quotes, slots, reports, billing and Spotlight in three weeks. Quote and
+  slot requests, read receipts, the events calendar and Spotlight are the
+  candidates to move past launch if the weeks do not hold.
 
 ### Phase 8 — Ranking (week 15)
 - Score from rating volume/average and engagement
@@ -550,10 +582,15 @@ previous runs on a real phone.
 - **A category with nothing eligible gets no board**, rather than an empty
   "Top 10"
 - **Featured buys a slot and a badge, never a position.** Covered by a test
+- **Rank inputs count unique users.** Exclude owner and team devices from views,
+  calls and taps, or a business can tap its own number to climb.
 - Recomputed on a schedule, not per request
-- Drives Featured order and search priority
+- Drives search order and the order inside the Featured page
 
 ### Phase 9 — Validate the business model (week 16)
+- **Start now, not at week 16.** Run these alongside the build, because every
+  phase before this one is engineering and the answers can change what gets built.
+  This phase is where the pricing test is closed out and the decisions are made.
 - Twenty conversations with business owners: how do they advertise today, what
   frustrates them, what do they pay, what would they pay us.
 - Test pricing in EC$ against the real answer, not against our assumption.
@@ -575,7 +612,12 @@ already fixed and unvalidated is the risk this phase exists to remove.
 
 ### Phase 11 — Release (weeks 18–19)
 - TestFlight beta, Play Store internal testing
-- Privacy policy and store assets
+- Privacy policy and store assets; check obligations under Antigua's data
+  protection law before collecting accounts and reviews
+- **Check before submitting:** whether Google sign-in means the iOS app must also
+  offer Sign in with Apple (guideline 4.8); the user-generated-content rules for
+  reviews (reporting, blocking, a moderation contact); and whether unlocking paid
+  tiers after an outside bank transfer is allowed (guidelines 3.1.1 and 3.1.3)
 - Store submission; plan for review delays
 - Soft launch
 
@@ -606,14 +648,14 @@ moderation is the scarce resource, not code.
 ### 14b. "What's happening today" feed
 
 A single answer to "what's on in Antigua today", assembled from business offers,
-events, and the curated collections in section 14. This is the strongest
+events, and the curated collections in 14c. This is the strongest
 retention idea in the external advice, because it is the only version that
 gives a *user* a reason to open the app on a day when no business is advertising.
 
 It depends on listings actually being current, which makes it a strong forcing
 function for the whole "we maintain the accuracy" promise.
 
-### 14c. Everything else from section 14
+### 14c. Other backlog items
 
 **Add before launch** (the ones not already in the phases)
 - Storm banner: team-run notice during hurricane season, linking to the
@@ -630,8 +672,6 @@ function for the whole "we maintain the accuracy" promise.
   app for these on an ordinary day.
   **This conflicts with the rule that only paying businesses appear — decide it
   deliberately, not by drift.** See section 15.
-- Events: Carnival, Sailing Week, Shirley Heights on a Sunday evening. Gives
-  businesses a reason to post offers around real dates.
 
 **Later**
 - Saved places and trip lists for tourists
@@ -651,16 +691,18 @@ a second look rather than a quiet drift.
 **1. Who writes the listing?**
 
 The advice is that businesses should post their own ads — upload a photo, pick
-a category, publish. Our plan is different: the business submits what it wants
-said, **the team implements it**, and the business can then self-edit.
+a category, publish. Our plan sits between the two: the team builds the first
+version of a listing during the trial and maintains it for owners who will not use
+the tools, and the business can edit directly (section 2, Content flow).
 
-We keep the team step because it is the product. The pitch is "we keep your
+We keep the team's role because it is the product. The pitch is "we keep your
 information up to date", and a self-serve editor hands that back to the
 business and lets it rot. It also lets us fix things businesses will never fix
 themselves. The cost is that we are a bottleneck for onboarding.
 
 If onboarding becomes the constraint that stops growth, revisit — but do not
-drift into it, because the accuracy promise is what is being sold.
+drift into it, because the accuracy promise is what is being sold. Phase 9 tests
+which one owners actually want.
 
 **2. Free first, charge later?**
 
@@ -677,7 +719,7 @@ The advice is to prove the idea with a simple site before investing in an app.
 
 We are past that point and the app is largely built. The underlying question is
 still live though: **have we asked twenty business owners anything?** Until we
-have, we are building ahead of demand rather than ahead of it. That is a real
+have, we are building before knowing there is demand, not in response to it. That is a real
 risk and it is cheap to retire. See section 16.
 
 ### Unresolved
@@ -698,6 +740,25 @@ risk and it is cheap to retire. See section 16.
 - Who holds the Apple and Google credentials?
 - Public web pages: which host, and does the domain go on them or on the app
   download page?
+- **Subscription marking.** Payment is by direct transfer, so someone marks
+  subscriptions active by hand. Automate from a bank feed or accept the manual
+  step, and name who owns it. (This was on the list earlier and dropped off.)
+- **Featured and the earned-rank promise.** "Priority in search" has been removed
+  from Featured so that ranking alone governs search order. A looser version of the
+  problem remains: Featured placement earns more views, views feed the engagement
+  score, so paid visibility can lift rank indirectly. Decide whether engagement
+  from the Featured page counts.
+- **What "verified" means.** The badge is sold to Featured subscribers, but
+  section 16 asks who verifies a business is real. Customers will read "verified"
+  as endorsed. Rename it, or make it mean an identity check and give it to every
+  tier.
+- **Visibility during trial and hold.** Is a listing visible to customers during
+  the 3-day trial and the 7-day hold? And do pre-built listings need the owner's
+  consent before they go live?
+- **What Growing shows its owners.** Growing has no analytics or reports, yet
+  section 10 says businesses cancel when they cannot see results. Online-only
+  businesses, its stated target, get no pin and are not ranked. Decide what an
+  online-only business is paying for.
 
 ## 16. The thing we have not done
 
@@ -708,15 +769,23 @@ The external advice puts this first, and it is right. The largest risks in this
 plan are all commercial, and none of them are technical:
 
 - Will a barber on Dickenson Bay pay EC$50 a month?
-- Will anyone pay **EC$200** for Featured, when Growing is EC$25? Four times
-  Basic is a big ask for a business that has never been charged for marketing.
+- Will anyone pay **EC$100** for Featured, when Growing is EC$25? Twice Basic
+  is still a new kind of expense for a business that has never been charged
+  for marketing.
 - Do they trust us to keep their listing right, or do they expect to control it?
 - What do they pay Facebook today, and what would they pay us instead?
 - Who verifies a business is real, and who pays for that check?
 - Does anyone actually want to post advertisements here, or do they still
   advertise on Facebook because that is where their customers are?
+- Will enough customers open the app for an advertisement to be worth paying for?
+  At launch there is no audience, and a first monthly report that says 6 views
+  does not renew anyone.
+- How many paying businesses make this worth four people's time? As an
+  illustration only, EC$1,000 a month each is EC$4,000 a month, about 80 Basic
+  subscriptions, before costs.
 
-Phase 9 is those twenty conversations. Phase 10 plans to onboard five to ten
+Phase 9 closes out those twenty conversations, and they should start now. Phase 10
+plans to onboard five to ten
 businesses, and pre-built listings are on the list so a pitch can open with
 "this is already yours" — which presupposes Phase 9 happened first, and a
 conversation worth having rather than a demonstration.
@@ -734,3 +803,35 @@ the corrected price. That still needs a human to ask.
 - Keep the paid/earned distinction honest and visible.
 - Do not claim the reviews are clean. They are verified visits filtered by the
   business, and the app says so.
+
+## 18. Changes in this revision
+
+**Contradictions fixed**
+- Section 6 pointed to section 7 for verified visits; it is section 8.
+- Section 6 said sign-in is Google only; Phase 2 has email sign-in as well.
+- Section 5 still said the leaderboard grace period was undecided; Phase 8 had
+  already decided it (30 days).
+- Section 15, conflict 1, said the team implements every listing, while section 2
+  says the business edits directly and the team is the fallback. It now describes
+  the position in section 2.
+- Phase 7 said the map pin is movable on Growing; section 3 says Growing has the
+  default pin only. Phase 7 now matches section 3.
+- Section 15, conflict 3, had a sentence that did not make sense; reworded.
+- Section 14c was titled "Everything else from section 14" and repeated the
+  Events calendar from Phase 7; retitled, and the duplicate bullet removed.
+- "Notices" in Phase 2 and "Announcements" elsewhere are now noted as the same
+  thing.
+
+**Judgment calls, reverse if you disagree**
+- Removed "Priority in search" from Featured, because section 5 says ranking alone
+  governs search order. If you want it back, change section 5 to say so.
+- Phase 9 now says to start the owner conversations now rather than at week 16.
+- Added a scope check to Phase 7 and a unique-user rule to Phase 8.
+- Added store-review and data-protection checks to Phase 11, worded as things to
+  check, not as confirmed requirements.
+
+**Added as open decisions**
+- Subscription marking (dropped from the list earlier), the indirect Featured
+  loop, what "verified" means, visibility during trial and hold, what Growing
+  shows its owners, and two new commercial questions in section 16: audience and
+  how many paying businesses are needed.

@@ -47,7 +47,7 @@ bundled SMTP is rate-limited. Turn it off in the dashboard for development.
 
 ## Decisions
 
-See `plan.md` section 2. Short version: **EC$25 growing / EC$50 basic / EC$200
+See `plan.md` section 2. Short version: **EC$25 growing / EC$50 basic / EC$100
 featured** per month (negotiable), unlimited featured Featured slots ordered by
 earned ranking, 10 rotating Spotlight slots, 3-day trial with a 7-day hold on
 expiry, guest browsing, business-verified reviews, payment by direct transfer,
