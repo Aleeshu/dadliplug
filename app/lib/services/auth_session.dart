@@ -2,12 +2,19 @@ import 'dart:async';
 
 import 'package:antigua_business_map/models/user.dart';
 import 'package:antigua_business_map/services/auth_service.dart';
+import 'package:flutter/foundation.dart';
 
 /// Session state, shared by both auth implementations.
 ///
 /// Screens talk to this, never to [AuthService] directly, so swapping
 /// `MockAuthService` for `SupabaseAuthService` changes nothing above this line.
-class AuthSession {
+///
+/// A [ChangeNotifier] because the user changes without a navigation event.
+/// Signing out, or claiming a role, both mutate this object in place: the
+/// profile screen does not rebuild, so it kept showing a signed-in user after
+/// sign-out until the app was restarted. Widgets that read [user] must wrap
+/// themselves in a `ListenableBuilder`.
+class AuthSession extends ChangeNotifier {
   AuthSession({required AuthService service}) : _service = service {
     _user = service.currentUser;
     _subscription = service.authStateChanges.listen(_setUser);
@@ -15,7 +22,6 @@ class AuthSession {
 
   final AuthService _service;
   late final StreamSubscription<AppUser?> _subscription;
-  final List<void Function()> _listeners = [];
 
   AppUser? _user;
 
@@ -42,10 +48,6 @@ class AuthSession {
   /// Whether this user may act on a review for this business. Used by the
   /// business admin screens to gate replies and disputes.
   bool canReviewFor(String businessId) => canEditBusiness(businessId);
-
-  void addListener(void Function() listener) => _listeners.add(listener);
-
-  void removeListener(void Function() listener) => _listeners.remove(listener);
 
   /// Applies the user immediately rather than waiting for the auth stream.
   ///
@@ -110,15 +112,22 @@ class AuthSession {
   }
 
   void _setUser(AppUser? user) {
-    if (_user?.id == user?.id && _user?.role == user?.role) return;
-    _user = user;
-    for (final listener in List.of(_listeners)) {
-      listener();
+    // Compare on the fields that change what a screen shows. The previous
+    // check ignored businessIds, so a role or ownership change that kept the
+    // same id and role would silently not notify.
+    if (_user?.id == user?.id &&
+        _user?.role == user?.role &&
+        _user?.email == user?.email &&
+        _user?.displayName == user?.displayName) {
+      return;
     }
+    _user = user;
+    notifyListeners();
   }
 
+  @override
   void dispose() {
     _subscription.cancel();
-    _listeners.clear();
+    super.dispose();
   }
 }

@@ -20,6 +20,16 @@ class YourPlacesScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // Rebuilt on session changes, same reason as the profile screen: the
+    // signed-out prompt and the signed-in list are different screens wearing
+    // one widget, and signing out has to swap them immediately.
+    return ListenableBuilder(
+      listenable: session,
+      builder: (context, _) => _body(context, ref),
+    );
+  }
+
+  Widget _body(BuildContext context, WidgetRef ref) {
     final placesAsync = ref.watch(userPlacesProvider);
     final requestsAsync = ref.watch(reviewRequestsProvider);
 

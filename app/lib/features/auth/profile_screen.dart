@@ -24,6 +24,17 @@ class ProfileScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    // The session is a ChangeNotifier, and this screen reads it directly. It
+    // has to rebuild when the user changes or nothing updates in place:
+    // signing out used to call Supabase successfully and leave the profile
+    // showing the account until the app was restarted.
+    return ListenableBuilder(
+      listenable: session,
+      builder: (context, _) => _body(context, ref),
+    );
+  }
+
+  Widget _body(BuildContext context, WidgetRef ref) {
     final user = session.user;
 
     // Read from Supabase rather than being handed lists. These were
