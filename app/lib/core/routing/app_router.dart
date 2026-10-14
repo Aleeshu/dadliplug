@@ -6,6 +6,8 @@ import 'package:antigua_business_map/features/auth/sign_up_screen.dart';
 import 'package:antigua_business_map/features/business_admin/business_dashboard_screen.dart';
 import 'package:antigua_business_map/features/business_admin/business_listing_screen.dart';
 import 'package:antigua_business_map/features/business_admin/business_reviews_screen.dart';
+import 'package:antigua_business_map/features/business_admin/monthly_report_screen.dart';
+import 'package:antigua_business_map/features/business_admin/posting_screens.dart';
 import 'package:antigua_business_map/features/discovery/bookmarks_screen.dart';
 import 'package:antigua_business_map/features/discovery/business_content_screens.dart';
 import 'package:antigua_business_map/features/discovery/explore_screen.dart';
@@ -41,6 +43,8 @@ abstract final class Routes {
   static const String businessReviews = '/business/reviews';
   static const String businessAnnouncements = '/business/announcements';
   static const String businessAds = '/business/ads';
+  static const String businessEvents = '/business/events';
+  static const String businessReport = '/business/report';
 
   // Team admin
   static const String teamDashboard = '/team';
@@ -158,13 +162,49 @@ GoRouter buildRouter({
         ),
         GoRoute(
           path: Routes.businessAnnouncements,
-          builder: (c, s) => const AnnouncementsScreen(),
+          builder: (c, s) => AnnouncementsScreen(
+            businessId: s.uri.queryParameters['business'],
+          ),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (c, s) => PostAnnouncementScreen(
+                businessId: s.uri.queryParameters['business'] ?? '',
+              ),
+            ),
+          ],
         ),
         GoRoute(
           path: Routes.businessAds,
           builder: (c, s) => BusinessAdsScreen(
             businessId: s.uri.queryParameters['business'] ?? '',
           ),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (c, s) => PostAdScreen(
+                businessId: s.uri.queryParameters['business'] ?? '',
+              ),
+            ),
+          ],
+        ),
+        GoRoute(
+          path: Routes.businessReport,
+          builder: (c, s) => MonthlyReportScreen(
+            businessId: s.uri.queryParameters['business'] ?? '',
+          ),
+        ),
+        GoRoute(
+          path: Routes.businessEvents,
+          builder: (c, s) => const EventsCalendarScreen(),
+          routes: [
+            GoRoute(
+              path: 'new',
+              builder: (c, s) => PostEventScreen(
+                businessId: s.uri.queryParameters['business'] ?? '',
+              ),
+            ),
+          ],
         ),
 
         GoRoute(

@@ -30,6 +30,15 @@ class AnnouncementsScreen extends ConsumerWidget {
         title: const Text('Announcements'),
         backgroundColor: palette.app,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          if (businessId != null)
+            IconButton(
+              tooltip: 'New announcement',
+              icon: const Icon(Icons.add),
+              onPressed: () =>
+                  context.push('/business/announcements/new?business=$businessId'),
+            ),
+        ],
       ),
       body: announcementsAsync.when(
         loading: () => Center(
@@ -137,6 +146,14 @@ class BusinessAdsScreen extends ConsumerWidget {
         title: const Text('Advertisements'),
         backgroundColor: palette.app,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          if (businessId.isNotEmpty)
+            IconButton(
+              tooltip: 'New advertisement',
+              icon: const Icon(Icons.add),
+              onPressed: () => context.push('/business/ads/new?business=$businessId'),
+            ),
+        ],
       ),
       // No linked listing means there is nothing to show and nothing to invent.
       // Saying so is the only honest option; showing an empty ad list would

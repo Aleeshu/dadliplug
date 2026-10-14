@@ -1,0 +1,599 @@
+import 'package:antigua_business_map/core/theme/app_colors.dart';
+import 'package:antigua_business_map/core/theme/app_spacing.dart';
+import 'package:antigua_business_map/core/theme/app_text.dart';
+import 'package:antigua_business_map/services/business_content_repository.dart';
+import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:intl/intl.dart';
+
+/// A business posting an advertisement.
+///
+/// What the owner is promised on the sign-up path, delivered: the trial
+/// includes every paid tool, and posting an ad is the tool the pitch is about.
+class PostAdScreen extends ConsumerStatefulWidget {
+  const PostAdScreen({required this.businessId, super.key});
+
+  final String businessId;
+
+  @override
+  ConsumerState<PostAdScreen> createState() => _PostAdScreenState();
+}
+
+class _PostAdScreenState extends ConsumerState<PostAdScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _title = TextEditingController();
+  final _body = TextEditingController();
+  final _link = TextEditingController();
+  DateTime? _endsAt;
+  bool _posting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _link.dispose();
+    super.dispose();
+  }
+
+  Future<void> _post() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _posting = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(businessContentRepositoryProvider).postAd(
+            businessId: widget.businessId,
+            title: _title.text,
+            body: _body.text,
+            linkUrl: _link.text,
+            endsAt: _endsAt,
+          );
+      if (!mounted) return;
+      ref.invalidate(businessAdsProvider(widget.businessId));
+      Navigator.of(context).pop(true);
+    } on InvalidContentException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _posting = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not post this advertisement. Check your connection.';
+        _posting = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Scaffold(
+      backgroundColor: palette.app,
+      appBar: AppBar(
+        title: const Text('New advertisement'),
+        backgroundColor: palette.app,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(Insets.lg),
+          children: [
+            Text(
+              'Advertisements sit at the top of your listing, above your '
+              'description. Customers see the running ones first.',
+              style: AppText.bodyMedium.copyWith(color: palette.muted),
+            ),
+            const SizedBox(height: Insets.lg),
+            _Field(
+              controller: _title,
+              label: 'Title',
+              hint: 'Lunch special this week',
+              maxLength: 120,
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Give the advertisement a title.'
+                  : null,
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _body,
+              label: 'Details',
+              hint: 'What is on offer, and any conditions',
+              maxLines: 4,
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _link,
+              label: 'Link (optional)',
+              hint: 'https://',
+              keyboardType: TextInputType.url,
+              validator: (value) {
+                final trimmed = value?.trim() ?? '';
+                if (trimmed.isEmpty) return null;
+                final uri = Uri.tryParse(trimmed);
+                // Rejects a bare word like "menu" that would render as a
+                // dead tap target on the public listing.
+                if (uri == null ||
+                    !uri.hasScheme ||
+                    (uri.scheme != 'http' && uri.scheme != 'https')) {
+                  return 'That does not look like a web address.';
+                }
+                return null;
+              },
+            ),
+            const SizedBox(height: Insets.lg),
+            _EndDatePicker(
+              value: _endsAt,
+              onChanged: (value) => setState(() => _endsAt = value),
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: Insets.md),
+              Text(
+                _error!,
+                style: AppText.bodyMedium.copyWith(color: palette.red),
+              ),
+            ],
+            const SizedBox(height: Insets.xl),
+            FilledButton(
+              onPressed: _posting ? null : _post,
+              child: Text(_posting ? 'Posting…' : 'Publish advertisement'),
+            ),
+            const SizedBox(height: Insets.sm),
+            Text(
+              'Published straight away. You can end it at any time.',
+              textAlign: TextAlign.center,
+              style: AppText.caption.copyWith(color: palette.muted),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A business posting an announcement.
+class PostAnnouncementScreen extends ConsumerStatefulWidget {
+  const PostAnnouncementScreen({required this.businessId, super.key});
+
+  final String businessId;
+
+  @override
+  ConsumerState<PostAnnouncementScreen> createState() =>
+      _PostAnnouncementScreenState();
+}
+
+class _PostAnnouncementScreenState
+    extends ConsumerState<PostAnnouncementScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _title = TextEditingController();
+  final _body = TextEditingController();
+  bool _posting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    super.dispose();
+  }
+
+  Future<void> _post() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _posting = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(businessContentRepositoryProvider).postAnnouncement(
+            businessId: widget.businessId,
+            title: _title.text,
+            body: _body.text,
+          );
+      if (!mounted) return;
+      ref.invalidate(announcementsProvider);
+      Navigator.of(context).pop(true);
+    } on InvalidContentException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _posting = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not post this announcement.';
+        _posting = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Scaffold(
+      backgroundColor: palette.app,
+      appBar: AppBar(
+        title: const Text('New announcement'),
+        backgroundColor: palette.app,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(Insets.lg),
+          children: [
+            Text(
+              'Announcements go to customers who follow you, and the most '
+              'recent one appears on your listing. Use them for closures, '
+              'notices and offers.',
+              style: AppText.bodyMedium.copyWith(color: palette.muted),
+            ),
+            const SizedBox(height: Insets.lg),
+            _Field(
+              controller: _title,
+              label: 'Title',
+              hint: 'Closed on Saturday',
+              maxLength: 120,
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Give the announcement a title.'
+                  : null,
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _body,
+              label: 'Message',
+              hint: 'What should customers know?',
+              maxLines: 5,
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: Insets.md),
+              Text(
+                _error!,
+                style: AppText.bodyMedium.copyWith(color: palette.red),
+              ),
+            ],
+            const SizedBox(height: Insets.xl),
+            FilledButton(
+              onPressed: _posting ? null : _post,
+              child: Text(_posting ? 'Posting…' : 'Publish announcement'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// A business posting an event.
+class PostEventScreen extends ConsumerStatefulWidget {
+  const PostEventScreen({required this.businessId, super.key});
+
+  final String businessId;
+
+  @override
+  ConsumerState<PostEventScreen> createState() => _PostEventScreenState();
+}
+
+class _PostEventScreenState extends ConsumerState<PostEventScreen> {
+  final _formKey = GlobalKey<FormState>();
+  final _title = TextEditingController();
+  final _body = TextEditingController();
+  final _location = TextEditingController();
+  DateTime? _startsAt;
+  DateTime? _endsAt;
+  bool _posting = false;
+  String? _error;
+
+  @override
+  void dispose() {
+    _title.dispose();
+    _body.dispose();
+    _location.dispose();
+    super.dispose();
+  }
+
+  Future<void> _post() async {
+    if (!(_formKey.currentState?.validate() ?? false)) return;
+
+    setState(() {
+      _posting = true;
+      _error = null;
+    });
+
+    try {
+      await ref.read(businessContentRepositoryProvider).postEvent(
+            businessId: widget.businessId,
+            title: _title.text,
+            body: _body.text,
+            startsAt: _startsAt!,
+            endsAt: _endsAt,
+            locationNote: _location.text,
+          );
+      if (!mounted) return;
+      ref.invalidate(upcomingEventsProvider);
+      Navigator.of(context).pop(true);
+    } on InvalidContentException catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = e.message;
+        _posting = false;
+      });
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _error = 'Could not post this event.';
+        _posting = false;
+      });
+    }
+  }
+
+  Future<void> _pickDate({required bool isStart}) async {
+    final now = DateTime.now();
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: (isStart ? _startsAt : _endsAt) ?? now,
+      firstDate: now.subtract(const Duration(days: 1)),
+      lastDate: now.add(const Duration(days: 730)),
+    );
+    if (picked == null) return;
+
+    final time = await showTimePicker(
+      context: context,
+      initialTime: const TimeOfDay(hour: 19, minute: 0),
+    );
+
+    final when = DateTime(
+      picked.year,
+      picked.month,
+      picked.day,
+      time?.hour ?? 19,
+      time?.minute ?? 0,
+    );
+
+    setState(() {
+      if (isStart) {
+        _startsAt = when;
+        // Moving the start past the end would leave the event finishing before
+        // it begins, which the repository rejects. Clearing the end is kinder
+        // than silently keeping an impossible pairing.
+        if (_endsAt != null && _endsAt!.isBefore(when)) _endsAt = null;
+      } else {
+        _endsAt = when;
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final format = DateFormat.yMMMd().add_jm();
+
+    return Scaffold(
+      backgroundColor: palette.app,
+      appBar: AppBar(
+        title: const Text('New event'),
+        backgroundColor: palette.app,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: Form(
+        key: _formKey,
+        child: ListView(
+          padding: const EdgeInsets.all(Insets.lg),
+          children: [
+            Text(
+              'Events show on your listing and in the calendar tab for '
+              'customers across the island.',
+              style: AppText.bodyMedium.copyWith(color: palette.muted),
+            ),
+            const SizedBox(height: Insets.lg),
+            _Field(
+              controller: _title,
+              label: 'Title',
+              hint: 'Cuisine night',
+              maxLength: 120,
+              validator: (value) => (value == null || value.trim().isEmpty)
+                  ? 'Give the event a title.'
+                  : null,
+            ),
+            const SizedBox(height: Insets.md),
+            _DateRow(
+              label: 'Starts',
+              value: _startsAt == null
+                  ? null
+                  : format.format(_startsAt!.toLocal()),
+              onTap: () => _pickDate(isStart: true),
+              errorText: _startsAt == null ? 'Pick when it starts.' : null,
+            ),
+            const SizedBox(height: Insets.md),
+            _DateRow(
+              label: 'Ends (optional)',
+              value: _endsAt == null ? null : format.format(_endsAt!.toLocal()),
+              onTap: () => _pickDate(isStart: false),
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _body,
+              label: 'Details',
+              hint: 'What happens, and anything people should bring',
+              maxLines: 4,
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _location,
+              label: 'Where (optional)',
+              hint: 'Past the roundabout, opposite the market',
+            ),
+            if (_error != null) ...[
+              const SizedBox(height: Insets.md),
+              Text(
+                _error!,
+                style: AppText.bodyMedium.copyWith(color: palette.red),
+              ),
+            ],
+            const SizedBox(height: Insets.xl),
+            FilledButton(
+              onPressed: _posting ? null : _post,
+              child: Text(_posting ? 'Posting…' : 'Publish event'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+/// Shared labelled text field. One implementation so the three posting forms
+/// behave identically, including validation timing.
+class _Field extends StatelessWidget {
+  const _Field({
+    required this.controller,
+    required this.label,
+    this.hint,
+    this.maxLines = 1,
+    this.maxLength,
+    this.keyboardType,
+    this.validator,
+  });
+
+  final TextEditingController controller;
+  final String label;
+  final String? hint;
+  final int maxLines;
+  final int? maxLength;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: AppText.sectionLabel),
+        const SizedBox(height: Insets.xs),
+        TextFormField(
+          controller: controller,
+          maxLines: maxLines,
+          maxLength: maxLength,
+          keyboardType: keyboardType,
+          validator: validator,
+          decoration: InputDecoration(
+            hintText: hint,
+            hintStyle: AppText.bodyMedium.copyWith(color: palette.muted),
+            filled: true,
+            fillColor: palette.surface,
+            border: OutlineInputBorder(
+              borderRadius: BorderRadius.circular(Corners.md),
+              borderSide: BorderSide(color: palette.line),
+            ),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _DateRow extends StatelessWidget {
+  const _DateRow({
+    required this.label,
+    required this.value,
+    required this.onTap,
+    this.errorText,
+  });
+
+  final String label;
+  final String? value;
+  final VoidCallback onTap;
+  final String? errorText;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text(label.toUpperCase(), style: AppText.sectionLabel),
+        const SizedBox(height: Insets.xs),
+        InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(Corners.md),
+          child: Container(
+            width: double.infinity,
+            padding: const EdgeInsets.all(Insets.md),
+            decoration: BoxDecoration(
+              color: palette.surface,
+              borderRadius: BorderRadius.circular(Corners.md),
+              border: Border.all(
+                color: errorText != null ? palette.red : palette.line,
+              ),
+            ),
+            child: Text(
+              value ?? 'Tap to choose',
+              style: AppText.bodyLarge.copyWith(
+                color: value == null ? palette.muted : palette.ink,
+              ),
+            ),
+          ),
+        ),
+        if (errorText != null)
+          Padding(
+            padding: const EdgeInsets.only(top: Insets.xs),
+            child: Text(
+              errorText!,
+              style: AppText.caption.copyWith(color: palette.red),
+            ),
+          ),
+      ],
+    );
+  }
+}
+
+class _EndDatePicker extends StatelessWidget {
+  const _EndDatePicker({required this.value, required this.onChanged});
+
+  final DateTime? value;
+  final ValueChanged<DateTime?> onChanged;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Text('END DATE (OPTIONAL)', style: AppText.sectionLabel),
+        const SizedBox(height: Insets.xs),
+        Row(
+          children: [
+            Expanded(
+              child: Text(
+                value == null
+                    ? 'Runs until you end it'
+                    : 'Ends ${DateFormat.yMMMd().format(value!.toLocal())}',
+                style: AppText.bodyLarge.copyWith(
+                  color: value == null ? palette.muted : palette.ink,
+                ),
+              ),
+            ),
+            TextButton(
+              onPressed: value == null ? null : () => onChanged(null),
+              child: const Text('Clear'),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}

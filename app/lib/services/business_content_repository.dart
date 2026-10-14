@@ -99,6 +99,20 @@ class NotSignedInException implements Exception {
       'NotSignedInException: this needs a signed-in user.';
 }
 
+/// Raised when content a business is posting is not usable as written.
+///
+/// Caught by the posting forms to show the message next to the field, rather
+/// than letting a database constraint violation reach the owner as a generic
+/// failure with no idea which field was at fault.
+class InvalidContentException implements Exception {
+  const InvalidContentException(this.message);
+
+  final String message;
+
+  @override
+  String toString() => 'InvalidContentException: $message';
+}
+
 /// Reads the content businesses post, and the viewer's own follows.
 ///
 /// Follows double as bookmarks: one relationship serves both, so there is no
@@ -220,6 +234,99 @@ class BusinessContentRepository {
     } catch (error) {
       debugPrint('Could not record announcement read: $error');
     }
+  }
+
+  /// Posts an advertisement.
+  ///
+  /// Rejects an empty title before it reaches the database, so the owner sees
+  /// the problem immediately rather than as a constraint violation. The column
+  /// has the same check, but that arrives as an opaque 400.
+  Future<void> postAd({
+    required String businessId,
+    required String title,
+    String body = '',
+    String? imageUrl,
+    String? linkUrl,
+    DateTime? endsAt,
+  }) async {
+    final cleanTitle = title.trim();
+    if (cleanTitle.isEmpty) {
+      throw const InvalidContentException('An advertisement needs a title.');
+    }
+
+    await _require.from('business_ads').insert({
+      'business_id': businessId,
+      'title': cleanTitle,
+      'body': body.trim(),
+      if (imageUrl != null && imageUrl.trim().isNotEmpty)
+        'image_url': imageUrl.trim(),
+      if (linkUrl != null && linkUrl.trim().isNotEmpty)
+        'link_url': linkUrl.trim(),
+      'ends_at': endsAt?.toUtc().toIso8601String(),
+    });
+  }
+
+  /// Ends a running advertisement without deleting it.
+  ///
+  /// Deleting would lose the view count, which is the number the month end
+  /// report is built from. The ad stays in the history, marked finished.
+  Future<void> endAd(String adId, {DateTime? at}) async {
+    await _require
+        .from('business_ads')
+        .update({'ends_at': (at ?? DateTime.now()).toUtc().toIso8601String()})
+        .eq('id', adId);
+  }
+
+  /// Posts an announcement.
+  Future<void> postAnnouncement({
+    required String businessId,
+    required String title,
+    String body = '',
+  }) async {
+    final cleanTitle = title.trim();
+    if (cleanTitle.isEmpty) {
+      throw const InvalidContentException('An announcement needs a title.');
+    }
+
+    await _require.from('business_announcements').insert({
+      'business_id': businessId,
+      'title': cleanTitle,
+      'body': body.trim(),
+    });
+  }
+
+  /// Posts an event.
+  ///
+  /// An event that ends before it starts is rejected rather than inserted: the
+  /// database has the same check, but a constraint violation surfaces as a
+  /// generic error with no hint about which field was wrong.
+  Future<void> postEvent({
+    required String businessId,
+    required String title,
+    required DateTime startsAt,
+    String body = '',
+    DateTime? endsAt,
+    String? locationNote,
+  }) async {
+    final cleanTitle = title.trim();
+    if (cleanTitle.isEmpty) {
+      throw const InvalidContentException('An event needs a title.');
+    }
+    if (endsAt != null && endsAt.isBefore(startsAt)) {
+      throw const InvalidContentException(
+        'An event cannot finish before it starts.',
+      );
+    }
+
+    await _require.from('business_events').insert({
+      'business_id': businessId,
+      'title': cleanTitle,
+      'body': body.trim(),
+      'starts_at': startsAt.toUtc().toIso8601String(),
+      'ends_at': endsAt?.toUtc().toIso8601String(),
+      if (locationNote != null && locationNote.trim().isNotEmpty)
+        'location_note': locationNote.trim(),
+    });
   }
 
   String _nameFrom(Object? business) => business is Map
