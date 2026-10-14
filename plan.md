@@ -1,7 +1,7 @@
 # Plan — IslandAds
 
-Status: Phases 0–2 complete. Planning continues; see section 14 for the
-post-launch backlog.
+Status: Phases 0–3 complete, Phase 4 in progress. Planning continues; see
+section 14 for the post-launch backlog.
 
 ## 1. Concept
 
@@ -458,12 +458,15 @@ previous runs on a real phone.
 - Sign up, sign in, sign out, password reset, Google sign-in
 - Three roles with route guards
 - Supabase live: schema, RLS, role-escalation protection verified
-- **Outstanding:** email confirmation blocks sign-up (SMTP rate-limited);
-  Google sign-in untested end-to-end; no team admin accounts exist yet
-- **Still to build:** guest browsing (browse with no account, sign in only to
-  act), and the **business/customer opening choice** with its two separate tab
-  sets from section 6a. The current three-tab shell is a placeholder shape and
-  gets replaced.
+- **Guest browsing** — customers read listings, profiles and leaderboards with
+  no account. Sign-in is only required to review, bookmark, follow or run a
+  business
+- **Opening choice** — first screen asks business or customer, before sign-in.
+  Continue stays disabled until something is picked
+- **Two tab sets** per section 6a: customer gets Home/Bookmarks/Calendar/Notices,
+  business gets Home/Profile/Reviews/Notices/Ads
+- **Outstanding:** Google sign-in untested end-to-end; no team admin accounts
+  exist yet; email auto-confirmation is still on (see section 15)
 
 ### Phase 3 — Map core (weeks 4–5) ✅
 - MapLibre with OpenFreeMap tiles, centred on Antigua
@@ -475,16 +478,24 @@ previous runs on a real phone.
 
 ### Phase 4 — Business listings (weeks 6–7)
 - Listing screen: photos, description/bio, menu/services, hours, price, location
-- **Social links on the profile**
+- **Social links on the profile** — Instagram, Facebook, TikTok, website, plus a
+  separate WhatsApp business line. Handles stored bare so nothing can render as
+  anything but a link
+- **Live advertisements at the top of the listing**, dated, ended ones hidden
+  but not deleted
+- **Most recent announcement**, so a closure notice reaches someone who never
+  opens the Notices tab
+- **Upcoming events only** — a listing advertising last month reads as
+  unmaintained
 - Click to call, click to WhatsApp with prefilled message
 - **Directions button and "how to find us" field**
 - **Tags**: cash only, accepts cards, accepts US$, parking, accessibility
 - **"Closed today" toggle** — hurricane season and Carnival make this urgent
 - **Last verified date, "report wrong info" button**
-- **Business profile is what the customer sees on tap — build it as the
-  complete destination**, including the announcements, events and ads slots even
-  before those features have content
 - Team backend for creating and editing listings
+- **Remaining:** posting screens for ads/announcements/events. The read paths
+  and tables exist; a business can see their content but not yet create it.
+  Also the monthly report, which has no surface yet.
 
 ### Phase 5 — Discovery (week 8)
 - Featured rail on the map screen, order from ranking score
@@ -527,10 +538,18 @@ previous runs on a real phone.
 ### Phase 8 — Ranking (week 15)
 - Score from rating volume/average and engagement
 - **Per-category leaderboard**, "Top 10 Food businesses by popularity"
-- **Settle the cold-start problem before building** — a fresh listing has no
-  reviews and no views, so a naive board ranks it dead last. Grace period, or a
-  "new this month" lane. Do not ship a leaderboard that punishes the businesses
-  Growing is aimed at.
+- **One-month grace period, decided.** A listing stays off the board for 30 days
+  after it goes live. Ranked honestly a new listing has no reviews and no views,
+  so it sits dead last and the board measures who signed up first. That punishes
+  exactly the small and online businesses Growing targets, and contradicts the
+  intent of showing competition rather than seniority. A month gives a business
+  time to be found and visited; after that a low position means something.
+  Businesses are told when they will appear rather than being silently absent.
+- **Online-only businesses are not ranked at all** — no pin, no walk-in traffic,
+  so the comparison is meaningless
+- **A category with nothing eligible gets no board**, rather than an empty
+  "Top 10"
+- **Featured buys a slot and a badge, never a position.** Covered by a test
 - Recomputed on a schedule, not per request
 - Drives Featured order and search priority
 
