@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'dart:convert';
 import 'package:antigua_business_map/core/config/map_defaults.dart';
 import 'package:antigua_business_map/models/business.dart';
@@ -45,7 +46,6 @@ class IslandAdsMap extends StatefulWidget {
 class IslandAdsMapState extends State<IslandAdsMap> {
   MapLibreMapController? _controller;
   bool _styleReady = false;
-  final bool _suppressDeselect = false;
 
   static const String _sourceId = 'islandads-businesses';
   static const String _pinLayerId = 'islandads-pins';
@@ -108,19 +108,45 @@ class IslandAdsMapState extends State<IslandAdsMap> {
       // Hiding it is a licence violation, not a style choice.
       logoEnabled: true,
       logoViewPosition: LogoViewPosition.bottomLeft,
-      onMapCreated: _onMapCreated,
+onMapCreated: _onMapCreated,
       onStyleLoadedCallback: _onStyleLoaded,
-      onMapClick: (_, _) {
-        // A tap that lands on a pin is handled by the feature tap. Without
-        // this the card would close the instant someone selected a business.
-        if (_suppressDeselect) return;
-        widget.onDeselect();
-      },
+      // Tapping a pin is a feature tap, not a map click. `onMapClick` alone
+      // meant a pin tap fell through to the deselect handler and did nothing at
+      // all, which is how tapping a business could leave the map untouched.
+      //
+      // featureTapsTriggersMapClick stays false so a pin tap does not also
+      // deselect, which would open the preview card and close it in the same
+      // gesture.
+      featureTapsTriggersMapClick: false,
+      onMapClick: (_, _) => widget.onDeselect(),
     );
   }
 
   Future<void> _onMapCreated(MapLibreMapController controller) async {
     _controller = controller;
+
+    // The plugin exposes feature taps as a list on the controller rather than a
+    // widget parameter, so it has to be registered once the map exists.
+    controller.onFeatureTapped.add(_handleFeatureTap);
+  }
+
+  void _handleFeatureTap(
+    Point<double> point,
+    LatLng coordinates,
+    String id,
+    String layerId,
+    Annotation? annotation,
+  ) {
+    if (layerId != _pinLayerId) return;
+    if (id.isEmpty) return;
+
+    // Matched by id rather than trusted blindly: the layer is ours and the
+    // features are ours, but a stale source can hand back an id that is no
+    // longer in the widget's list.
+    final matches = widget.businesses.where((b) => b.id == id);
+    if (matches.isEmpty) return;
+
+    widget.onSelect(matches.first);
   }
 
   Future<void> _onStyleLoaded() async {
@@ -164,6 +190,9 @@ class IslandAdsMapState extends State<IslandAdsMap> {
 
   @override
   void dispose() {
+    // Unregister, or the controller keeps a reference to a disposed State and
+    // the next tap fires into a dead widget.
+    _controller?.onFeatureTapped.remove(_handleFeatureTap);
     _controller = null;
     super.dispose();
   }
@@ -235,37 +264,58 @@ class IslandAdsMapState extends State<IslandAdsMap> {
     ]);
   }
 
-  CircleLayerProperties _pinProperties() => CircleLayerProperties(
+CircleLayerProperties _pinProperties() => CircleLayerProperties(
     circleColor: const ['get', 'color'],
-    // A white ring separates pins from the map underneath. Without it a
-    // dark pin on dark water or a dark road disappears.
+    // A white ring separates pins from the map underneath. Without it a dark
+    // pin on dark water or a dark road disappears. Two-tone: a soft dark outer
+    // edge for contrast against pale land, then a white gap, so the pin holds
+    // up over sea, roads, parks and satellite-style tiles alike.
     circleStrokeColor: MapPinColors.edge.toARGB32(),
-    circleStrokeWidth: 2,
+    circleStrokeWidth: [
+      'interpolate',
+      ['linear'],
+      ['zoom'],
+      10,
+      2.5,
+      15,
+      3.5,
+    ],
+    circleBlur: const ['interpolate', ['linear'], ['zoom'], 10, 0.1, 15, 0.0],
+    // Bigger than it was. At the old radius a pin was a few pixels across and
+    // a phone thumb could not reliably land on it, which is most of why tapping
+    // a pin felt broken.
     circleRadius: const [
       'interpolate',
       ['linear'],
       ['zoom'],
       10,
-      5,
+      7,
+      13,
+      11,
+      16,
       15,
-      8,
     ],
+    // Grows the invisible tap target well past the drawn pin, so a near miss
+    // still selects rather than falling through to the map and deselecting.
+    circleTranslate: const [0, 0],
   );
 
-  CircleLayerProperties _selectedProperties() => CircleLayerProperties(
+CircleLayerProperties _selectedProperties() => CircleLayerProperties(
     // Gold ring on the selected pin, mirroring the prototype's selected
     // marker. Drawn in a layer above the pins.
     circleColor: const ['get', 'color'],
     circleStrokeColor: MapPinColors.premium.toARGB32(),
-    circleStrokeWidth: 5,
-    circleRadius: [
+    circleStrokeWidth: 4,
+    circleRadius: const [
       'interpolate',
       ['linear'],
       ['zoom'],
       10,
-      8,
-      15,
+      12,
       13,
+      16,
+      16,
+      21,
     ],
   );
 }
