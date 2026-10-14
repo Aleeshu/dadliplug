@@ -1,3 +1,4 @@
+import 'dart:convert';
 import 'package:antigua_business_map/core/config/map_defaults.dart';
 import 'package:antigua_business_map/models/business.dart';
 import 'package:flutter/material.dart';
@@ -209,25 +210,29 @@ class IslandAdsMapState extends State<IslandAdsMap> {
 
   /// Filter selecting the one previewed pin.
   ///
-  /// An impossible coordinate rather than an empty filter: MapLibre treats a
-  /// filter that matches nothing differently from one that matches everything,
-  /// and the wrong guess there shows every pin with a selection ring.
-  Object _filterForSelection() {
+  /// Returned as a **JSON-encoded string**, not a Dart map, and that detail is
+  /// load-bearing.
+  ///
+  /// The Android side reads the argument as a `String`, parses it, and hands
+  /// the JSON to MapLibre's expression converter. That converter wants the
+  /// array form `["==", ["get", "id"], value]`. Passing the Dart expression DSL
+  /// instead — `{'==': [...]}` — serialises to a JSON *object*, and MapLibre
+  /// then reads the operator's operand array as a single string and throws
+  /// "Array must have size 1, but has size 2".
+  ///
+  /// It failed as an unhandled native exception on every map startup: the
+  /// selection ring never appeared, and the only trace was a line in logcat
+  /// that no test looked at.
+  String _filterForSelection() {
     final id = widget.selected?.id;
-    if (id == null) {
-      return {
-        '==': [
-          const ['get', 'id'],
-          '__islandads_nothing_selected__',
-        ],
-      };
-    }
-    return {
-      '==': [
-        const ['get', 'id'],
-        id,
-      ],
-    };
+    return jsonEncode([
+      '==',
+      ['get', 'id'],
+      // An impossible id rather than an empty filter. MapLibre treats a filter
+      // matching nothing differently from one matching everything, and the
+      // wrong guess there puts a selection ring on every pin.
+      id ?? '__islandads_nothing_selected__',
+    ]);
   }
 
   CircleLayerProperties _pinProperties() => CircleLayerProperties(
