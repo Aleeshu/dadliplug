@@ -119,7 +119,9 @@ class OpeningHours {
   /// opens. Drives the "Closed, opens Fri 6pm" label.
   int? nextOpenDay(int todayWeekday) {
     for (var i = 1; i <= 7; i++) {
-      final d = (todayWeekday + i) % 7;
+      // Weekdays run 1 (Mon) to 7 (Sun). A bare `% 7` produced 0 for Sunday,
+      // a day no business can contain, so "opens Sun" could never appear.
+      final d = (todayWeekday - 1 + i) % 7 + 1;
       if (days.contains(d)) return d;
     }
     return null;

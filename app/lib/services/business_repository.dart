@@ -56,6 +56,26 @@ abstract interface class BusinessRepository {
   });
 }
 
+/// Team-only listing operations: creating a listing and setting what it pays.
+///
+/// Kept apart from [BusinessRepository] because only the team does these, and
+/// the database enforces that (`businesses_insert_team`, and the field guard in
+/// `20261014120000`). Owners editing their own listing never touch this.
+abstract interface class ListingAdminRepository {
+  /// Every listing the caller administers, delisted ones included.
+  ///
+  /// The public list drops delisted rows, which is right for customers and
+  /// wrong for the team: a lapsed listing is exactly the one they need to find.
+  Future<List<Business>> getAllListings();
+
+  /// Creates a listing and returns its id.
+  Future<String> createBusiness(Business business);
+
+  /// Records which plan a listing is on, as `subscription_status` and `tier`
+  /// together so the two can never disagree.
+  Future<void> setSubscription(String businessId, SubscriptionTier tier);
+}
+
 /// Supabase implementation of [BusinessRepository].
 ///
 /// Reads `public.businesses`. Row Level Security already hides delisted
@@ -66,7 +86,8 @@ abstract interface class BusinessRepository {
 /// so. Inventing listings — even obviously placeholder ones — risks a real
 /// person's number being called, or a business being shown a rating nobody
 /// gave it, in an app whose entire pitch is that the information is accurate.
-class SupabaseBusinessRepository implements BusinessRepository {
+class SupabaseBusinessRepository
+    implements BusinessRepository, ListingAdminRepository {
   SupabaseBusinessRepository({this._client});
 
   final SupabaseClient? _client;
@@ -138,32 +159,94 @@ class SupabaseBusinessRepository implements BusinessRepository {
     try {
       await _require
           .from('businesses')
-          .update({
-            'name': business.name,
-            'category': business.category.name,
-            'area': business.area,
-            'description': business.description,
-            'address': business.address,
-            'how_to_find_us': business.howToFindUs,
-            'phone': business.phone,
-            'whatsapp': business.whatsapp,
-            'website': business.website,
-            'price_range': business.priceRange,
-            'tags': business.tags,
-            'is_closed_today': business.isClosedToday,
-            'last_verified_at': DateTime.now().toUtc().toIso8601String(),
-            'hours': {
-              'days': business.hours.days.toList(),
-              'opensAt': business.hours.opensAt,
-              'closesAt': business.hours.closesAt,
-            },
-            'photos': business.photos.map((p) => p.toMap()).toList(),
-            'menu': business.menu.map((m) => m.toMap()).toList(),
-          })
+          .update(editableFields(business))
           .eq('id', business.id);
     } catch (error) {
       throw ListingsUnavailable(error);
     }
+  }
+
+  @override
+  Future<List<Business>> getAllListings() async {
+    try {
+      // RLS returns delisted rows only to someone who administers them, so
+      // this cannot leak a lapsed listing to a customer.
+      final rows = await _require.from('businesses').select().order('name');
+      return rows.map(_fromMap).toList(growable: false);
+    } catch (error) {
+      throw ListingsUnavailable(error);
+    }
+  }
+
+  @override
+  Future<String> createBusiness(Business business) async {
+    try {
+      final row = await _require
+          .from('businesses')
+          .insert({
+            ...editableFields(business),
+            'tier': business.tier.name,
+            'subscription_status': business.tier.name,
+          })
+          .select('id')
+          .single();
+      return '${row['id']}';
+    } catch (error) {
+      throw ListingsUnavailable(error);
+    }
+  }
+
+  @override
+  Future<void> setSubscription(String businessId, SubscriptionTier tier) async {
+    try {
+      await _require
+          .from('businesses')
+          .update({'tier': tier.name, 'subscription_status': tier.name})
+          .eq('id', businessId);
+    } catch (error) {
+      throw ListingsUnavailable(error);
+    }
+  }
+
+  /// The columns an owner may write.
+  ///
+  /// A whitelist rather than the whole model: subscription state, counters and
+  /// seeded ratings are absent on purpose, and the database refuses them from
+  /// anyone but the team regardless.
+  @visibleForTesting
+  static Map<String, Object?> editableFields(Business business) => {
+    'name': business.name,
+    'category': business.category.name,
+    'area': business.area,
+    'description': business.description,
+    'address': _nullIfBlank(business.address),
+    'how_to_find_us': _nullIfBlank(business.howToFindUs),
+    'phone': _nullIfBlank(business.phone),
+    'whatsapp': _nullIfBlank(business.whatsapp),
+    'whatsapp_business': _nullIfBlank(business.whatsappBusiness),
+    'website': _nullIfBlank(business.website),
+    'instagram': _nullIfBlank(business.instagram),
+    'facebook': _nullIfBlank(business.facebook),
+    'tiktok': _nullIfBlank(business.tiktok),
+    'price_range': _nullIfBlank(business.priceRange),
+    'offer': _nullIfBlank(business.offer),
+    'latitude': business.latitude,
+    'longitude': business.longitude,
+    'tags': business.tags,
+    'is_closed_today': business.isClosedToday,
+    'last_verified_at': DateTime.now().toUtc().toIso8601String(),
+    'hours': {
+      'days': business.hours.days.toList()..sort(),
+      'opensAt': business.hours.opensAt,
+      'closesAt': business.hours.closesAt,
+    },
+    'photos': business.photos.map((p) => p.toMap()).toList(),
+    'menu': business.menu.map((m) => m.toMap()).toList(),
+  };
+
+  static String? _nullIfBlank(String? value) {
+    final trimmed = value?.trim();
+    return trimmed == null || trimmed.isEmpty ? null : trimmed;
   }
 
   @override

@@ -15,8 +15,6 @@ dependencies:
   # OpenFreeMap needs no API key and no signup, which matters for a project
   # without budget for a Google Maps key. It is vector data from OpenStreetMap,
   # so the island is legible at street level rather than a raster blur.
-  maplibre_gl: ^0.27.1
-
   # Geocoding and device location, used by the listing editor and "near me".
   geocoding: ^4.0.0
   geolocator: ^14.0.2
@@ -39,6 +37,7 @@ dependencies:
   url_launcher: ^6.3.2
 
   riverpod: any
+  google_maps_flutter: ^2.19.0
 dev_dependencies:
   flutter_lints: ^6.0.0
   flutter_test:

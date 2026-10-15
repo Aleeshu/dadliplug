@@ -1,4 +1,5 @@
 import Flutter
+import GoogleMaps
 import UIKit
 
 @main
@@ -7,6 +8,12 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
+    // GMSApiKey in Info.plist expands $(GOOGLE_MAPS_API_KEY), which is not yet
+    // set by any iOS build. Until it is, the map will not load on iOS.
+    if let key = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
+       !key.isEmpty {
+      GMSServices.provideAPIKey(key)
+    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 

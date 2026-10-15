@@ -84,7 +84,7 @@ const Size smallPhone = Size(360, 640);
 const Size tallPhone = Size(412, 915);
 
 void main() {
-  // MapLibre is a PlatformView with no widget-tree equivalent, so it cannot be
+  // Google Maps is a PlatformView with no widget-tree equivalent, so it cannot be
   // instantiated in a widget test. These tests cover the Flutter chrome around
   // it — which is where every reported layout problem actually was.
   setUpAll(TestWidgetsFlutterBinding.ensureInitialized);

@@ -84,8 +84,9 @@ but never as a pin.
 ## Open questions
 
 1. **Custom pins.** The prototype hand-draws its pins. The app currently uses
-   hue-tinted default markers, because custom glyph pins need a Google Maps map
-   ID enabled and are unforgiving at small sizes. Decide once pins can be
+   circles drawn to bitmaps in the tier colours (`island_ads_map.dart`), not
+   glyph pins, which need a Google Maps map ID and are unforgiving at small
+   sizes. Decide once pins can be
    judged on a real phone in daylight.
 2. **Hand-drawn map.** The prototype draws Antigua as SVG instead of using
    Google tiles. This looks distinctive and costs nothing, but it cannot pan,

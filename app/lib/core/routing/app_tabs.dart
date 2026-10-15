@@ -68,6 +68,12 @@ abstract final class AppTabs {
   ];
 
   static const List<AppTab> teamAdmin = [
+    // First, because maintaining listings is the team's main job.
+    AppTab(
+      path: '/team/listings',
+      label: 'Listings',
+      icon: Icons.storefront_outlined,
+    ),
     AppTab(path: '/team', label: 'Moderation', icon: Icons.shield_outlined),
     AppTab(
       path: '/team/billing',
@@ -144,7 +150,7 @@ class AppTabBar extends StatelessWidget {
               Expanded(
                 child: _TabButton(
                   tab: tab,
-                  isSelected: _isSelected(tab.path, currentPath),
+                  isSelected: tab.path == _selectedPath(tabs, currentPath),
                   onTap: () => onSelect(tab.path),
                 ),
               ),
@@ -154,11 +160,23 @@ class AppTabBar extends StatelessWidget {
     );
   }
 
-  /// Exact match, except a nested path keeps its parent tab lit. So
-  /// `/business/listing` keeps the Dashboard tab selected.
-  bool _isSelected(String tabPath, String currentPath) {
-    if (tabPath == currentPath) return true;
-    return currentPath.startsWith('$tabPath/');
+  /// The most specific tab containing [currentPath].
+  ///
+  /// A nested path keeps its parent tab lit, so `/business/ads/new` lights
+  /// Ads. Longest match wins, otherwise `/team` (Moderation) would also light
+  /// up on `/team/listings` and `/business` (Home) on every business screen.
+  static String? _selectedPath(List<AppTab> tabs, String currentPath) {
+    String? best;
+    for (final tab in tabs) {
+      // `/` is excluded from prefix matching or it would contain every path.
+      final matches =
+          tab.path == currentPath ||
+          (tab.path != '/' && currentPath.startsWith('${tab.path}/'));
+      if (matches && (best == null || tab.path.length > best.length)) {
+        best = tab.path;
+      }
+    }
+    return best;
   }
 }
 

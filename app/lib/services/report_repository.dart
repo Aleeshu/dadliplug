@@ -94,7 +94,8 @@ class MonthlyReport {
 
   final String businessId;
 
-  /// First instant of the month, in UTC.
+  /// The month covered, as Antigua's calendar month: midnight on the 1st,
+  /// with `year` and `month` reading as Antigua sees them.
   final DateTime month;
 
   final int listingViews;
@@ -160,24 +161,33 @@ class ReportRepository {
     return Supabase.instance.client;
   }
 
-  /// Start of the month `count` months before the current one, in UTC.
+  /// The instant the month `monthsBack` months before the current one began,
+  /// as a UTC instant.
+  ///
+  /// Antigua's month starts at local midnight, which is 04:00 UTC. The previous
+  /// version picked the right month but returned UTC midnight, so every query
+  /// window opened four hours early and closed four hours early: the last
+  /// evening of each month was counted in the next one.
   ///
   /// Month 0 is the current month. A report for the current month is allowed,
   /// but callers should label it as partial.
   static DateTime monthStart(DateTime now, int monthsBack) {
     final antigua = now.toUtc().add(_antiguaOffset);
-    final firstOfThisMonth = DateTime.utc(
-      antigua.year,
-      antigua.month,
-      1,
-    );
-    return DateTime.utc(firstOfThisMonth.year, firstOfThisMonth.month - monthsBack);
+    return DateTime.utc(antigua.year, antigua.month - monthsBack, 1)
+        .subtract(_antiguaOffset);
   }
 
-  static DateTime monthEnd(DateTime monthStart) =>
-      DateTime.utc(monthStart.year, monthStart.month + 1, 1);
+  static DateTime monthEnd(DateTime monthStart) {
+    final antigua = monthStart.add(_antiguaOffset);
+    return DateTime.utc(antigua.year, antigua.month + 1, 1)
+        .subtract(_antiguaOffset);
+  }
 
   /// Builds the report for one month.
+  ///
+  /// Every count is for the month only. Views, calls and taps used to be read
+  /// from the lifetime counters on the listing, so a "monthly" report showed
+  /// everything since the listing went live and could never show a dip.
   Future<MonthlyReport> build({
     required String businessId,
     required DateTime now,
@@ -186,23 +196,35 @@ class ReportRepository {
     final from = monthStart(now, monthsBack);
     final to = monthEnd(from);
 
-    final ads = await _adPerformance(businessId, from, to);
-    final reviews = await _reviewBreakdown(businessId, from, to);
-    final engagement = await _engagement(businessId);
+    final results = await Future.wait([
+      _adPerformance(businessId, from, to),
+      _reviewBreakdown(businessId, from, to),
+      _eventCount(businessId, 'view', from, to),
+      _eventCount(businessId, 'call', from, to),
+      _eventCount(businessId, 'whatsapp', from, to),
+      _visitCount(businessId, from, to),
+    ]);
+    final reviews = results[1] as StarBreakdown;
 
     return MonthlyReport(
       businessId: businessId,
-      month: from,
-      listingViews: engagement.views,
-      calls: engagement.calls,
-      whatsappTaps: engagement.taps,
-      ads: ads,
+      month: from.add(_antiguaOffset),
+      listingViews: results[2] as int,
+      calls: results[3] as int,
+      whatsappTaps: results[4] as int,
+      ads: results[0] as List<AdPerformance>,
       reviews: reviews,
       verifiedReviews: reviews.total,
-      newVisits: await _visitCount(businessId, from, to),
+      newVisits: results[5] as int,
     );
   }
 
+  /// Every ad that was live at any point in the month, with the views it
+  /// earned inside the month.
+  ///
+  /// Previously only ads that *started* in the month were listed, with their
+  /// lifetime view count. An ad running since last month vanished from the
+  /// report while still earning views.
   Future<List<AdPerformance>> _adPerformance(
     String businessId,
     DateTime from,
@@ -210,24 +232,58 @@ class ReportRepository {
   ) async {
     final rows = await _require
         .from('business_ads')
-        .select('id, title, views, starts_at, ends_at')
+        .select('id, title, starts_at, ends_at')
         .eq('business_id', businessId)
-        .gte('starts_at', from.toIso8601String())
         .lt('starts_at', to.toIso8601String())
-        .order('views', ascending: false);
+        .or('ends_at.is.null,ends_at.gte.${from.toIso8601String()}');
 
-    return [
-      for (final raw in rows as List<dynamic>)
-        if (raw is Map)
-          AdPerformance(
-            adId: raw['id']?.toString() ?? '',
-            title: raw['title']?.toString() ?? 'Untitled',
-            views: (raw['views'] as num?)?.toInt() ?? 0,
-            // An ad that started before the month and ran into it still counts
-            // as having run, which is why the end date is compared too.
-            wasRunning: true,
-          ),
-    ];
+    final ads = <AdPerformance>[];
+    for (final raw in rows as List<dynamic>) {
+      if (raw is! Map) continue;
+      final id = raw['id']?.toString();
+      if (id == null) continue;
+
+      final views = await _require
+          .from('engagement_events')
+          .select('id')
+          .eq('ad_id', id)
+          .eq('kind', 'ad_view')
+          .gte('occurred_at', from.toIso8601String())
+          .lt('occurred_at', to.toIso8601String())
+          .count(CountOption.exact);
+
+      ads.add(
+        AdPerformance(
+          adId: id,
+          title: raw['title']?.toString() ?? 'Untitled',
+          views: views.count,
+          wasRunning: true,
+        ),
+      );
+    }
+
+    ads.sort((a, b) => b.views.compareTo(a.views));
+    return ads;
+  }
+
+  /// A server-side count, not a fetched list. PostgREST caps a response at a
+  /// thousand rows by default, and counting a capped list would quietly
+  /// under-report a busy listing's month.
+  Future<int> _eventCount(
+    String businessId,
+    String kind,
+    DateTime from,
+    DateTime to,
+  ) async {
+    final response = await _require
+        .from('engagement_events')
+        .select('id')
+        .eq('business_id', businessId)
+        .eq('kind', kind)
+        .gte('occurred_at', from.toIso8601String())
+        .lt('occurred_at', to.toIso8601String())
+        .count(CountOption.exact);
+    return response.count;
   }
 
   Future<StarBreakdown> _reviewBreakdown(
@@ -272,32 +328,16 @@ class ReportRepository {
     );
   }
 
-  Future<({int views, int calls, int taps})> _engagement(String businessId) async {
-    final rows = await _require
-        .from('businesses')
-        .select('views, calls, whatsapp_taps')
-        .eq('id', businessId)
-        .limit(1);
-
-    final row = rows.isNotEmpty ? rows.first as Map : null;
-    if (row == null) return (views: 0, calls: 0, taps: 0);
-
-    return (
-      views: (row['views'] as num?)?.toInt() ?? 0,
-      calls: (row['calls'] as num?)?.toInt() ?? 0,
-      taps: (row['whatsapp_taps'] as num?)?.toInt() ?? 0,
-    );
-  }
-
   Future<int> _visitCount(String businessId, DateTime from, DateTime to) async {
-    final rows = await _require
+    final response = await _require
         .from('visits')
         .select('id')
         .eq('business_id', businessId)
         .gte('visited_at', from.toIso8601String())
-        .lt('visited_at', to.toIso8601String());
+        .lt('visited_at', to.toIso8601String())
+        .count(CountOption.exact);
 
-    return rows.length;
+    return response.count;
   }
 }
 

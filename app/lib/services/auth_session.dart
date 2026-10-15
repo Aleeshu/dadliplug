@@ -37,7 +37,22 @@ class AuthSession extends ChangeNotifier {
   ///
   /// Derived from the role rather than checked at each route, so a deep link
   /// into `/team` from a regular user is refused rather than rendered.
-  bool canAccessBusinessDashboard() => role == UserRole.businessAdmin;
+  ///
+  /// Team admins reach the business area too. They build and maintain
+  /// listings on an owner's behalf (plan.md 2, Content flow), and RLS already
+  /// lets them write any listing — so locking them out of the screens only
+  /// meant the team could not use the tools the database allowed.
+  bool canAccessBusinessDashboard() =>
+      role == UserRole.businessAdmin || role == UserRole.teamAdmin;
+
+  /// The listing the business screens act on when none is named.
+  ///
+  /// An owner's first assigned listing. Null when the account has none, which
+  /// the screens show as "no listing linked" rather than guessing.
+  String? get primaryBusinessId {
+    final ids = _user?.businessIds ?? const <String>[];
+    return ids.isEmpty ? null : ids.first;
+  }
 
   bool canAccessTeamDashboard() => role == UserRole.teamAdmin;
 
@@ -118,7 +133,8 @@ class AuthSession extends ChangeNotifier {
     if (_user?.id == user?.id &&
         _user?.role == user?.role &&
         _user?.email == user?.email &&
-        _user?.displayName == user?.displayName) {
+        _user?.displayName == user?.displayName &&
+        listEquals(_user?.businessIds, user?.businessIds)) {
       return;
     }
     _user = user;

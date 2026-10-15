@@ -13,16 +13,44 @@ import 'package:intl/intl.dart';
 /// behaviour: a customer reads and follows, a business posts and watches the
 /// read receipts.
 class AnnouncementsScreen extends ConsumerWidget {
-  const AnnouncementsScreen({this.businessId, super.key});
+  const AnnouncementsScreen({
+    this.businessId,
+    this.isSignedIn = false,
+    super.key,
+  });
 
-  /// Set when a business opens this for their own listing.
+  /// Set when a business opens this for their own listing. Empty when the
+  /// account has no listing linked.
   final String? businessId;
+
+  /// A signed-in customer sees the businesses they follow.
+  final bool isSignedIn;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final announcementsAsync = ref.watch(announcementsProvider);
     final palette = context.palette;
     final isOwner = businessId != null;
+
+    if (isOwner && businessId!.isEmpty) {
+      return Scaffold(
+        backgroundColor: palette.app,
+        appBar: AppBar(title: const Text('Announcements')),
+        body: const ContentMessage(
+          icon: Icons.storefront_outlined,
+          title: 'No listing linked yet',
+          body: 'Your account is not linked to a business yet, so there is '
+              'nowhere to post announcements.',
+        ),
+      );
+    }
+
+    // plan.md 4: announcements go to the customers who follow a business.
+    // Someone following nobody sees everything, because an empty feed on a new
+    // app is a worse first impression than a busy one and nothing is private.
+    final followed = isOwner || !isSignedIn
+        ? const <String>[]
+        : ref.watch(followedBusinessIdsProvider).value ?? const <String>[];
 
     return Scaffold(
       backgroundColor: palette.app,
@@ -53,7 +81,9 @@ class AnnouncementsScreen extends ConsumerWidget {
         data: (all) {
           final items = isOwner
               ? all.where((a) => a.businessId == businessId).toList()
-              : all;
+              : followed.isEmpty
+              ? all
+              : all.where((a) => followed.contains(a.businessId)).toList();
 
           if (items.isEmpty) {
             return ContentMessage(
@@ -230,7 +260,12 @@ class BusinessAdsScreen extends ConsumerWidget {
                               ),
                             ),
                             if (!live)
-                              Text('ENDED', style: AppText.sectionLabel),
+                              Text('ENDED', style: AppText.sectionLabel)
+                            else
+                              TextButton(
+                                onPressed: () => _confirmEnd(context, ref, ad),
+                                child: const Text('End'),
+                              ),
                           ],
                         ),
                         if (ad.body.isNotEmpty) ...[
@@ -261,24 +296,39 @@ class BusinessAdsScreen extends ConsumerWidget {
   }
 }
 
-/// Upcoming events across every business.
+/// Upcoming events across every business, or one business's own.
 ///
 /// Sorted soonest first, because the only question a customer opens this with
 /// is "what is happening and when".
 class EventsCalendarScreen extends ConsumerWidget {
-  const EventsCalendarScreen({super.key});
+  const EventsCalendarScreen({this.businessId, super.key});
+
+  /// Set when a business opens this for its own events. It then sees only
+  /// those, with a way to post one; it used to get the whole island's
+  /// calendar and no way to add to it.
+  final String? businessId;
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
     final eventsAsync = ref.watch(upcomingEventsProvider);
     final palette = context.palette;
+    final ownerId = businessId;
 
     return Scaffold(
       backgroundColor: palette.app,
       appBar: AppBar(
-        title: const Text('What\'s on'),
+        title: Text(ownerId == null ? "What's on" : 'Your events'),
         backgroundColor: palette.app,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          if (ownerId != null && ownerId.isNotEmpty)
+            IconButton(
+              tooltip: 'New event',
+              icon: const Icon(Icons.add),
+              onPressed: () =>
+                  context.push('/business/events/new?business=$ownerId'),
+            ),
+        ],
       ),
       body: eventsAsync.when(
         loading: () => Center(
@@ -290,13 +340,20 @@ class EventsCalendarScreen extends ConsumerWidget {
           body: 'Check your connection and try again.',
           onRetry: () => ref.invalidate(upcomingEventsProvider),
         ),
-        data: (events) {
+        data: (all) {
+          final events = ownerId == null
+              ? all
+              : all.where((e) => e.businessId == ownerId).toList();
+
           if (events.isEmpty) {
-            return const ContentMessage(
+            return ContentMessage(
               icon: Icons.event_outlined,
               title: 'Nothing coming up yet',
-              body: 'When businesses post events they show up here. Carnival '
-                  'and sailing week are usually the first.',
+              body: ownerId == null
+                  ? 'When businesses post events they show up here. Carnival '
+                      'and sailing week are usually the first.'
+                  : 'Post an event and it appears on your listing and in the '
+                      'island calendar.',
             );
           }
 
@@ -364,6 +421,45 @@ class EventsCalendarScreen extends ConsumerWidget {
           );
         },
       ),
+    );
+  }
+}
+
+/// Ends a running ad after confirming. Ending sets an end date rather than
+/// deleting, so the views it earned stay in the monthly report.
+Future<void> _confirmEnd(
+  BuildContext context,
+  WidgetRef ref,
+  BusinessAd ad,
+) async {
+  final confirmed = await showDialog<bool>(
+    context: context,
+    builder: (dialogContext) => AlertDialog(
+      title: const Text('End this advertisement?'),
+      content: const Text(
+        'It comes off your listing now. Its views stay in your reports.',
+      ),
+      actions: [
+        TextButton(
+          onPressed: () => Navigator.of(dialogContext).pop(false),
+          child: const Text('Cancel'),
+        ),
+        FilledButton(
+          onPressed: () => Navigator.of(dialogContext).pop(true),
+          child: const Text('End it'),
+        ),
+      ],
+    ),
+  );
+  if (!(confirmed ?? false)) return;
+
+  try {
+    await ref.read(businessContentRepositoryProvider).endAd(ad.id);
+    ref.invalidate(businessAdsProvider(ad.businessId));
+  } catch (_) {
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(content: Text('Could not end it. Check your connection.')),
     );
   }
 }

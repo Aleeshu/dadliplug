@@ -5,25 +5,47 @@ import 'package:antigua_business_map/features/listing/widgets/report_wrong_info_
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/models/business_category.dart';
 import 'package:antigua_business_map/services/business_content_repository.dart';
+import 'package:antigua_business_map/services/engagement_recorder.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
+import 'package:antigua_business_map/services/ranking_service.dart';
 import 'package:cached_network_image/cached_network_image.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
 import 'package:intl/intl.dart';
-import 'package:riverpod/src/providers/future_provider.dart';
 import 'package:url_launcher/url_launcher.dart';
 
 /// Provider fetching a single business listing by ID.
-final FutureProviderFamily<Business?, String> singleBusinessProvider =
-    FutureProvider.family<Business?, String>((
-      ref,
-      id,
-    ) async {
-      final repo = ref.watch(businessRepositoryProvider);
-      return repo.getBusinessById(id);
-    });
+///
+/// The type is inferred on purpose. Riverpod 3 does not export the family
+/// type publicly, and spelling it out needed an import from `riverpod/src/...`,
+/// a private path that breaks on any package update.
+// ignore: specify_nonobvious_property_types
+final singleBusinessProvider = FutureProvider.family<Business?, String>(
+  (ref, id) => ref.watch(businessRepositoryProvider).getBusinessById(id),
+);
+
+/// How a listing's rating is described.
+///
+/// Only reviews that passed the visit gate may be called verified. Ratings the
+/// team entered from before the app existed have passed no gate, and the
+/// listing called them "verified reviews" — the one claim this app sells
+/// itself on (handover 6.2). They are counted, and labelled for what they are.
+String ratingLabel(Business b) {
+  final stats = reviewStats(b);
+  final verified = b.visibleReviews.length;
+  final imported = b.seededReviewCount;
+
+  if (imported == 0) {
+    return '($verified verified ${verified == 1 ? 'review' : 'reviews'})';
+  }
+  if (verified == 0) {
+    return '(${stats.count} ${stats.count == 1 ? 'rating' : 'ratings'} '
+        'from before IslandAds)';
+  }
+  return '(${stats.count} ratings, $verified verified)';
+}
 
 /// Phase 4 Business Listing Screen.
 ///
@@ -158,7 +180,7 @@ class SocialLink {
   final Uri? url;
 }
 
-class _ListingContent extends StatefulWidget {
+class _ListingContent extends ConsumerStatefulWidget {
   const _ListingContent({
     required this.business,
     this.ads = const [],
@@ -174,11 +196,50 @@ class _ListingContent extends StatefulWidget {
   final List<SocialLink> socials;
 
   @override
-  State<_ListingContent> createState() => _ListingContentState();
+  ConsumerState<_ListingContent> createState() => _ListingContentState();
 }
 
-class _ListingContentState extends State<_ListingContent> {
+class _ListingContentState extends ConsumerState<_ListingContent> {
   int _activePhotoIndex = 0;
+
+  /// Ads already counted on this visit. A rebuild must not count them again;
+  /// the server only deduplicates signed-in viewers, so a guest's every
+  /// rebuild would otherwise be a fresh view.
+  final Set<String> _countedAds = {};
+
+  EngagementRecorder get _recorder => ref.read(engagementRecorderProvider);
+
+  @override
+  void initState() {
+    super.initState();
+    _recorder.record(widget.business.id, EngagementKind.view);
+    _countAds();
+  }
+
+  @override
+  void didUpdateWidget(covariant _ListingContent oldWidget) {
+    super.didUpdateWidget(oldWidget);
+    // Ads arrive after the listing itself, so they are counted as they land.
+    _countAds();
+  }
+
+  void _countAds() {
+    for (final ad in widget.ads) {
+      if (_countedAds.add(ad.id)) {
+        _recorder.record(ad.businessId, EngagementKind.adView, adId: ad.id);
+      }
+    }
+  }
+
+  void _call(Business b) {
+    _recorder.record(b.id, EngagementKind.call);
+    _launchUrl('tel:${b.phone}');
+  }
+
+  void _whatsApp(Business b) {
+    _recorder.record(b.id, EngagementKind.whatsapp);
+    _launchWhatsApp(b);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -206,13 +267,14 @@ class _ListingContentState extends State<_ListingContent> {
             onPressed: () => context.pop(),
           ),
           actions: [
+            _BookmarkButton(businessId: b.id),
             IconButton(
               icon: CircleAvatar(
                 backgroundColor: palette.surface.withValues(alpha: 0.85),
                 child: Icon(Icons.share_outlined, color: palette.ink, size: 20),
               ),
-              onPressed: () => _shareListing(context, b),
-              tooltip: 'Share listing',
+              onPressed: () => _shareListing(b),
+              tooltip: 'Share on WhatsApp',
             ),
           ],
           flexibleSpace: FlexibleSpaceBar(
@@ -294,7 +356,7 @@ class _ListingContentState extends State<_ListingContent> {
                       Icon(Icons.star, size: 20, color: palette.gold),
                       const SizedBox(width: Insets.xs),
                       Text(
-                        b.seededRating.toStringAsFixed(1),
+                        reviewStats(b).average.toStringAsFixed(1),
                         style: AppText.numeric.copyWith(
                           fontSize: 18,
                           color: palette.ink,
@@ -302,10 +364,12 @@ class _ListingContentState extends State<_ListingContent> {
                         ),
                       ),
                       const SizedBox(width: Insets.xs),
-                      Text(
-                        '(${b.totalReviewCount} verified reviews)',
-                        style: AppText.bodyMedium.copyWith(
-                          color: palette.muted,
+                      Flexible(
+                        child: Text(
+                          ratingLabel(b),
+                          style: AppText.bodyMedium.copyWith(
+                            color: palette.muted,
+                          ),
                         ),
                       ),
                     ],
@@ -691,7 +755,7 @@ class _ListingContentState extends State<_ListingContent> {
               icon: Icons.phone,
               label: 'Call',
               color: palette.ink,
-              onTap: () => _launchUrl('tel:${b.phone}'),
+              onTap: () => _call(b),
             ),
           ),
         if (hasPhone && (hasWhatsApp || hasLocation))
@@ -702,7 +766,7 @@ class _ListingContentState extends State<_ListingContent> {
               icon: Icons.chat,
               label: 'WhatsApp',
               color: const Color(0xFF25D366),
-              onTap: () => _launchWhatsApp(b),
+              onTap: () => _whatsApp(b),
             ),
           ),
         if (hasWhatsApp && hasLocation) const SizedBox(width: Insets.sm),
@@ -919,8 +983,12 @@ class _ListingContentState extends State<_ListingContent> {
     Business b,
     AppPalette palette,
   ) {
-    final verifiedDate = b.lastVerifiedAt ?? DateTime.now();
-    final formattedDate = DateFormat('MMM d, yyyy').format(verifiedDate);
+    // No date means nobody has verified it. Showing today's date instead, as
+    // this used to, invented a verification that never happened.
+    final verifiedDate = b.lastVerifiedAt;
+    final verifiedLabel = verifiedDate == null
+        ? 'Not yet verified'
+        : 'Last verified ${DateFormat('MMM d, yyyy').format(verifiedDate.toLocal())}';
 
     return Container(
       width: double.infinity,
@@ -938,7 +1006,7 @@ class _ListingContentState extends State<_ListingContent> {
               Icon(Icons.verified_outlined, size: 18, color: palette.muted),
               const SizedBox(width: Insets.xs),
               Text(
-                'Data verified: $formattedDate',
+                verifiedLabel,
                 style: AppText.caption.copyWith(color: palette.muted),
               ),
             ],
@@ -1006,13 +1074,21 @@ class _ListingContentState extends State<_ListingContent> {
     }
   }
 
-  static void _shareListing(BuildContext context, Business b) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Sharing ${b.name} on IslandAds'),
-        duration: const Duration(seconds: 2),
-      ),
+  /// Shares to WhatsApp, where most word of mouth on the island runs
+  /// (plan.md 11). The button used to show a "Sharing…" message and share
+  /// nothing. A rich preview card needs the public web page (Phase 5); until
+  /// then the text carries everything someone needs to find the place.
+  static Future<void> _shareListing(Business b) async {
+    final lines = [
+      '${b.name}${b.area.isEmpty ? '' : ' — ${b.area}'}',
+      if (b.phone?.isNotEmpty ?? false) 'Call: ${b.phone}',
+      if (b.howToFindUs?.isNotEmpty ?? false) b.howToFindUs!,
+      'Found on IslandAds',
+    ];
+    final uri = Uri.parse(
+      'https://wa.me/?text=${Uri.encodeComponent(lines.join('\n'))}',
     );
+    await launchUrl(uri, mode: LaunchMode.externalApplication);
   }
 }
 
@@ -1065,21 +1141,27 @@ class _AdCard extends StatelessWidget {
           ],
           if (ad.linkUrl?.isNotEmpty ?? false) ...[
             const SizedBox(height: Insets.sm),
-            InkWell(
-              // Only opens when the stored value parses. A malformed URL is
-              // shown as plain text rather than as a button that does nothing.
-              onTap: ad.linkUrl == null
-                  ? null
-                  : () => launchUrl(
-                        Uri.parse(ad.linkUrl!),
-                        mode: LaunchMode.externalApplication,
-                      ),
-              child: Text(
-                ad.linkUrl!,
-                style: AppText.bodyMedium.copyWith(
-                  color: ad.linkUrl == null ? palette.muted : palette.red,
-                ),
-              ),
+            Builder(
+              builder: (context) {
+                // Only opens when the stored value parses as a web address. A
+                // malformed URL is shown as plain text rather than as a link
+                // that throws when tapped — the old null check could never be
+                // false here, so it guarded nothing.
+                final uri = Uri.tryParse(ad.linkUrl!);
+                final usable = uri != null &&
+                    (uri.scheme == 'http' || uri.scheme == 'https');
+                return InkWell(
+                  onTap: usable
+                      ? () => launchUrl(uri, mode: LaunchMode.externalApplication)
+                      : null,
+                  child: Text(
+                    ad.linkUrl!,
+                    style: AppText.bodyMedium.copyWith(
+                      color: usable ? palette.red : palette.muted,
+                    ),
+                  ),
+                );
+              },
             ),
           ],
         ],
@@ -1252,6 +1334,67 @@ class _SocialRow extends StatelessWidget {
             ),
           ),
       ],
+    );
+  }
+}
+
+/// Save a business. The same relationship as following, so a bookmarked
+/// business's announcements reach the Notices tab (plan.md 4).
+///
+/// The Bookmarks tab told customers to "tap the bookmark on any business",
+/// and no business had one.
+class _BookmarkButton extends ConsumerStatefulWidget {
+  const _BookmarkButton({required this.businessId});
+
+  final String businessId;
+
+  @override
+  ConsumerState<_BookmarkButton> createState() => _BookmarkButtonState();
+}
+
+class _BookmarkButtonState extends ConsumerState<_BookmarkButton> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool saved) async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(businessContentRepositoryProvider)
+          .setFollow(businessId: widget.businessId, follow: !saved);
+      ref.invalidate(followedBusinessIdsProvider);
+    } on NotSignedInException {
+      if (mounted) await context.push<void>('/sign-in');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not save. Check your connection.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final saved =
+        ref.watch(followedBusinessIdsProvider).value?.contains(
+          widget.businessId,
+        ) ??
+        false;
+
+    return IconButton(
+      tooltip: saved ? 'Remove bookmark' : 'Bookmark',
+      onPressed: _busy ? null : () => _toggle(saved),
+      icon: CircleAvatar(
+        backgroundColor: palette.surface.withValues(alpha: 0.85),
+        child: Icon(
+          saved ? Icons.bookmark : Icons.bookmark_border,
+          color: saved ? palette.red : palette.ink,
+          size: 20,
+        ),
+      ),
     );
   }
 }

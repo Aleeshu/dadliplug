@@ -9,6 +9,11 @@ final businessRepositoryProvider = Provider<BusinessRepository>((ref) {
   return SupabaseBusinessRepository();
 });
 
+/// Team-only listing writes. Backed by the same Supabase repository.
+final listingAdminRepositoryProvider = Provider<ListingAdminRepository>((ref) {
+  return SupabaseBusinessRepository();
+});
+
 /// Stream provider for all active business listings.
 final businessListProvider = StreamProvider<List<Business>>((ref) {
   final repo = ref.watch(businessRepositoryProvider);

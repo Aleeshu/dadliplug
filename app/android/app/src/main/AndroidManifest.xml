@@ -37,15 +37,16 @@
                 <category android:name="android.intent.category.LAUNCHER"/>
             </intent-filter>
         </activity>
-        <!-- Impeller is disabled because MapLibre draws into its own OpenGL surface,
-             and Impeller's Vulkan backend does not composite that surface
-             correctly on some Android devices. The symptom is a map area that
-             stays uniformly dark with no tiles and no error in logcat — the
-             native library loads and the map surface exists, but nothing paints.
-
-             Skia's hybrid compositor handles the MapLibre surface correctly.
-             Revisit once MapLibre is stable with Impeller; until then this is
-             the difference between a working map and a blank rectangle. -->
+        <!-- Set from GOOGLE_MAPS_API_KEY in .env; see build.gradle.kts.
+             Restrict this key to the package name and signing certificate in
+             Google Cloud before release: it ships inside the APK. -->
+        <meta-data
+            android:name="com.google.android.geo.API_KEY"
+            android:value="${googleMapsApiKey}" />
+        <!-- Impeller was disabled for MapLibre, whose OpenGL surface rendered
+             as a uniformly dark rectangle under Impeller's Vulkan backend.
+             Left disabled after the move to Google Maps until a device shows
+             the Google map rendering correctly with it on. -->
         <meta-data
             android:name="io.flutter.embedding.android.EnableImpeller"
             android:value="false" />

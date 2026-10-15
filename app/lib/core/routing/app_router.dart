@@ -20,6 +20,7 @@ import 'package:antigua_business_map/features/team_admin/billing_screen.dart';
 import 'package:antigua_business_map/features/team_admin/moderation_screen.dart';
 import 'package:antigua_business_map/features/team_admin/ranking_screen.dart';
 import 'package:antigua_business_map/features/team_admin/spotlight_screen.dart';
+import 'package:antigua_business_map/features/team_admin/team_listings_screen.dart';
 import 'package:antigua_business_map/models/user.dart';
 import 'package:antigua_business_map/services/auth_factory.dart';
 import 'package:antigua_business_map/services/auth_session.dart';
@@ -51,6 +52,7 @@ abstract final class Routes {
   static const String teamBilling = '/team/billing';
   static const String teamRanking = '/team/ranking';
   static const String teamSpotlight = '/team/spotlight';
+  static const String teamListings = '/team/listings';
 
   static const String teamPrefix = '/team';
 
@@ -78,8 +80,39 @@ abstract final class Routes {
 GoRouter buildRouter({
   required AuthSession session,
   required RoleSwitcherController roleSwitcher,
+  bool askAudienceFirst = false,
+}) {
+  // The listing the business screens act on. A team admin manages several, so
+  // the one they last opened is remembered; otherwise the tab bar, which
+  // carries no id, would drop back to their first listing on every tab change.
+  String? activeBusinessId;
+
+  String businessIdFor(GoRouterState state) {
+    final fromUrl = state.uri.queryParameters['business'];
+    if (fromUrl != null && fromUrl.isNotEmpty) {
+      activeBusinessId = fromUrl;
+      return fromUrl;
+    }
+    return activeBusinessId ?? session.primaryBusinessId ?? '';
+  }
+
+  return _buildRouter(
+    session: session,
+    roleSwitcher: roleSwitcher,
+    askAudienceFirst: askAudienceFirst,
+    businessIdFor: businessIdFor,
+  );
+}
+
+GoRouter _buildRouter({
+  required AuthSession session,
+  required RoleSwitcherController roleSwitcher,
+  required bool askAudienceFirst,
+  required String Function(GoRouterState) businessIdFor,
 }) => GoRouter(
-  initialLocation: Routes.map,
+  // plan.md 6a: the first screen asks business or customer. Only on a first
+  // run — main.dart records that it has been asked.
+  initialLocation: askAudienceFirst ? Routes.chooseRole : Routes.map,
   redirect: (context, state) {
     final location = state.uri.path;
     final requiredRole = AppTabs.roleForLocation(location);
@@ -141,7 +174,9 @@ GoRouter buildRouter({
         ),
         GoRoute(
           path: Routes.announcements,
-          builder: (c, s) => const AnnouncementsScreen(),
+          builder: (c, s) => AnnouncementsScreen(
+            isSignedIn: session.isSignedIn,
+          ),
         ),
         GoRoute(
           path: Routes.leaderboard,
@@ -150,11 +185,27 @@ GoRouter buildRouter({
 
         GoRoute(
           path: Routes.businessDashboard,
-          builder: (c, s) => const BusinessDashboardScreen(),
+          builder: (c, s) {
+            final id = businessIdFor(s);
+            return BusinessDashboardScreen(
+              key: ValueKey('dashboard-$id'),
+              businessId: id,
+              otherBusinessIds: session.user?.businessIds ?? const [],
+            );
+          },
         ),
         GoRoute(
           path: Routes.businessListing,
-          builder: (c, s) => const BusinessListingScreen(),
+          builder: (c, s) {
+            final id = businessIdFor(s);
+            // Keyed on the id so switching listings rebuilds the form rather
+            // than keeping the previous listing's text in its controllers.
+            return BusinessListingScreen(
+              key: ValueKey('listing-$id'),
+              businessId: id,
+              isTeam: session.canAccessTeamDashboard(),
+            );
+          },
         ),
         GoRoute(
           path: Routes.businessReviews,
@@ -163,46 +214,39 @@ GoRouter buildRouter({
         GoRoute(
           path: Routes.businessAnnouncements,
           builder: (c, s) => AnnouncementsScreen(
-            businessId: s.uri.queryParameters['business'],
+            businessId: businessIdFor(s),
+            isSignedIn: session.isSignedIn,
           ),
           routes: [
             GoRoute(
               path: 'new',
-              builder: (c, s) => PostAnnouncementScreen(
-                businessId: s.uri.queryParameters['business'] ?? '',
-              ),
+              builder: (c, s) =>
+                  PostAnnouncementScreen(businessId: businessIdFor(s)),
             ),
           ],
         ),
         GoRoute(
           path: Routes.businessAds,
-          builder: (c, s) => BusinessAdsScreen(
-            businessId: s.uri.queryParameters['business'] ?? '',
-          ),
+          builder: (c, s) => BusinessAdsScreen(businessId: businessIdFor(s)),
           routes: [
             GoRoute(
               path: 'new',
-              builder: (c, s) => PostAdScreen(
-                businessId: s.uri.queryParameters['business'] ?? '',
-              ),
+              builder: (c, s) => PostAdScreen(businessId: businessIdFor(s)),
             ),
           ],
         ),
         GoRoute(
           path: Routes.businessReport,
-          builder: (c, s) => MonthlyReportScreen(
-            businessId: s.uri.queryParameters['business'] ?? '',
-          ),
+          builder: (c, s) => MonthlyReportScreen(businessId: businessIdFor(s)),
         ),
         GoRoute(
           path: Routes.businessEvents,
-          builder: (c, s) => const EventsCalendarScreen(),
+          builder: (c, s) =>
+              EventsCalendarScreen(businessId: businessIdFor(s)),
           routes: [
             GoRoute(
               path: 'new',
-              builder: (c, s) => PostEventScreen(
-                businessId: s.uri.queryParameters['business'] ?? '',
-              ),
+              builder: (c, s) => PostEventScreen(businessId: businessIdFor(s)),
             ),
           ],
         ),
@@ -216,6 +260,19 @@ GoRouter buildRouter({
             GoRoute(
               path: 'spotlight',
               builder: (c, s) => const SpotlightScreen(),
+            ),
+            GoRoute(
+              path: 'listings',
+              builder: (c, s) => const TeamListingsScreen(),
+              routes: [
+                GoRoute(
+                  path: 'new',
+                  builder: (c, s) => const BusinessListingScreen(
+                    createNew: true,
+                    isTeam: true,
+                  ),
+                ),
+              ],
             ),
           ],
         ),

@@ -345,12 +345,15 @@ class _PostEventScreenState extends ConsumerState<PostEventScreen> {
       firstDate: now.subtract(const Duration(days: 1)),
       lastDate: now.add(const Duration(days: 730)),
     );
-    if (picked == null) return;
+    // The screen can be closed while a picker is open; both awaits need the
+    // check or the next line uses a dead context.
+    if (picked == null || !mounted) return;
 
     final time = await showTimePicker(
       context: context,
       initialTime: const TimeOfDay(hour: 19, minute: 0),
     );
+    if (!mounted) return;
 
     final when = DateTime(
       picked.year,

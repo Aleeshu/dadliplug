@@ -1,4 +1,5 @@
 import 'package:antigua_business_map/models/business.dart';
+import 'package:antigua_business_map/models/business_category.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
@@ -70,6 +71,60 @@ void main() {
         const OpeningHours(days: {2, 4, 6}).label,
         'Tue, Thu, Sat',
       );
+    });
+  });
+
+  group('Antigua clock', () {
+    test('is UTC minus four, whatever the device timezone', () {
+      // 18:00 UTC is 14:00 in Antigua. The old clock subtracted four hours
+      // from local time, so on a phone in Antigua it read 10:00.
+      final island = AntiguaClock.antiguaTimeOf(DateTime.utc(2026, 3, 2, 18));
+      expect(island.hour, 14);
+      expect(island.weekday, DateTime.monday);
+    });
+
+    test('crosses midnight back into the previous day', () {
+      final island = AntiguaClock.antiguaTimeOf(DateTime.utc(2026, 3, 9, 2));
+      expect(island.weekday, DateTime.sunday);
+      expect(island.hour, 22);
+    });
+  });
+
+  group('nextOpenDay', () {
+    test('finds Sunday', () {
+      // Sunday is 7. A plain `% 7` turned it into 0 and never matched.
+      const h = OpeningHours(days: {DateTime.sunday});
+      expect(h.nextOpenDay(DateTime.saturday), DateTime.sunday);
+    });
+
+    test('wraps from Sunday to Monday', () {
+      const h = OpeningHours(days: {DateTime.monday});
+      expect(h.nextOpenDay(DateTime.sunday), DateTime.monday);
+    });
+  });
+
+  group('openInfo', () {
+    const bar = Business(
+      id: 'bar',
+      name: 'Bar',
+      category: BusinessCategory.food,
+      tier: SubscriptionTier.basic,
+      area: '',
+      description: '',
+      hours: OpeningHours(days: {5, 6}, opensAt: 18, closesAt: 2),
+    );
+
+    test('a bar open past midnight is labelled open at 1am', () {
+      // Saturday 01:00 in Antigua, inside Friday night's session. The label
+      // used to have its own window check that did not understand this.
+      final info = openInfo(bar, now: DateTime(2026, 3, 7, 1));
+      expect(info.isOpen, isTrue);
+    });
+
+    test('labels the next opening day by name', () {
+      final info = openInfo(bar, now: DateTime(2026, 3, 8, 12));
+      expect(info.isOpen, isFalse);
+      expect(info.label, 'Closed, opens Fri 6 pm');
     });
   });
 

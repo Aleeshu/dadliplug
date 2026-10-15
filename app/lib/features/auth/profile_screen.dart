@@ -74,9 +74,12 @@ class ProfileScreen extends ConsumerWidget {
                   const SizedBox(height: Insets.giant),
                   _PlacesSection(
                     title: 'Places you visited',
+                    // There is no "I was here" button, and there must not be
+                    // one: a self-reported tap verifies nothing (plan.md 8).
+                    // Visits arrive with the QR check-in in Phase 6.
                     emptyLabel:
-                        'Nothing yet. Open a business and tap '
-                        '"I was here" to add it.',
+                        'Nothing yet. Visits are recorded when you check in '
+                        'at a business.',
                     places: places,
                   ),
                   const SizedBox(height: Insets.giant),

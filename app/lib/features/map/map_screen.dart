@@ -6,6 +6,7 @@ import 'package:antigua_business_map/core/theme/app_text.dart';
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/services/auth_factory.dart';
 import 'package:antigua_business_map/services/auth_session.dart';
+import 'package:antigua_business_map/services/engagement_recorder.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
 import 'package:antigua_business_map/widgets/business_preview_card.dart';
 import 'package:antigua_business_map/widgets/category_filter_bar.dart';
@@ -131,7 +132,7 @@ class MapScreen extends ConsumerStatefulWidget {
   final AuthSession session;
   final RoleSwitcherController roleSwitcher;
 
-  /// Layout-test seam. Swaps the native MapLibre surface for an equivalent
+  /// Layout-test seam. Swaps the native Google Maps surface for an equivalent
   /// widget so the chrome around it can be measured without a device.
   /// Null in every real code path.
   @visibleForTesting
@@ -190,7 +191,7 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               fit: StackFit.expand,
               children: [
                 // Positioned.fill is not optional. A Stack passes loose
-                // constraints to non-positioned children, and the MapLibre
+                // constraints to non-positioned children, and a native map
                 // surface does not expand to fill them — so the map collapsed
                 // to nothing while the overlays drew over the top. That is
                 // what left a blank map with no error anywhere.
@@ -263,6 +264,9 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               child: SafeArea(
                 child: BusinessPreviewCard(
                   business: selectedBusiness,
+                  onEngagement: (kind) => ref
+                      .read(engagementRecorderProvider)
+                      .record(selectedBusiness.id, kind),
                   onClose: () {
                     ref.read(selectedBusinessProvider.notifier).selected = null;
                   },
@@ -281,22 +285,34 @@ class _MapScreenState extends ConsumerState<MapScreen> {
   ) {
     final mapBusinesses = businesses.where((b) => b.hasLocation).toList();
 
-    // MapLibre has no desktop and web support in this package, so those
-    // platforms get the non-map layout rather than a blank surface.
+    // Desktop has no Google Maps plugin, and the web build is not configured
+    // with a key, so those platforms get the non-map layout rather than a
+    // blank surface.
     if (_isDesktopOrWeb) {
       return _DesktopMapFallback(
         businesses: mapBusinesses,
         onSelectBusiness: _selectBusiness,
         palette: palette,
+        message: 'MAP PREVIEW\nRun on a phone for the live map',
       );
     }
 
-    // MapLibre is a PlatformView whose native surface does not exist in the
-    // test environment, and disposing it throws a LateInitializationError that
-    // masks the real assertions. Layout tests substitute a plain box of the
+    // Google Maps is a PlatformView whose native surface does not exist in the
+    // test environment. Layout tests substitute a plain box of the
     // same geometry so the surrounding chrome can be measured honestly.
     if (MapScreen.debugMapSurfaceOverride case final Widget surface?) {
       return surface;
+    }
+
+    // Google Maps draws blank tiles with no error when the key is missing, so
+    // a keyless build says so instead of showing an empty grey map.
+    if (!AppConfig.hasGoogleMapsKey) {
+      return _DesktopMapFallback(
+        businesses: mapBusinesses,
+        onSelectBusiness: _selectBusiness,
+        palette: palette,
+        message: 'NO MAPS KEY\nBuild with scripts/build-apk.ps1',
+      );
     }
 
     return IslandAdsMap(
@@ -378,11 +394,16 @@ class _DesktopMapFallback extends StatelessWidget {
     required this.businesses,
     required this.onSelectBusiness,
     required this.palette,
+    required this.message,
   });
 
   final List<Business> businesses;
   final ValueChanged<Business> onSelectBusiness;
   final AppPalette palette;
+
+  /// Says which reason this fallback is showing. "Desktop" and "no API key"
+  /// are very different problems and a blank island tells you neither.
+  final String message;
 
   @override
   Widget build(BuildContext context) {
@@ -402,12 +423,7 @@ class _DesktopMapFallback extends StatelessWidget {
               ),
               child: Center(
                 child: Text(
-                  // Says which of the two reasons this fallback is showing.
-                  // "Desktop" and "no API key" are very different problems and
-                  // a blank island tells you neither.
-                  AppConfig.hasGoogleMapsKey
-                      ? 'ANTIGUA MAP'
-                      : 'MAP OFFLINE\nMaps API key missing',
+                  message,
                   style: AppText.titleMedium.copyWith(
                     color: palette.landLine,
                     letterSpacing: 2,

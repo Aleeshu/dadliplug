@@ -140,7 +140,10 @@ void main() {
       expect(find.text('Food & drink'), findsWidgets);
       expect(find.text(r'$$'), findsOneWidget);
       expect(find.text('4.8'), findsOneWidget);
-      expect(find.text('(15 verified reviews)'), findsOneWidget);
+      // Seeded ratings have passed no visit gate, so they must not be called
+      // verified (handover 6.2).
+      expect(find.text('(15 ratings from before IslandAds)'), findsOneWidget);
+      expect(find.textContaining('verified reviews'), findsNothing);
 
       // 2. Action buttons
       expect(find.text('Call'), findsOneWidget);
@@ -170,7 +173,7 @@ void main() {
       expect(find.text(r'EC$10'), findsOneWidget);
 
       // 7. Accuracy footer
-      expect(find.textContaining('Data verified:'), findsOneWidget);
+      expect(find.textContaining('Last verified Oct 1, 2026'), findsOneWidget);
       expect(find.text('Report wrong info'), findsOneWidget);
     });
 

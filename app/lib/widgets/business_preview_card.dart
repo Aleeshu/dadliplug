@@ -3,7 +3,9 @@ import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/models/business_category.dart';
+import 'package:antigua_business_map/services/engagement_recorder.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
+import 'package:antigua_business_map/services/ranking_service.dart';
 import 'package:flutter/material.dart';
 import 'package:go_router/go_router.dart';
 import 'package:url_launcher/url_launcher.dart';
@@ -13,11 +15,17 @@ class BusinessPreviewCard extends StatelessWidget {
   const BusinessPreviewCard({
     required this.business,
     required this.onClose,
+    this.onEngagement,
     super.key,
   });
 
   final Business business;
   final VoidCallback onClose;
+
+  /// Told when the customer calls or messages from the card, so the tap is
+  /// counted for the business's report. A callback rather than a provider
+  /// read, so the card stays a plain widget.
+  final void Function(EngagementKind kind)? onEngagement;
 
   @override
   Widget build(BuildContext context) {
@@ -146,12 +154,13 @@ class BusinessPreviewCard extends StatelessWidget {
               const Spacer(),
 
               // Rating
-              if (business.seededRating > 0 ||
-                  business.totalReviewCount > 0) ...[
+              // The blended average, not the seeded figure alone, so live
+              // reviews move the stars once they exist.
+              if (reviewStats(business).count > 0) ...[
                 Icon(Icons.star, size: 16, color: palette.gold),
                 const SizedBox(width: Insets.xxs),
                 Text(
-                  business.seededRating.toStringAsFixed(1),
+                  reviewStats(business).average.toStringAsFixed(1),
                   style: AppText.numeric.copyWith(
                     color: palette.ink,
                     fontWeight: FontWeight.w700,
@@ -174,7 +183,10 @@ class BusinessPreviewCard extends StatelessWidget {
                 _ActionButton(
                   icon: Icons.phone,
                   label: 'Call',
-                  onTap: () => _launchUrl('tel:${business.phone}'),
+                  onTap: () {
+                    onEngagement?.call(EngagementKind.call);
+                    _launchUrl('tel:${business.phone}');
+                  },
                 ),
                 const SizedBox(width: Insets.sm),
               ],
@@ -183,7 +195,10 @@ class BusinessPreviewCard extends StatelessWidget {
                 _ActionButton(
                   icon: Icons.chat,
                   label: 'WhatsApp',
-                  onTap: () => _launchWhatsApp(business.whatsapp!),
+                  onTap: () {
+                    onEngagement?.call(EngagementKind.whatsapp);
+                    _launchWhatsApp(business.whatsapp!);
+                  },
                 ),
                 const SizedBox(width: Insets.sm),
               ],

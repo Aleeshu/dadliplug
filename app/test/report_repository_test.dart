@@ -10,36 +10,46 @@ void main() {
   group('month boundaries', () {
     test('month zero starts at the beginning of this month', () {
       final start = ReportRepository.monthStart(DateTime.utc(2026, 6, 15), 0);
-      expect(start, DateTime.utc(2026, 6, 1));
+      // Antigua midnight on the 1st is 04:00 UTC. Returning UTC midnight
+      // opened every query window four hours early.
+      expect(start, DateTime.utc(2026, 6, 1, 4));
     });
 
     test('one month back crosses the year boundary', () {
       final start = ReportRepository.monthStart(DateTime.utc(2026, 1, 15), 1);
-      expect(start, DateTime.utc(2025, 12, 1));
+      expect(start, DateTime.utc(2025, 12, 1, 4));
     });
 
     test('twelve months back is the same month a year earlier', () {
       // Mid-month UTC, so the Antigua offset cannot shift which month this is.
       // Midnight on the 1st would, correctly, still be the previous month there.
       final start = ReportRepository.monthStart(DateTime.utc(2026, 6, 15), 12);
-      expect(start, DateTime.utc(2025, 6, 1));
+      expect(start, DateTime.utc(2025, 6, 1, 4));
     });
 
     test('the boundary uses Antigua time, not device time', () {
       // 03:00 UTC on 1 June is still 31 May in Antigua (UTC-4). Computing the
       // boundary in UTC would start the month four hours early.
       final start = ReportRepository.monthStart(DateTime.utc(2026, 6, 1, 3), 0);
-      expect(start, DateTime.utc(2026, 5, 1));
+      expect(start, DateTime.utc(2026, 5, 1, 4));
     });
 
     test('the end of a month is the start of the next', () {
-      final end = ReportRepository.monthEnd(DateTime.utc(2026, 12, 1));
-      expect(end, DateTime.utc(2027, 1, 1));
+      final end = ReportRepository.monthEnd(DateTime.utc(2026, 12, 1, 4));
+      expect(end, DateTime.utc(2027, 1, 1, 4));
+    });
+
+    test('the last evening of a month stays in that month', () {
+      // 23:00 on 30 June in Antigua is 03:00 UTC on 1 July. It belongs to
+      // June's report, which means June's window must end at 04:00 UTC.
+      final june = ReportRepository.monthStart(DateTime.utc(2026, 6, 15), 0);
+      final lastEvening = DateTime.utc(2026, 7, 1, 3);
+      expect(lastEvening.isBefore(ReportRepository.monthEnd(june)), isTrue);
     });
 
     test('a future month still produces a valid range', () {
       final from = ReportRepository.monthStart(DateTime.utc(2026, 6, 15), -3);
-      expect(from, DateTime.utc(2026, 9, 1));
+      expect(from, DateTime.utc(2026, 9, 1, 4));
       expect(ReportRepository.monthEnd(from).isAfter(from), isTrue);
     });
   });

@@ -3,9 +3,10 @@
 Written for Claude Code picking this project up cold. Read this before changing
 anything.
 
-**State at handover:** `739583a`. Analyzer clean, 147 tests passing. Phases 0–3
-complete, Phase 4 substantially built. One change in `739583a` (pin taps and
-pin styling) is **unverified on a device** — see Known issues.
+**State at handover:** 2026-10-14. Analyzer clean, 172 tests passing. Phases
+0–3 complete, Phase 4 code complete. The map (now Google Maps), pin taps and
+Google sign-in are confirmed on a phone. The business posting-to-report path
+has **not** been walked on a device yet — see section 7.
 
 ---
 
@@ -78,7 +79,7 @@ chasing.
 ### Device
 
 Wireless debugging. **The port changes on every reconnect** — ask, or run
-`adb devices`. Last seen: `192.168.1.165:39881`.
+`adb devices`. Last seen: `192.168.1.165:39707`.
 
 ```powershell
 $adb = "$env:LOCALAPPDATA\Android\Sdk\platform-tools\adb.exe"
@@ -153,9 +154,8 @@ with no Flutter dependency are the cheapest things in the project to test.
   `Future.delayed` never elapses under fake async and the test deadlocks
   rather than failing. Use a synchronous fake service instead — see
   `test/auth_session_notification_test.dart`.
-- **MapLibre is a PlatformView.** It cannot be instantiated or disposed in a
-  widget test; disposing throws a `LateInitializationError` that masks real
-  assertions. `MapScreen.debugMapSurfaceOverride` substitutes a plain box.
+- **Google Maps is a PlatformView.** It cannot be instantiated in a widget
+  test. `MapScreen.debugMapSurfaceOverride` substitutes a plain box.
   `test/map_layout_test.dart` shows the pattern.
 - Assert **geometry, not pixels.** The map shipped visibly broken for a full
   session because nothing asserted where the recentre button was.
@@ -166,10 +166,10 @@ with no Flutter dependency are the cheapest things in the project to test.
 
 | | |
 |---|---|
-| HEAD | `739583a` |
-| Tests | 147 passing |
+| HEAD | see `git log` |
+| Tests | 172 passing |
 | Analyzer | 0 errors, 0 warnings, ~8 infos |
-| APK | `builds/islandads-debug.apk` — built, **not installed to device** |
+| APK | `builds/islandads-debug.apk` — built and installed on the phone |
 | Signed-in account | `ahjahlwashere@gmail.com`, team admin, via phone wireless debugging |
 | Also exists | `islandads.test@gmail.com` (plain user, unused) |
 
@@ -218,12 +218,11 @@ publishable key. For local testing:
 update public.dev_flags set auto_confirm_email = true where id = true;
 ```
 
-### 6.2 Seeded ratings are labelled "verified reviews"
+### 6.2 Seeded ratings were labelled "verified reviews" — fixed
 
-The listing shows "28 verified reviews" for the demo salon. Those are
-team-entered `seeded_rating` / `seeded_review_count` numbers that have passed no
-visit gate. The word "verified" is exactly the claim this app sells honesty on.
-**Fix before any real listing exists.**
+`ratingLabel()` in `listing_screen.dart` now says "28 ratings from before
+IslandAds" for team-entered numbers, and only calls reviews verified when they
+passed the visit gate. Pinned by `test/phase4_closeout_test.dart`.
 
 ### 6.3 `subscription_status` typo silently delists a business
 
@@ -233,27 +232,74 @@ but the underlying trap remains for any new free-text field:
 recognise. A value like `'Active'` removes a paying business from the app with
 no error anywhere.
 
-### 6.4 Pin taps and pin styling are unverified
+### 6.4 Pin taps — fixed, verified on a device
 
-`739583a` wires up `onFeatureTapped` (pin taps previously did nothing — only
-`onMapClick` was wired, so a pin tap fell through to deselect) and enlarges the
-pins from radius 5–8 to 7–15 with a two-tone edge.
+Pins are Google Maps markers with `consumeTapEvents` and their own `onTap`, so
+a tap cannot fall through to the map's deselect. Confirmed on the phone.
 
-**Builds and passes tests, but was never installed to a device.** Tap a demo pin
-and confirm the preview card appears.
+### 6.5 Google sign-in — fixed, verified on a device
 
-### 6.5 Google sign-in has never completed
+It had never completed, and the app reported every failure as "Something went
+wrong", so there was nothing to go on. The failure is now logged
+(`Google sign-in failed: ...` in logcat), which found three configuration
+faults in turn, all outside the code:
 
-The account chooser opens. No confirmed session has ever come back from it.
-Email sign-in works.
+1. `[16] Account reauth failed` — no Android OAuth client matching the package
+   and debug SHA-1. Created one (`154710325721-kfofoa…`).
+2. `provider_disabled` — Supabase's Google provider was off.
+3. `Unacceptable audience in id_token` — Supabase's Client IDs must include the
+   **Web** client id (`…-ndovs7n1…`), because that is the token's audience on
+   Android. Both ids are listed, Web first. Skip nonce checks is on.
 
-### 6.6 MapLibre, once fixed, may recur
+A release build signs with a different key, so it will fail at step 1 again
+until its SHA-1 is added to an Android OAuth client.
 
-The selection filter was being passed as a Dart map (`{'==': [...]}`) when the
-Android side reads it as a **JSON-encoded string in array form**. It threw
-`Array must have size 1, but has size 2` on every startup and only appeared in
-logcat. `test/map_geojson_test.dart` pins the wire format now. If any new
-expression is added, match the array form.
+### 6.6a Phase 4 close-out — fixed in code, not yet seen on a device
+
+Migration `20261014120000_engagement_and_listing_guards.sql` plus app changes:
+
+- **Engagement now counts.** Nothing ever incremented views, calls or taps.
+  `record_engagement()` records them as timestamped events and bumps the
+  counters; owners' and the team's own taps are excluded.
+- **The monthly report is monthly.** It read lifetime counters, listed only ads
+  that *started* that month, and used UTC midnight instead of Antigua midnight
+  (04:00 UTC) as the boundary.
+- **Owners could self-upgrade.** The row policy let an owner set their own
+  `subscription_status`, counters and seeded rating with the publishable key.
+  A trigger now refuses those from anyone but the team.
+- **Antigua clock was 4h out on Antigua phones.** `AntiguaClock.now()`
+  subtracted the offset from local time rather than UTC.
+- **Business tabs had no listing.** Ads, Notices and Report needed
+  `?business=` and the tab bar never passed it. The router now falls back to
+  the last listing opened, then the account's first.
+- **Team admins were locked out of business screens**, which were the only
+  route to the demo listings' posting tools.
+- **Team Listings tab** added: the team's create/edit backend (Phase 4).
+- Also: leaderboard rows opened `/listing/` with no id and showed the 0–1 score
+  as stars; demo seed hours/tags were in the wrong vocabulary; auto-confirm's
+  gated trigger was AFTER INSERT so the dev flag did nothing; content RLS used
+  `tier` while listings used `subscription_status`; Sunday never appeared as a
+  next-open day; the editor had no hours controls and edited "the first
+  business in the table" when given no id.
+
+### 6.6 Map moved from MapLibre to Google Maps — verified on a device
+
+All of it is in `features/map/island_ads_map.dart`. The key goes `.env` →
+dart-define → `build.gradle.kts` (decodes Flutter's `dart-defines` Gradle
+property) → `com.google.android.geo.API_KEY` in the manifest. A build with no
+key shows "NO MAPS KEY" instead of the SDK's silent blank tiles.
+
+- The key must allow **Maps SDK for Android** in its API restrictions. It
+  allowed every other Maps API except that one, which gave a blank map and
+  `Authorization failure` in logcat. First tiles can take a minute to appear.
+- **Restrict the key** in Google Cloud (package name + SHA-1, Maps SDK for
+  Android only) before release. It ships inside the APK.
+- Impeller is still disabled from the MapLibre days. Try enabling it once the
+  map is confirmed working on the phone.
+- iOS reads `GMSApiKey` from Info.plist, which expands `$(GOOGLE_MAPS_API_KEY)`;
+  nothing sets that build setting yet.
+- The MapLibre-specific traps (selection-filter wire format, bounded camera
+  blanking on tall screens) no longer apply. Camera bounds are back on.
 
 ---
 
@@ -262,16 +308,17 @@ expression is added, match the array form.
 Ordered by value, not by ease.
 
 1. **Turn off `mailer_autoconfirm`.** Five minutes, and it is the only thing
-   standing between this and being unfit to ship.
-2. **Install and verify pin taps** (`6.4`).
-3. **Fix the "verified reviews" label** (`6.2`). Small, and it is a claim the
-   product is sold on.
-4. **Walk the full business path on device**: post an ad, post an announcement,
+   standing between this and being unfit to ship. Check it took with
+   `GET <SUPABASE_URL>/auth/v1/settings` (publishable key as `apikey`): it
+   must say `"mailer_autoconfirm": false`.
+2. **Walk the full business path on device**: post an ad, post an announcement,
    post an event, then open the monthly report and confirm the numbers match what
    was posted. The data layer and report arithmetic are unit-tested; the wiring
    between them has only been seen in pieces.
-5. **Complete Google sign-in** (`6.5`).
-6. Then `plan.md` Phase 5.
+3. Then `plan.md` Phase 5.
+
+Minor: the Demo Kitchen seed is labelled Dickenson Bay but its coordinates
+(17.1181, -61.7965) put it inland near Osbourn.
 
 ### The thing that is not a code task
 

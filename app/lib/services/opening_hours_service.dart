@@ -31,33 +31,38 @@ abstract final class AntiguaClock {
 
   /// Weekday and fractional hour in Antigua time.
   ///
-  /// Dart's core date API has no timezone support, so this reads the offset
-  /// once at startup and the app treats every subsequent timestamp as local to
-  /// Antigua. That is correct for an Antigua-only app and means no user ever
-  /// sees a business closed because their phone is set to another country.
+  /// Derived from UTC, never from the device's local time. The previous version
+  /// subtracted four hours from *local* time, which was only right on a phone
+  /// set to UTC: on a phone in Antigua it subtracted the offset twice and every
+  /// open/closed label was four hours out.
   static ({int weekday, double hour}) now() {
-    final local = DateTime.now();
-    final utc = local.toUtc();
-    final offset = _offsetMinutes(local, utc);
-
-    final island = local.add(Duration(minutes: offset));
+    final island = nowInAntigua();
     return (
       weekday: island.weekday,
       hour: island.hour + island.minute / 60,
     );
   }
 
-  /// Antigua is UTC-4 year round — no daylight saving since 1971. Using the
-  /// fixed offset avoids depending on a timezone database package for the
-  /// whole app.
-  static int _offsetMinutes(DateTime local, DateTime utc) {
-    final difference = local.difference(utc).inMinutes;
-    return difference == 0 ? -240 : -240;
-  }
-
   /// The current time in Antigua, for use with [OpeningHours.isOpenAt].
-  static DateTime nowInAntigua() =>
-      DateTime.now().toUtc().add(const Duration(hours: -4));
+  ///
+  /// Antigua is UTC-4 year round — no daylight saving since 1971 — so a fixed
+  /// offset is correct and avoids a timezone database package.
+  static DateTime nowInAntigua() => antiguaTimeOf(DateTime.now());
+
+  /// [instant] as Antigua wall-clock time. Exposed so tests can pin the clock.
+  static DateTime antiguaTimeOf(DateTime instant) {
+    final shifted = instant.toUtc().add(const Duration(hours: -4));
+    // Rebuilt as a non-UTC value so `weekday` and `hour` read as Antigua
+    // wall-clock fields rather than being reinterpreted.
+    return DateTime(
+      shifted.year,
+      shifted.month,
+      shifted.day,
+      shifted.hour,
+      shifted.minute,
+      shifted.second,
+    );
+  }
 }
 
 /// "6pm", "9:30am", "12pm".
@@ -72,7 +77,12 @@ String formatHour(double hour) {
 }
 
 /// Whether a business is open right now, and the label to show.
-OpenInfo openInfo(Business b) {
+///
+/// [now] is Antigua wall-clock time and defaults to the real clock. Openness
+/// itself is decided by [OpeningHours.isOpenAt], so the label and the
+/// open-now filter cannot disagree — they used to be two implementations, and
+/// only one of them understood a bar that closes after midnight.
+OpenInfo openInfo(Business b, {DateTime? now}) {
   if (b.isClosedToday) {
     return const OpenInfo(
       isOpen: false,
@@ -87,25 +97,25 @@ OpenInfo openInfo(Business b) {
     return const OpenInfo(isOpen: true, label: 'Open 24 hours');
   }
 
-  final clock = AntiguaClock.now();
+  final island = now ?? AntiguaClock.nowInAntigua();
+  final weekday = island.weekday;
+  final hour = island.hour + island.minute / 60;
 
-  if (h.days.contains(clock.weekday) &&
-      clock.hour >= h.opensAt &&
-      clock.hour < h.closesAt) {
+  if (h.isOpenAt(island)) {
     return OpenInfo(
       isOpen: true,
       label: 'Open until ${formatHour(h.closesAt)}',
     );
   }
 
-  if (h.days.contains(clock.weekday) && clock.hour < h.opensAt) {
+  if (h.days.contains(weekday) && hour < h.opensAt) {
     return OpenInfo(
       isOpen: false,
       label: 'Closed, opens ${formatHour(h.opensAt)}',
     );
   }
 
-  final next = h.nextOpenDay(clock.weekday);
+  final next = h.nextOpenDay(weekday);
   if (next != null) {
     return OpenInfo(
       isOpen: false,

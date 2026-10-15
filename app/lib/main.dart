@@ -9,7 +9,11 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:supabase_flutter/supabase_flutter.dart' show Supabase;
+
+/// Set once the opening business-or-customer question has been shown.
+const String _audienceAskedKey = 'audience_asked';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
@@ -50,9 +54,22 @@ Future<void> main() async {
 
   final session = AuthSession(service: authService);
 
+  // plan.md 6a: a first run opens on "are you a business or a customer?".
+  // Recorded as soon as it is shown, so someone who skips it is not asked
+  // again on every launch. A preferences failure just skips the question.
+  var askAudienceFirst = false;
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    askAudienceFirst = !(prefs.getBool(_audienceAskedKey) ?? false);
+    if (askAudienceFirst) await prefs.setBool(_audienceAskedKey, true);
+  } catch (e) {
+    debugPrint('Preferences unavailable: $e');
+  }
+
   runApp(
     AntiguaMapApp(
       session: session,
+      askAudienceFirst: askAudienceFirst,
       // Only enabled while the mock is in use. Against Supabase, roles come
       // from the database and a client-side switch would just be a lie.
       roleSwitcher: authService is MockAuthService
@@ -66,11 +83,15 @@ class AntiguaMapApp extends StatefulWidget {
   const AntiguaMapApp({
     required this.session,
     required this.roleSwitcher,
+    this.askAudienceFirst = false,
     super.key,
   });
 
   final AuthSession session;
   final RoleSwitcherController roleSwitcher;
+
+  /// Opens on the business-or-customer question instead of the map.
+  final bool askAudienceFirst;
 
   @override
   State<AntiguaMapApp> createState() => _AntiguaMapAppState();
@@ -82,6 +103,7 @@ class _AntiguaMapAppState extends State<AntiguaMapApp> {
   late final GoRouter _router = buildRouter(
     session: widget.session,
     roleSwitcher: widget.roleSwitcher,
+    askAudienceFirst: widget.askAudienceFirst,
   );
 
   @override

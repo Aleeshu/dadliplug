@@ -163,10 +163,14 @@ class _EntryRow extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final b = entry.business;
-    final rating = entry.score.rating;
+    // The star average a customer recognises. `entry.score.rating` is the
+    // normalised 0–1 ranking component, which rendered as "0.8 · 42 reviews"
+    // beside a business averaging 4.6 stars.
+    final stats = reviewStats(b);
 
     return InkWell(
-      onTap: () => context.push('/listing/'),
+      // The id was missing, so every row opened a route that matched nothing.
+      onTap: () => context.push('/listing/${b.id}'),
       borderRadius: BorderRadius.circular(Corners.md),
       child: Container(
         margin: const EdgeInsets.only(bottom: Insets.sm),
@@ -212,10 +216,11 @@ class _EntryRow extends StatelessWidget {
                   ),
                   const SizedBox(height: Insets.xxs),
                   Text(
-                    rating <= 0
+                    stats.count == 0
                         ? 'No reviews yet'
-                        : '${rating.toStringAsFixed(1)} · '
-                            '${reviewStats(b).count} reviews',
+                        : '${stats.average.toStringAsFixed(1)} · '
+                            '${stats.count} '
+                            '${stats.count == 1 ? 'rating' : 'ratings'}',
                     style: AppText.caption.copyWith(color: palette.muted),
                   ),
                 ],

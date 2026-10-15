@@ -122,6 +122,11 @@ class SupabaseAuthService implements AuthService {
       if (user == null) return const AuthError(AuthFailure.unknown);
       return AuthSuccess(await _loadUser(user.id));
     } catch (e) {
+      // Logged because the screen only ever says "Something went wrong", and
+      // Google sign-in failed that way for weeks with nothing to go on. The
+      // cause is almost always configuration (SHA-1, client ids, Supabase's
+      // Google provider), and the exception names which.
+      debugPrint('Google sign-in failed: $e');
       return AuthError(mapError(e));
     }
   }

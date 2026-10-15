@@ -1,15 +1,284 @@
-import 'package:antigua_business_map/core/routing/stub_scaffold.dart';
+import 'package:antigua_business_map/core/theme/app_colors.dart';
+import 'package:antigua_business_map/core/theme/app_spacing.dart';
+import 'package:antigua_business_map/core/theme/app_text.dart';
+import 'package:antigua_business_map/features/listing/listing_screen.dart'
+    show singleBusinessProvider;
+import 'package:antigua_business_map/models/business.dart';
+import 'package:antigua_business_map/services/opening_hours_service.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_riverpod/flutter_riverpod.dart';
+import 'package:go_router/go_router.dart';
 
-/// Phase 1 stub. Analytics plus the customer review verification queue. The
-/// queue is what gates who is allowed to review, so it is the screen that
-/// makes the app's reviews trustworthy. Phase 7.
-class BusinessDashboardScreen extends StatelessWidget {
-  const BusinessDashboardScreen({super.key});
+/// The business Home tab: one listing, and every tool that acts on it.
+///
+/// Analytics and the review verification queue arrive in Phases 6–7. Until
+/// then this is the way into the Phase 4 tools — the monthly report and the
+/// event poster had no route in from the tab bar at all, so they were only
+/// reachable by typing a URL.
+class BusinessDashboardScreen extends ConsumerWidget {
+  const BusinessDashboardScreen({
+    required this.businessId,
+    this.otherBusinessIds = const [],
+    super.key,
+  });
+
+  /// The listing in focus. Empty when the account has none linked.
+  final String businessId;
+
+  /// Every listing this account manages, for switching between them. The team
+  /// and multi-site owners have more than one.
+  final List<String> otherBusinessIds;
 
   @override
-  Widget build(BuildContext context) => const StubScaffold(
-    title: 'Dashboard',
-    phase: '7',
-  );
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+
+    if (businessId.isEmpty) {
+      return Scaffold(
+        backgroundColor: palette.app,
+        appBar: AppBar(title: const Text('Your business')),
+        body: Center(
+          child: Padding(
+            padding: const EdgeInsets.all(Insets.giant),
+            child: Text(
+              'No listing is linked to your account yet. The IslandAds team '
+              'links it once your listing is set up.',
+              textAlign: TextAlign.center,
+              style: AppText.bodyLarge.copyWith(color: palette.muted),
+            ),
+          ),
+        ),
+      );
+    }
+
+    final businessAsync = ref.watch(singleBusinessProvider(businessId));
+    final q = '?business=$businessId';
+
+    return Scaffold(
+      backgroundColor: palette.app,
+      appBar: AppBar(
+        title: const Text('Your business'),
+        backgroundColor: palette.app,
+        surfaceTintColor: Colors.transparent,
+      ),
+      body: businessAsync.when(
+        loading: () => Center(
+          child: CircularProgressIndicator(color: palette.red),
+        ),
+        error: (_, _) => Center(
+          child: Padding(
+            padding: const EdgeInsets.all(Insets.giant),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'Could not load your listing.',
+                  style: AppText.titleMedium.copyWith(color: palette.ink),
+                ),
+                const SizedBox(height: Insets.md),
+                FilledButton(
+                  onPressed: () =>
+                      ref.invalidate(singleBusinessProvider(businessId)),
+                  child: const Text('Try again'),
+                ),
+              ],
+            ),
+          ),
+        ),
+        data: (business) => ListView(
+          padding: const EdgeInsets.all(Insets.lg),
+          children: [
+            if (business == null)
+              Text(
+                'This listing could not be found. It may have been removed.',
+                style: AppText.bodyLarge.copyWith(color: palette.muted),
+              )
+            else
+              _Summary(business: business, palette: palette),
+            if (otherBusinessIds.length > 1) ...[
+              const SizedBox(height: Insets.md),
+              _Switcher(
+                ids: otherBusinessIds,
+                current: businessId,
+              ),
+            ],
+            const SizedBox(height: Insets.xl),
+            _Tool(
+              icon: Icons.edit_outlined,
+              title: 'Edit listing',
+              body: 'Hours, contact details, menu, tags, closed today.',
+              onTap: () => context.go('/business/listing$q'),
+            ),
+            _Tool(
+              icon: Icons.campaign_outlined,
+              title: 'Advertisements',
+              body: 'Post an ad, end one, see views per ad.',
+              onTap: () => context.go('/business/ads$q'),
+            ),
+            _Tool(
+              icon: Icons.notifications_none,
+              title: 'Announcements',
+              body: 'Closures, notices and offers for your followers.',
+              onTap: () => context.go('/business/announcements$q'),
+            ),
+            _Tool(
+              icon: Icons.event_outlined,
+              title: 'Events',
+              body: 'Put something on the island calendar.',
+              onTap: () => context.go('/business/events$q'),
+            ),
+            _Tool(
+              icon: Icons.insert_chart_outlined,
+              title: 'Monthly report',
+              body: 'Views, calls, WhatsApp taps and reviews this month.',
+              onTap: () => context.push('/business/report$q'),
+            ),
+            _Tool(
+              icon: Icons.visibility_outlined,
+              title: 'See it as a customer',
+              body: 'Your public listing, exactly as it appears.',
+              onTap: () => context.push('/listing/$businessId'),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _Summary extends StatelessWidget {
+  const _Summary({required this.business, required this.palette});
+
+  final Business business;
+  final AppPalette palette;
+
+  @override
+  Widget build(BuildContext context) {
+    final status = openInfo(business);
+
+    return Container(
+      padding: const EdgeInsets.all(Insets.lg),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.md),
+        border: Border.all(color: palette.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            business.name,
+            style: AppText.titleLarge.copyWith(color: palette.ink),
+          ),
+          const SizedBox(height: Insets.xs),
+          Text(
+            '${business.tier.label} plan · ${status.label}',
+            style: AppText.bodyMedium.copyWith(
+              color: status.isOpen ? palette.good : palette.muted,
+            ),
+          ),
+          if (business.tier == SubscriptionTier.overdue) ...[
+            const SizedBox(height: Insets.sm),
+            Text(
+              'Payment is overdue. Your listing stays up for 7 days, then it '
+              'is removed. Contact the IslandAds team to settle it.',
+              style: AppText.bodyMedium.copyWith(color: palette.bad),
+            ),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+class _Switcher extends ConsumerWidget {
+  const _Switcher({required this.ids, required this.current});
+
+  final List<String> ids;
+  final String current;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+
+    return Wrap(
+      spacing: Insets.sm,
+      runSpacing: Insets.sm,
+      children: [
+        for (final id in ids)
+          ChoiceChip(
+            selected: id == current,
+            label: Text(
+              ref.watch(singleBusinessProvider(id)).value?.name ?? '…',
+              style: AppText.labelMedium.copyWith(
+                color: id == current ? palette.app : palette.ink,
+              ),
+            ),
+            selectedColor: palette.ink,
+            onSelected: (_) => context.go('/business?business=$id'),
+          ),
+      ],
+    );
+  }
+}
+
+class _Tool extends StatelessWidget {
+  const _Tool({
+    required this.icon,
+    required this.title,
+    required this.body,
+    required this.onTap,
+  });
+
+  final IconData icon;
+  final String title;
+  final String body;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Insets.sm),
+      child: Material(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.md),
+        child: InkWell(
+          onTap: onTap,
+          borderRadius: BorderRadius.circular(Corners.md),
+          child: Container(
+            padding: const EdgeInsets.all(Insets.lg),
+            decoration: BoxDecoration(
+              borderRadius: BorderRadius.circular(Corners.md),
+              border: Border.all(color: palette.line),
+            ),
+            child: Row(
+              children: [
+                Icon(icon, color: palette.red),
+                const SizedBox(width: Insets.md),
+                Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        title,
+                        style: AppText.titleMedium.copyWith(color: palette.ink),
+                      ),
+                      const SizedBox(height: Insets.xxs),
+                      Text(
+                        body,
+                        style: AppText.caption.copyWith(color: palette.muted),
+                      ),
+                    ],
+                  ),
+                ),
+                Icon(Icons.chevron_right, color: palette.muted),
+              ],
+            ),
+          ),
+        ),
+      ),
+    );
+  }
 }

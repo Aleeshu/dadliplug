@@ -130,8 +130,10 @@ void main() {
       await session.register('staff@example.com', 'correcthorse', 'Staff');
       await session.setRole(UserRole.teamAdmin);
 
+      // Both, as the name says. The team maintains listings for owners who
+      // will not, so it needs the business screens as well.
       expect(session.canAccessTeamDashboard(), isTrue);
-      expect(session.canAccessBusinessDashboard(), isFalse);
+      expect(session.canAccessBusinessDashboard(), isTrue);
     });
 
     test('business ids gate editing', () async {

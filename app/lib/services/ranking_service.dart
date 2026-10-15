@@ -162,36 +162,10 @@ List<Business> advanceSpotlight({
     currentWeek: currentWeek,
     slots: slots,
   );
+  // copyWith, not a hand-built constructor. The hand-built copy silently
+  // dropped every field added after it was written — tags, socials, the
+  // closed-today flag and createdAt — so a Spotlight business lost them.
   return chosen
-      .map(
-        (b) => Business(
-          id: b.id,
-          name: b.name,
-          category: b.category,
-          tier: b.tier,
-          area: b.area,
-          description: b.description,
-          hours: b.hours,
-          photos: b.photos,
-          menu: b.menu,
-          phone: b.phone,
-          whatsapp: b.whatsapp,
-          website: b.website,
-          address: b.address,
-          latitude: b.latitude,
-          longitude: b.longitude,
-          priceRange: b.priceRange,
-          offer: b.offer,
-          acceptsReviews: b.acceptsReviews,
-          isSpotlight: true,
-          lastSpotlightWeek: currentWeek,
-          seededRating: b.seededRating,
-          seededReviewCount: b.seededReviewCount,
-          reviews: b.reviews,
-          views: b.views,
-          calls: b.calls,
-          whatsappTaps: b.whatsappTaps,
-        ),
-      )
+      .map((b) => b.copyWith(isSpotlight: true, lastSpotlightWeek: currentWeek))
       .toList(growable: false);
 }

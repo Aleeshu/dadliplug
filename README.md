@@ -5,8 +5,10 @@ to date. Businesses pay for placement. See `plan.md` for the full plan.
 
 ## Status
 
-Phase 2 complete. Scaffolding, design system, and auth are in place. Map,
-listing, and dashboard screens are still stubs.
+Phases 0–4 complete in code. The map, listings, the listing editor, posting
+screens for ads, announcements and events, the monthly report, and the team's
+listings backend are built. Phase 4 still needs walking end to end on a device
+(see `docs/handover.md`). Phase 5 (discovery) is next.
 
 ## Structure
 
@@ -67,5 +69,6 @@ AVD (`antigua_api35`). See `docs/previewing-ui.md`.
 
 ## Next
 
-Phase 3 — the map. Settle the hand-drawn SVG map vs Google Maps question first;
-it is in the open questions at the bottom of `plan.md`.
+See `docs/handover.md` section 7. The map is Google Maps. `GOOGLE_MAPS_API_KEY`
+in `.env` reaches Android through the dart-defines, so only builds made with
+`scripts/build-apk.ps1` show a map; a build without it says "NO MAPS KEY".

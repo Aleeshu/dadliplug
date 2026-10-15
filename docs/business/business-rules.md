@@ -30,11 +30,23 @@ Ties break on review count, so a tie does not reshuffle between refreshes.
 
 Payment affects visibility, never score. There is a test asserting this.
 
+## Engagement
+
+Views, calls, WhatsApp taps and ad views are recorded through the
+`record_engagement` database function, never written by the client directly.
+It refuses taps from the listing's own admins and the team, and counts a
+signed-in customer once per kind per listing per hour. Guests cannot be
+deduplicated without tracking them, which the privacy rule below rules out.
+
+Each event is stored with a timestamp in `engagement_events`, which is what
+makes the monthly report monthly. The counters on `businesses` are kept in
+step for ranking.
+
 ## Featured vs Spotlight
 
 Two separate things, easy to confuse:
 
-- **Featured** — premium subscribers only, capacity unlimited. Premium buys
+- **Featured** — Featured subscribers only, capacity unlimited. Featured buys
   the slot; ranking decides the order inside it.
 - **Spotlight** — 10 rotating slots, open to any visible listing. Serves the
   least-recently-featured first, so businesses take turns.
@@ -45,13 +57,21 @@ featured board still reflects earned popularity.
 
 ## Subscription states
 
+Prices are EC$ per month (`plan.md` section 2).
+
 | State | Visible | Featured slot | Price |
 | --- | --- | --- | --- |
-| `basic` | yes | no | $50 |
-| `premium` | yes | yes | $100 |
+| `growing` | yes | no | EC$25 |
+| `basic` | yes | no | EC$50 |
+| `featured` | yes | yes | EC$100 |
 | `trial` | yes, 3 days | yes | — |
-| `overdue` | yes, during grace | no | — |
+| `overdue` | yes, 7-day hold | no | — |
 | `delisted` | no | no | — |
+
+`subscription_status` is authoritative and only the team can change it. A
+database trigger (`20261014120000`) refuses changes to status, tier, counters
+and seeded ratings from anyone else, because a row-level policy cannot stop an
+owner editing those columns on their own row.
 
 Trial holds a Featured slot deliberately: a business needs to see what it is
 paying for during the three days it is deciding.

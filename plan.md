@@ -79,7 +79,7 @@ part of the pitch, not a concession.
 | Accounts | Customers may browse as a **guest**. Sign-in is required only to review, bookmark, follow, or run a business. |
 | Onboarding | First screen asks: **are you a business, or a customer?** |
 | Listings | 5–10 target businesses before launch |
-| Map | MapLibre with OpenFreeMap tiles (no Google Maps key, no billing dependency) |
+| Map | Google Maps (moved from MapLibre/OpenFreeMap on 2026-10-14). Free tier covers mobile map loads; restrict the key before launch |
 | Backend | Supabase, linked and live |
 | Team | 4 people |
 | Funding | Company bank account; earnings split equally between the four |
@@ -487,7 +487,7 @@ Email sign-in works; the Google account chooser opens and has not been carried
 through to a confirmed session.
 
 ### Phase 3 — Map core (weeks 4–5) ✅
-- MapLibre with OpenFreeMap tiles, centred on Antigua
+- Google Maps, centred on Antigua (originally MapLibre; switched 2026-10-14)
 - Pins from the database, pan/zoom, tap → preview card
 - Category filters, all 8 categories
 - Open-now calculation
@@ -520,9 +520,14 @@ through to a confirmed session.
   Antigua time, not device time, so a phone set elsewhere cannot split a month
   and silently drop a day of a paying customer's numbers. Only verified reviews
   count
-- **Remaining:** these are built and unit-tested but have never run against a
-  real business, because the businesses table is empty. Seed a test business and
-  walk the whole posting-to-report path before trusting any of it.
+- **Team backend**: a Listings tab for the team to create any listing, set its
+  plan, and open the same business tools an owner gets
+- **Engagement counting**: views, calls, WhatsApp taps and ad views recorded as
+  timestamped events, owners' own taps excluded, so the report is genuinely
+  monthly
+- **Code complete.** Two demo listings are seeded and the database side is
+  verified live. **Remaining:** walk the whole posting-to-report path on a
+  device (handover section 7).
 
 ### Phase 5 — Discovery (week 8)
 - Featured rail on the map screen, order from ranking score
@@ -733,8 +738,8 @@ risk and it is cheap to retire. See section 16.
   businesses ask why they pay for a listing next to free ones.
 - **QR verification method.** Customer scans, or staff scan the customer's
   code. Decide before Phase 6 (section 8).
-- Hand-drawn SVG map or MapLibre tiles? MapLibre is in and working; the
-  hand-drawn option in the prototype cannot pan or zoom.
+- Hand-drawn SVG map or real tiles? Google Maps is in; the hand-drawn option
+  in the prototype cannot pan or zoom.
 - Bundle the three prototype fonts, or accept system fallbacks?
 - Revenue split: equal, but who covers refunds, bad debt, and the chasing?
 - Who holds the Apple and Google credentials?
