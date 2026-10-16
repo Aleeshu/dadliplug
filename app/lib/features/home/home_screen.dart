@@ -296,6 +296,7 @@ class _FeaturedSection extends ConsumerWidget {
     );
 
     return businessesAsync.when(
+      skipError: true,
       data: (all) {
         final featured = featuredBusinesses(all);
         if (featured.isEmpty) return const SizedBox.shrink();

@@ -21,12 +21,18 @@ import 'package:flutter_test/flutter_test.dart';
 /// Sizes are the ones that actually ship: a small Samsung, a common Android
 /// phone, and a tall device.
 class _Repo implements BusinessRepository {
-  _Repo(this.list);
+  _Repo(this.list, {this.dropAfterLoad = false});
 
   final List<Business> list;
 
+  /// Loads, then loses the connection: the stream errors after one value.
+  final bool dropAfterLoad;
+
   @override
-  Stream<List<Business>> watchBusinesses() => Stream.value(list);
+  Stream<List<Business>> watchBusinesses() async* {
+    yield list;
+    if (dropAfterLoad) throw Exception('connection dropped');
+  }
 
   @override
   Future<List<Business>> getBusinesses() async => list;
@@ -64,13 +70,19 @@ Business _business(String id) => Business(
   phone: '+1 268 555 0000',
 );
 
-Widget _app(List<Business> businesses, {String? focus}) {
+Widget _app(
+  List<Business> businesses, {
+  String? focus,
+  bool dropAfterLoad = false,
+}) {
   final session = AuthSession(
     service: MockAuthService(latency: Duration.zero),
   );
   return ProviderScope(
     overrides: [
-      businessRepositoryProvider.overrideWithValue(_Repo(businesses)),
+      businessRepositoryProvider.overrideWithValue(
+        _Repo(businesses, dropAfterLoad: dropAfterLoad),
+      ),
     ],
     child: MaterialApp(
       theme: AppTheme.light,
@@ -331,5 +343,26 @@ void main() {
     );
     expect(container.read(selectedBusinessProvider)?.id, 'b');
     expect(find.text('Business b'), findsWidgets);
+  });
+
+  testWidgets('a dropped connection keeps the loaded map and says so', (
+    tester,
+  ) async {
+    // On island mobile data the connection drops often. A failed refresh
+    // must not throw away the businesses already on screen.
+    tester.view.physicalSize = tallPhone;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_app([_business('a')], dropAfterLoad: true));
+    await tester.pump();
+    await tester.pump();
+
+    expect(
+      find.textContaining('Showing what was loaded earlier'),
+      findsOneWidget,
+    );
+    expect(find.text('Could not load businesses'), findsNothing);
+    expect(find.byKey(const Key('fake_map_surface')), findsOneWidget);
   });
 }

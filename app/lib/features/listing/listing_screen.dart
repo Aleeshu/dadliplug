@@ -1,6 +1,7 @@
 import 'package:antigua_business_map/features/events/event_widgets.dart';
 import 'package:antigua_business_map/features/reviews/reviews_section.dart';
 import 'package:antigua_business_map/services/push_service.dart';
+import 'package:antigua_business_map/services/reviews_repository.dart';
 import 'package:antigua_business_map/widgets/category_icon.dart';
 import 'package:antigua_business_map/widgets/offer_code_chip.dart';
 import 'package:antigua_business_map/widgets/verified_badge.dart';
@@ -496,7 +497,15 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
 
                 _ListingTabs(
                   selected: _tab,
-                  reviewCount: reviewStats(b).count,
+                  // Reviews it can actually show: verified ones. The
+                  // ratings from before Dadliplug have no text to list.
+                  reviewCount:
+                      ref
+                          .watch(reviewsForBusinessProvider(b.id))
+                          .value
+                          ?.where((r) => r.isVisible)
+                          .length ??
+                      0,
                   onSelect: (i) => setState(() => _tab = i),
                 ),
                 const SizedBox(height: Insets.xl),

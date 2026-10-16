@@ -164,7 +164,17 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final palette = context.palette;
     final query = ref.watch(mapQueryProvider);
     final queryNotifier = ref.read(mapQueryProvider.notifier);
-    final businessesAsync = ref.watch(filteredBusinessesProvider);
+    final filteredAsync = ref.watch(filteredBusinessesProvider);
+    // A refresh that failed after listings had loaded (a dropped connection,
+    // normal on island mobile data): the raw provider still holds the last
+    // good list, so keep showing it, filtered, and flag it as stale rather
+    // than replacing a working map with an error.
+    final rawAsync = ref.watch(businessListProvider);
+    final staleList = rawAsync.hasError ? rawAsync.value : null;
+    final isStale = staleList != null;
+    final businessesAsync = isStale
+        ? AsyncData(ListingFilter.apply(staleList, query))
+        : filteredAsync;
     final selectedBusiness = ref.watch(selectedBusinessProvider);
     _applyFocus(businessesAsync.value);
 
@@ -201,6 +211,8 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // with the empty state hid the island entirely, which made a working
           // map look broken and gave no context for where those businesses
           // would be. The empty state now sits on top of a real map.
+          // With nothing loaded yet, a failure still shows the error; after
+          // a load, see staleList above.
           businessesAsync.when(
             data: (businesses) => Stack(
               fit: StackFit.expand,
@@ -217,8 +229,19 @@ class _MapScreenState extends ConsumerState<MapScreen> {
                     palette,
                   ),
                 ),
-                if (businesses.isEmpty)
+                if (businesses.isEmpty && !isStale)
                   Positioned.fill(child: _EmptyListings(palette: palette)),
+                if (isStale)
+                  Positioned(
+                    left: Insets.lg,
+                    right: Insets.lg,
+                    top: 132,
+                    child: SafeArea(
+                      child: _StaleBanner(
+                        onRetry: () => ref.invalidate(businessListProvider),
+                      ),
+                    ),
+                  ),
               ],
             ),
             loading: () => Center(
@@ -561,6 +584,40 @@ class _PositionedPin extends StatelessWidget {
             boxShadow: Shadows.card,
           ),
           child: Icon(Icons.place, size: 24, color: color),
+        ),
+      ),
+    );
+  }
+}
+
+/// Shown over the map when a refresh failed but earlier listings are still
+/// on screen: they may be out of date, and the viewer should know that.
+class _StaleBanner extends StatelessWidget {
+  const _StaleBanner({required this.onRetry});
+
+  final VoidCallback onRetry;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Material(
+      color: palette.warnBg,
+      elevation: 2,
+      borderRadius: BorderRadius.circular(Corners.lg),
+      child: Padding(
+        padding: const EdgeInsets.only(left: Insets.xl),
+        child: Row(
+          children: [
+            Icon(Icons.cloud_off_outlined, size: 18, color: palette.warn),
+            const SizedBox(width: Insets.md),
+            Expanded(
+              child: Text(
+                'No connection. Showing what was loaded earlier.',
+                style: AppText.caption.copyWith(color: palette.warn),
+              ),
+            ),
+            TextButton(onPressed: onRetry, child: const Text('Retry')),
+          ],
         ),
       ),
     );
