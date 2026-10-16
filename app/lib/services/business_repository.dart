@@ -44,7 +44,7 @@ abstract interface class BusinessRepository {
   /// The most time-sensitive control in the app. A hurricane closure still
   /// showing "Open 9am–5pm" sends someone across the island for nothing, which
   /// is the fastest way to lose a paying customer.
-  Future<void> toggleClosedToday(String businessId, bool isClosed);
+  Future<void> toggleClosedToday(String businessId, {required bool isClosed});
 
   /// Flags a listing as wrong. Any user, no account required.
   ///
@@ -101,7 +101,7 @@ class SupabaseBusinessRepository
     // the user as an unexplained "Could not load businesses" and costs hours to
     // trace back to a missing dart-define.
     if (!AppConfig.supabaseConfigured) {
-      throw StateError(AppConfig.supabaseMissingBuildHint);
+      throw const BackendNotConfigured();
     }
     return Supabase.instance.client;
   }
@@ -216,7 +216,7 @@ class SupabaseBusinessRepository
   @visibleForTesting
   static Map<String, Object?> editableFields(Business business) => {
     'name': business.name,
-    'category': business.category.name,
+    'category': business.category.dbName,
     'area': business.area,
     'description': business.description,
     'address': _nullIfBlank(business.address),
@@ -250,7 +250,10 @@ class SupabaseBusinessRepository
   }
 
   @override
-  Future<void> toggleClosedToday(String businessId, bool isClosed) async {
+  Future<void> toggleClosedToday(
+    String businessId, {
+    required bool isClosed,
+  }) async {
     try {
       await _require
           .from('businesses')

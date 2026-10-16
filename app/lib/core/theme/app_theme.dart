@@ -79,13 +79,14 @@ abstract final class AppTheme {
       filledButtonTheme: FilledButtonThemeData(
         style: FilledButton.styleFrom(
           minimumSize: const Size(0, Touch.minimum),
-          backgroundColor: p.ink,
-          foregroundColor: p.app,
-          disabledBackgroundColor: p.ink.withValues(alpha: 0.35),
+          // Red, as in the design's primary actions (Call, Save Event).
+          backgroundColor: p.red,
+          foregroundColor: p.onRed,
+          disabledBackgroundColor: p.red.withValues(alpha: 0.35),
           textStyle: AppText.labelLarge,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Corners.lg),
+            borderRadius: BorderRadius.circular(Corners.xxl),
           ),
         ),
       ),
@@ -93,12 +94,12 @@ abstract final class AppTheme {
       outlinedButtonTheme: OutlinedButtonThemeData(
         style: OutlinedButton.styleFrom(
           minimumSize: const Size(0, Touch.minimum),
-          foregroundColor: p.ink,
+          foregroundColor: p.red,
           backgroundColor: p.surface,
-          side: BorderSide(color: p.line),
+          side: BorderSide(color: p.red),
           textStyle: AppText.labelLarge,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(Corners.lg),
+            borderRadius: BorderRadius.circular(Corners.xxl),
           ),
         ),
       ),

@@ -2,6 +2,7 @@ import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
 import 'package:antigua_business_map/services/business_content_repository.dart';
+import 'package:antigua_business_map/widgets/announcement_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -12,6 +13,19 @@ import 'package:intl/intl.dart';
 /// Customer tab and business tab land on the same screen with different
 /// behaviour: a customer reads and follows, a business posts and watches the
 /// read receipts.
+/// Whether the Bulletin Board shows only businesses the viewer follows.
+class _FollowingOnly extends Notifier<bool> {
+  @override
+  bool build() => false;
+
+  bool get value => state;
+  set value(bool v) => state = v;
+}
+
+final _followingOnlyProvider = NotifierProvider<_FollowingOnly, bool>(
+  _FollowingOnly.new,
+);
+
 class AnnouncementsScreen extends ConsumerWidget {
   const AnnouncementsScreen({
     this.businessId,
@@ -39,23 +53,63 @@ class AnnouncementsScreen extends ConsumerWidget {
         body: const ContentMessage(
           icon: Icons.storefront_outlined,
           title: 'No listing linked yet',
-          body: 'Your account is not linked to a business yet, so there is '
+          body:
+              'Your account is not linked to a business yet, so there is '
               'nowhere to post announcements.',
         ),
       );
     }
 
     // plan.md 4: announcements go to the customers who follow a business.
-    // Someone following nobody sees everything, because an empty feed on a new
-    // app is a worse first impression than a busy one and nothing is private.
+    // "All" is the default, because an empty feed on a new app is a worse
+    // first impression than a busy one and nothing here is private;
+    // "Following" narrows it to the businesses the viewer saved.
     final followed = isOwner || !isSignedIn
         ? const <String>[]
         : ref.watch(followedBusinessIdsProvider).value ?? const <String>[];
+    final followingOnly = !isOwner && ref.watch(_followingOnlyProvider);
 
     return Scaffold(
       backgroundColor: palette.app,
       appBar: AppBar(
-        title: const Text('Announcements'),
+        title: Text(isOwner ? 'Announcements' : 'Bulletin Board'),
+        bottom: isOwner
+            ? null
+            : PreferredSize(
+                preferredSize: const Size.fromHeight(48),
+                child: Padding(
+                  padding: const EdgeInsets.fromLTRB(
+                    Insets.lg,
+                    0,
+                    Insets.lg,
+                    Insets.md,
+                  ),
+                  child: Row(
+                    children: [
+                      ChoiceChip(
+                        label: const Text('All Posts'),
+                        selected: !followingOnly,
+                        onSelected: (_) =>
+                            ref.read(_followingOnlyProvider.notifier).value =
+                                false,
+                      ),
+                      const SizedBox(width: Insets.md),
+                      ChoiceChip(
+                        label: const Text('Following'),
+                        selected: followingOnly,
+                        onSelected: (_) {
+                          if (!isSignedIn) {
+                            context.push('/sign-in');
+                            return;
+                          }
+                          ref.read(_followingOnlyProvider.notifier).value =
+                              true;
+                        },
+                      ),
+                    ],
+                  ),
+                ),
+              ),
         backgroundColor: palette.app,
         surfaceTintColor: Colors.transparent,
         actions: [
@@ -63,8 +117,9 @@ class AnnouncementsScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'New announcement',
               icon: const Icon(Icons.add),
-              onPressed: () =>
-                  context.push('/business/announcements/new?business=$businessId'),
+              onPressed: () => context.push(
+                '/business/announcements/new?business=$businessId',
+              ),
             ),
         ],
       ),
@@ -81,17 +136,24 @@ class AnnouncementsScreen extends ConsumerWidget {
         data: (all) {
           final items = isOwner
               ? all.where((a) => a.businessId == businessId).toList()
-              : followed.isEmpty
-              ? all
-              : all.where((a) => followed.contains(a.businessId)).toList();
+              : followingOnly
+              ? all.where((a) => followed.contains(a.businessId)).toList()
+              : all;
 
           if (items.isEmpty) {
             return ContentMessage(
-              icon: isOwner ? Icons.campaign_outlined : Icons.notifications_none,
-              title: 'No announcements yet',
-              body: isOwner
+              icon: isOwner
+                  ? Icons.campaign_outlined
+                  : Icons.notifications_none,
+              title: followingOnly
+                  ? 'Nothing from businesses you follow'
+                  : 'No announcements yet',
+              body: followingOnly
+                  ? 'Save a business, or tap its bell, and its notices land '
+                        'here.'
+                  : isOwner
                   ? 'Post a notice and your customers who follow you will be '
-                      'told about it.'
+                        'told about it.'
                   : 'Businesses post closures, offers and notices here.',
             );
           }
@@ -127,9 +189,13 @@ class AnnouncementsScreen extends ConsumerWidget {
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
+                        AnnouncementKindLabel(kind: announcement.kind),
+                        const SizedBox(height: Insets.sm),
                         Text(
                           announcement.title,
-                          style: AppText.titleMedium.copyWith(color: palette.ink),
+                          style: AppText.titleMedium.copyWith(
+                            color: palette.ink,
+                          ),
                         ),
                         const SizedBox(height: Insets.xxs),
                         Text(
@@ -181,7 +247,8 @@ class BusinessAdsScreen extends ConsumerWidget {
             IconButton(
               tooltip: 'New advertisement',
               icon: const Icon(Icons.add),
-              onPressed: () => context.push('/business/ads/new?business=$businessId'),
+              onPressed: () =>
+                  context.push('/business/ads/new?business=$businessId'),
             ),
         ],
       ),
@@ -193,104 +260,164 @@ class BusinessAdsScreen extends ConsumerWidget {
           ? const ContentMessage(
               icon: Icons.storefront_outlined,
               title: 'No listing linked yet',
-              body: 'Your account is not linked to a business yet, so there is '
+              body:
+                  'Your account is not linked to a business yet, so there is '
                   'nowhere to post advertisements.',
             )
           : adsAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: palette.red),
-        ),
-        error: (error, _) => ContentMessage(
-          icon: Icons.cloud_off_outlined,
-          title: 'Could not load advertisements',
-          body: 'Check your connection and try again.',
-          onRetry: () => ref.invalidate(businessAdsProvider(businessId)),
-        ),
-        data: (ads) {
-          if (ads.isEmpty) {
-            return const ContentMessage(
-              icon: Icons.campaign_outlined,
-              title: 'No advertisements yet',
-              body: 'Advertisements you post appear here with a count of how '
-                  'many people have viewed each one.',
-            );
-          }
+              loading: () => Center(
+                child: CircularProgressIndicator(color: palette.red),
+              ),
+              error: (error, _) => ContentMessage(
+                icon: Icons.cloud_off_outlined,
+                title: 'Could not load advertisements',
+                body: 'Check your connection and try again.',
+                onRetry: () => ref.invalidate(businessAdsProvider(businessId)),
+              ),
+              data: (ads) {
+                if (ads.isEmpty) {
+                  return const ContentMessage(
+                    icon: Icons.campaign_outlined,
+                    title: 'No advertisements yet',
+                    body:
+                        'Advertisements you post appear here with a count of how '
+                        'many people have viewed each one.',
+                  );
+                }
 
-          final now = DateTime.now();
+                final now = DateTime.now();
 
-          return RefreshIndicator(
-            onRefresh: () async {
-              ref.invalidate(businessAdsProvider(businessId));
-              await ref.read(businessAdsProvider(businessId).future);
-            },
-            child: ListView.separated(
-              padding: const EdgeInsets.all(Insets.lg),
-              itemCount: ads.length,
-              separatorBuilder: (_, _) => const SizedBox(height: Insets.sm),
-              itemBuilder: (context, index) {
-                final ad = ads[index];
-                final live = ad.isLiveAt(now);
+                return RefreshIndicator(
+                  onRefresh: () async {
+                    ref.invalidate(businessAdsProvider(businessId));
+                    await ref.read(businessAdsProvider(businessId).future);
+                  },
+                  child: ListView.separated(
+                    padding: const EdgeInsets.all(Insets.lg),
+                    itemCount: ads.length,
+                    separatorBuilder: (_, _) =>
+                        const SizedBox(height: Insets.sm),
+                    itemBuilder: (context, index) {
+                      final ad = ads[index];
+                      final live = ad.isLiveAt(now);
 
-                return Container(
-                  padding: const EdgeInsets.all(Insets.md),
-                  decoration: BoxDecoration(
-                    color: palette.surface,
-                    borderRadius: BorderRadius.circular(Corners.md),
-                    border: Border.all(
-                      color: live ? palette.line : palette.line.withValues(alpha: 0.5),
-                    ),
-                  ),
-                  child: InkWell(
-                    onTap: () => context.push('/listing/${ad.businessId}'),
-                    borderRadius: BorderRadius.circular(Corners.md),
-                    child: Column(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Row(
-                          children: [
-                            Expanded(
-                              child: Text(
-                                ad.title,
-                                style: AppText.titleMedium.copyWith(
-                                  // A finished ad stays visible but recedes, so
-                                  // an owner can see what ran without it
-                                  // looking current to a customer.
-                                  color: live ? palette.ink : palette.muted,
+                      return Container(
+                        padding: const EdgeInsets.all(Insets.md),
+                        decoration: BoxDecoration(
+                          color: palette.surface,
+                          borderRadius: BorderRadius.circular(Corners.md),
+                          border: Border.all(
+                            color: live
+                                ? palette.line
+                                : palette.line.withValues(alpha: 0.5),
+                          ),
+                        ),
+                        child: InkWell(
+                          onTap: () =>
+                              context.push('/listing/${ad.businessId}'),
+                          borderRadius: BorderRadius.circular(Corners.md),
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Expanded(
+                                    child: Text(
+                                      ad.title,
+                                      style: AppText.titleMedium.copyWith(
+                                        // A finished ad stays visible but recedes, so
+                                        // an owner can see what ran without it
+                                        // looking current to a customer.
+                                        color: live
+                                            ? palette.ink
+                                            : palette.muted,
+                                      ),
+                                    ),
+                                  ),
+                                  if (!live)
+                                    Text('ENDED', style: AppText.sectionLabel)
+                                  else
+                                    TextButton(
+                                      onPressed: () =>
+                                          _confirmEnd(context, ref, ad),
+                                      child: const Text('End'),
+                                    ),
+                                ],
+                              ),
+                              if (ad.body.isNotEmpty) ...[
+                                const SizedBox(height: Insets.xs),
+                                Text(
+                                  ad.body,
+                                  style: AppText.bodyMedium.copyWith(
+                                    color: palette.muted,
+                                  ),
+                                ),
+                              ],
+                              const SizedBox(height: Insets.sm),
+                              Text(
+                                '${DateFormat.yMMMd().format(ad.startsAt.toLocal())}'
+                                ' · ${ad.views} views',
+                                style: AppText.caption.copyWith(
+                                  color: palette.muted,
                                 ),
                               ),
-                            ),
-                            if (!live)
-                              Text('ENDED', style: AppText.sectionLabel)
-                            else
-                              TextButton(
-                                onPressed: () => _confirmEnd(context, ref, ad),
-                                child: const Text('End'),
-                              ),
-                          ],
-                        ),
-                        if (ad.body.isNotEmpty) ...[
-                          const SizedBox(height: Insets.xs),
-                          Text(
-                            ad.body,
-                            style: AppText.bodyMedium.copyWith(
-                              color: palette.muted,
-                            ),
+                              if (ad.isOffer) ...[
+                                const SizedBox(height: Insets.sm),
+                                Row(
+                                  children: [
+                                    Icon(
+                                      Icons.local_offer,
+                                      size: 16,
+                                      color: palette.red,
+                                    ),
+                                    const SizedBox(width: Insets.xs),
+                                    Text(
+                                      'Code ${ad.offerCode}',
+                                      style: AppText.labelMedium.copyWith(
+                                        color: palette.ink,
+                                      ),
+                                    ),
+                                    const Spacer(),
+                                    if (live)
+                                      FilledButton.tonal(
+                                        onPressed: () =>
+                                            _recordRedemption(context, ref, ad),
+                                        child: const Text('Redeemed +1'),
+                                      ),
+                                  ],
+                                ),
+                              ],
+                            ],
                           ),
-                        ],
-                        const SizedBox(height: Insets.sm),
-                        Text(
-                          '${DateFormat.yMMMd().format(ad.startsAt.toLocal())}'
-                          ' · ${ad.views} views',
-                          style: AppText.caption.copyWith(color: palette.muted),
                         ),
-                      ],
-                    ),
+                      );
+                    },
                   ),
                 );
               },
             ),
-          );
-        },
+    );
+  }
+}
+
+/// Counts one redemption of an offer at the till. Shown only to the business,
+/// which is the only one that hears the code being said.
+Future<void> _recordRedemption(
+  BuildContext context,
+  WidgetRef ref,
+  BusinessAd ad,
+) async {
+  final messenger = ScaffoldMessenger.of(context);
+  try {
+    await ref.read(businessContentRepositoryProvider).recordRedemption(ad.id);
+    messenger.showSnackBar(
+      SnackBar(content: Text('Redemption of ${ad.offerCode} recorded.')),
+    );
+  } catch (error) {
+    debugPrint('Could not record redemption: $error');
+    messenger.showSnackBar(
+      const SnackBar(
+        content: Text('Could not record it. Check your connection.'),
       ),
     );
   }
@@ -351,9 +478,9 @@ class EventsCalendarScreen extends ConsumerWidget {
               title: 'Nothing coming up yet',
               body: ownerId == null
                   ? 'When businesses post events they show up here. Carnival '
-                      'and sailing week are usually the first.'
+                        'and sailing week are usually the first.'
                   : 'Post an event and it appears on your listing and in the '
-                      'island calendar.',
+                        'island calendar.',
             );
           }
 
@@ -376,7 +503,7 @@ class EventsCalendarScreen extends ConsumerWidget {
                     border: Border.all(color: palette.line),
                   ),
                   child: InkWell(
-                    onTap: () => context.push('/listing/${event.businessId}'),
+                    onTap: () => context.push('/event/${event.id}'),
                     borderRadius: BorderRadius.circular(Corners.md),
                     child: Row(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -507,6 +634,7 @@ class ContentMessage extends StatelessWidget {
     required this.icon,
     required this.title,
     required this.body,
+    super.key,
     this.onRetry,
   });
 

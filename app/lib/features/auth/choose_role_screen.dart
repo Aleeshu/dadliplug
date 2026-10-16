@@ -47,7 +47,7 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> {
           children: [
             const SizedBox(height: Insets.xl),
             Text(
-              'IslandAds',
+              'Dadliplug',
               style: AppText.displayLarge.copyWith(color: palette.ink),
             ),
             const SizedBox(height: Insets.sm),
@@ -60,7 +60,8 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> {
             _Choice(
               icon: Icons.storefront_outlined,
               title: 'I run a business',
-              body: 'Advertise to people nearby, post events and announcements, '
+              body:
+                  'Advertise to people nearby, post events and announcements, '
                   'and see how many people are looking.',
               selected: _selected == Audience.business,
               onTap: () => setState(() => _selected = Audience.business),
@@ -69,7 +70,8 @@ class _ChooseRoleScreenState extends State<ChooseRoleScreen> {
             _Choice(
               icon: Icons.explore_outlined,
               title: "I'm looking for somewhere",
-              body: 'Find food, beauty, trades and more near you, and save the '
+              body:
+                  'Find food, beauty, trades and more near you, and save the '
                   'places you like.',
               selected: _selected == Audience.customer,
               onTap: () => setState(() => _selected = Audience.customer),

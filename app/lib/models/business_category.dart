@@ -1,77 +1,122 @@
 /// Industry categories.
 ///
-/// Exactly the eight from the prototype, with the same hues. Hues drive the
-/// category icon tiles and pin tints, so a business's industry is recognisable
-/// from the map before you read a single word.
+/// The nine from the Dadliplug design (2026-10-15), replacing the prototype's
+/// eight. Existing listings were mapped across in migration
+/// `20261015120000_design_categories.sql`; the database stores `dbName`.
 ///
-/// The prototype's set is deliberately coarser than a full taxonomy. That is
-/// the right call for a first release: eight filters is already a lot for a
-/// phone screen, and businesses can be listed under the nearest match rather
-/// than forcing a category they don't fit. New categories are a cheap addition
-/// — add an entry here and the filter chip appears.
+/// Each category has its own colour and icon, used for the category circles,
+/// list placeholders and map pins, so an industry is recognisable before you
+/// read a word.
+///
+/// There is no "online-only" category any more. A business with no walk-in
+/// location is simply one with no coordinates: it has no map pin and is kept
+/// off the leaderboards, whatever its category.
 library;
+
+import 'package:flutter/material.dart';
 
 enum BusinessCategory {
   food,
-  beauty,
-  trades,
-  medical,
-  tourism,
-  retail,
-  professional,
-  online,
+  shopping,
+  services,
+  healthBeauty,
+  entertainment,
+  automotive,
+  realEstate,
+  education,
+  other,
 }
 
 extension BusinessCategoryX on BusinessCategory {
   /// Full name, used in listings and as the search haystack.
   String get label => switch (this) {
-    BusinessCategory.food => 'Food & drink',
-    BusinessCategory.beauty => 'Salons & beauty',
-    BusinessCategory.trades => 'Trades',
-    BusinessCategory.medical => 'Medical',
-    BusinessCategory.tourism => 'Tourism',
-    BusinessCategory.retail => 'Retail',
-    BusinessCategory.professional => 'Professional',
-    BusinessCategory.online => 'Online-only',
+    BusinessCategory.food => 'Food & Drink',
+    BusinessCategory.shopping => 'Shopping',
+    BusinessCategory.services => 'Services',
+    BusinessCategory.healthBeauty => 'Health & Beauty',
+    BusinessCategory.entertainment => 'Entertainment',
+    BusinessCategory.automotive => 'Automotive',
+    BusinessCategory.realEstate => 'Real Estate',
+    BusinessCategory.education => 'Education',
+    BusinessCategory.other => 'Other',
   };
 
-  /// Chip label on the map filter bar. Kept short so eight of them fit in a
-  /// horizontally scrolling row without truncating.
+  /// Chip label. Kept short so a row of them scrolls without truncating.
   String get shortLabel => switch (this) {
     BusinessCategory.food => 'Food',
-    BusinessCategory.beauty => 'Beauty',
-    BusinessCategory.trades => 'Trades',
-    BusinessCategory.medical => 'Medical',
-    BusinessCategory.tourism => 'Tours',
-    BusinessCategory.retail => 'Retail',
-    BusinessCategory.professional => 'Pro',
-    BusinessCategory.online => 'Online',
+    BusinessCategory.shopping => 'Shopping',
+    BusinessCategory.services => 'Services',
+    BusinessCategory.healthBeauty => 'Beauty',
+    BusinessCategory.entertainment => 'Fun',
+    BusinessCategory.automotive => 'Auto',
+    BusinessCategory.realEstate => 'Property',
+    BusinessCategory.education => 'Education',
+    BusinessCategory.other => 'Other',
   };
 
-  /// Icon tile hue from the prototype. Feeds the gradient placeholder used
-  /// until a business uploads real photos.
-  int get hue => switch (this) {
-    BusinessCategory.food => 18,
-    BusinessCategory.beauty => 330,
-    BusinessCategory.trades => 42,
-    BusinessCategory.medical => 165,
-    BusinessCategory.tourism => 200,
-    BusinessCategory.retail => 272,
-    BusinessCategory.professional => 222,
-    BusinessCategory.online => 95,
+  /// What belongs here, shown under the name on the Categories screen.
+  String get examples => switch (this) {
+    BusinessCategory.food => 'Restaurants, Cafés, Bars, Takeaway',
+    BusinessCategory.shopping => 'Clothing, Electronics, Home & More',
+    BusinessCategory.services => 'Repairs, Cleaning, Trades, Professional',
+    BusinessCategory.healthBeauty => 'Salons, Spas, Fitness, Healthcare',
+    BusinessCategory.entertainment => 'Events, Tours, Activities, Nightlife',
+    BusinessCategory.automotive => 'Repairs, Parts, Rentals',
+    BusinessCategory.realEstate => 'Rentals, Sales, Property Services',
+    BusinessCategory.education => 'Schools, Training, Courses',
+    BusinessCategory.other => 'Online and everything else',
   };
 
-  /// Online-only businesses have no walk-in location. They are filtered out of
-  /// the map view and appear in list results only, since there is nothing
-  /// meaningful to place on the map.
-  bool get isMapLess => this == BusinessCategory.online;
+  IconData get icon => switch (this) {
+    BusinessCategory.food => Icons.restaurant,
+    BusinessCategory.shopping => Icons.shopping_bag,
+    BusinessCategory.services => Icons.build,
+    BusinessCategory.healthBeauty => Icons.spa,
+    BusinessCategory.entertainment => Icons.local_activity,
+    BusinessCategory.automotive => Icons.directions_car,
+    BusinessCategory.realEstate => Icons.home_work,
+    BusinessCategory.education => Icons.school,
+    BusinessCategory.other => Icons.mail,
+  };
 
-  /// Map pin tint, as a HSL hue for `BitmapDescriptor.defaultMarkerWithHue`.
-  double get pinHue => hue.toDouble();
+  /// The category's colour, from the design. Used for the icon circle, list
+  /// placeholders and pins.
+  Color get color => switch (this) {
+    BusinessCategory.food => const Color(0xFFE8253F),
+    BusinessCategory.shopping => const Color(0xFFF59E0B),
+    BusinessCategory.services => const Color(0xFF2E7CF6),
+    BusinessCategory.healthBeauty => const Color(0xFF8B5CF6),
+    BusinessCategory.entertainment => const Color(0xFFEC4899),
+    BusinessCategory.automotive => const Color(0xFF2563EB),
+    BusinessCategory.realEstate => const Color(0xFF16A34A),
+    BusinessCategory.education => const Color(0xFF7C3AED),
+    BusinessCategory.other => const Color(0xFFDB2777),
+  };
 
-  static BusinessCategory fromName(String name) => BusinessCategory.values
-      .firstWhere((c) => c.name == name, orElse: () => BusinessCategory.food);
+  /// Hue of [color], for the gradient placeholder shown until a business
+  /// uploads real photos.
+  int get hue => HSLColor.fromColor(color).hue.round();
 
-  /// Storage-safe form. Enum names are already lowercase.
+  /// The value stored in `businesses.category`.
+  String get dbName => switch (this) {
+    BusinessCategory.healthBeauty => 'health_beauty',
+    BusinessCategory.realEstate => 'real_estate',
+    _ => name,
+  };
+
+  /// Parses a stored category. Accepts [dbName] or the enum name. Anything
+  /// unrecognised is "Other", never a guess at a real category: a listing
+  /// filed under the wrong industry is worse than one filed under none.
+  static BusinessCategory fromName(String raw) {
+    final normalised = raw
+        .replaceAll('_', '')
+        .replaceAll(' ', '')
+        .toLowerCase();
+    for (final c in BusinessCategory.values) {
+      if (c.name.toLowerCase() == normalised) return c;
+    }
+    return BusinessCategory.other;
+  }
+
   static List<BusinessCategory> get all => BusinessCategory.values;
 }

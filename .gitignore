@@ -44,3 +44,13 @@ builds/
 *.apk
 *.ipa
 *.aab
+# Firebase Android config. Not a secret (its key is restricted to this app),
+# but kept out of git alongside the other keys. Copy it to
+# app/android/app/google-services.json to build.
+google-services.json
+GoogleService-Info.plist
+# Firebase server key: a real secret, never in the repo or the app.
+*firebase-adminsdk*.json
+
+# Cloudflare Wrangler local state (account ids, caches).
+.wrangler/

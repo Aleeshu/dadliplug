@@ -9,10 +9,10 @@
 library;
 
 abstract final class AppConfig {
-  static const String appName = 'IslandAds';
+  static const String appName = 'Dadliplug';
 
   /// Short label used where the full name does not fit.
-  static const String appShortName = 'IslandAds';
+  static const String appShortName = 'Dadliplug';
 
   static const String supabaseUrl = String.fromEnvironment('SUPABASE_URL');
   static const String supabaseAnonKey = String.fromEnvironment(
@@ -36,7 +36,15 @@ abstract final class AppConfig {
   static bool get supabaseConfigured =>
       supabaseUrl.isNotEmpty && supabaseAnonKey.isNotEmpty;
 
+  /// Public web page for a listing, for social bios and link previews.
+  /// Served by the Cloudflare Worker in `workers/listing-page`, which passes
+  /// through the Supabase `listing` function as HTML.
+  static String publicListingUrl(String businessId) =>
+      'https://dadliplug-listing.listing-page.workers.dev/l/$businessId';
+
   /// Actionable description of a missing-credentials build.
+  ///
+  /// Carried by [BackendNotConfigured].
   static const String supabaseMissingBuildHint =
       'This build has no Supabase credentials, so it cannot load data. Build '
       'with scripts/build-apk.ps1, which passes the dart-defines from .env. '
@@ -98,4 +106,16 @@ abstract final class AppConfig {
   static const String privacyPolicyUrl = String.fromEnvironment(
     'PRIVACY_POLICY_URL',
   );
+}
+
+/// Thrown by a repository when this build has no Supabase credentials.
+///
+/// An [Exception], not a `StateError`: a missing backend is a condition the
+/// screens handle (a guest sees empty bookmarks, the map says why it cannot
+/// load), not a programming mistake to crash on.
+class BackendNotConfigured implements Exception {
+  const BackendNotConfigured();
+
+  @override
+  String toString() => AppConfig.supabaseMissingBuildHint;
 }

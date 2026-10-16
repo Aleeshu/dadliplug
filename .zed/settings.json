@@ -1,0 +1,24 @@
+// Project settings for Zed.
+//
+// supabase/functions is Deno code (Supabase Edge Functions). Checked as plain
+// TypeScript it reports `Deno` and `jsr:` imports as errors that are not real;
+// `npx deno check supabase/functions/*/index.ts` is clean. These settings hand
+// TypeScript to the Deno language server instead. Zed installs the Deno
+// extension when asked (Extensions -> "Deno").
+{
+  "lsp": {
+    "deno": {
+      "settings": {
+        "deno": {
+          "enable": true,
+          "enablePaths": ["supabase/functions"]
+        }
+      }
+    }
+  },
+  "languages": {
+    "TypeScript": {
+      "language_servers": ["deno", "!typescript-language-server", "!vtsls", "!eslint"]
+    }
+  }
+}

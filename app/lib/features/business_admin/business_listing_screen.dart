@@ -229,7 +229,9 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
 
     setState(() => _isClosedToday = value);
     try {
-      await ref.read(businessRepositoryProvider).toggleClosedToday(b.id, value);
+      await ref
+          .read(businessRepositoryProvider)
+          .toggleClosedToday(b.id, isClosed: value);
       ref.invalidate(businessListProvider);
       _snack(value ? 'Marked as closed today.' : 'Back to normal hours.');
     } catch (_) {
@@ -324,7 +326,7 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
             padding: const EdgeInsets.all(Insets.giant),
             child: Text(
               _loadError ??
-                  'No listing is linked to your account yet. The IslandAds '
+                  'No listing is linked to your account yet. The Dadliplug '
                       'team links it once your listing is set up.',
               style: AppText.bodyLarge.copyWith(color: palette.muted),
               textAlign: TextAlign.center,
@@ -352,7 +354,10 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
             onPressed: _isSaving ? null : _save,
             child: Text(
               'Save',
-              style: TextStyle(color: palette.blue, fontWeight: FontWeight.w700),
+              style: TextStyle(
+                color: palette.blue,
+                fontWeight: FontWeight.w700,
+              ),
             ),
           ),
         ],
@@ -436,36 +441,37 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
               maxLines: 2,
             ),
             _field(_address, 'Address (if there is one)', palette),
-            if (!_category.isMapLess)
-              Row(
-                children: [
-                  Expanded(
-                    child: _field(
-                      _latitude,
-                      'Latitude',
-                      palette,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
-                      ),
-                      validator: (v) => _coordinate(v, 16.9, 17.8),
+            // Left blank for a business with no walk-in location; it then
+            // has no pin.
+            Row(
+              children: [
+                Expanded(
+                  child: _field(
+                    _latitude,
+                    'Latitude',
+                    palette,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
                     ),
+                    validator: (v) => _coordinate(v, 16.9, 17.8),
                   ),
-                  const SizedBox(width: Insets.md),
-                  Expanded(
-                    child: _field(
-                      _longitude,
-                      'Longitude',
-                      palette,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
-                      ),
-                      validator: (v) => _coordinate(v, -62.0, -61.6),
+                ),
+                const SizedBox(width: Insets.md),
+                Expanded(
+                  child: _field(
+                    _longitude,
+                    'Longitude',
+                    palette,
+                    keyboardType: const TextInputType.numberWithOptions(
+                      decimal: true,
+                      signed: true,
                     ),
+                    validator: (v) => _coordinate(v, -62.0, -61.6),
                   ),
-                ],
-              ),
+                ),
+              ],
+            ),
             const SizedBox(height: Insets.md),
 
             _Header('Contact', palette),
@@ -494,7 +500,12 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
               palette,
               keyboardType: TextInputType.url,
             ),
-            _field(_instagram, 'Instagram handle', palette, hint: 'yourbusiness'),
+            _field(
+              _instagram,
+              'Instagram handle',
+              palette,
+              hint: 'yourbusiness',
+            ),
             _field(_facebook, 'Facebook page', palette, hint: 'yourbusiness'),
             _field(_tiktok, 'TikTok handle', palette, hint: 'yourbusiness'),
             const SizedBox(height: Insets.md),
@@ -522,8 +533,7 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
               palette,
             ),
             const SizedBox(height: Insets.md),
-            for (var i = 0; i < _menu.length; i++)
-              _menuRow(i, palette),
+            for (var i = 0; i < _menu.length; i++) _menuRow(i, palette),
             TextButton.icon(
               onPressed: () => setState(() => _menu.add(_MenuRow.empty())),
               icon: const Icon(Icons.add),
@@ -704,7 +714,11 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
     );
   }
 
-  InputDecoration _decoration(String label, AppPalette palette, {String? hint}) {
+  InputDecoration _decoration(
+    String label,
+    AppPalette palette, {
+    String? hint,
+  }) {
     final border = OutlineInputBorder(
       borderRadius: BorderRadius.circular(Corners.md),
       borderSide: BorderSide(color: palette.line),

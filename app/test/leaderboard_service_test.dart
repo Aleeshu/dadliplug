@@ -11,7 +11,7 @@ import 'package:flutter_test/flutter_test.dart';
 /// including the edges, because a grace period that is off by one day either
 /// publishes a business that has no evidence behind it or hides one that has.
 void main() {
-  final now = DateTime.utc(2026, 6, 1);
+  final now = DateTime.utc(2026, 6);
   const service = LeaderboardService();
 
   Business business(
@@ -21,20 +21,21 @@ void main() {
     int reviews = 10,
     double rating = 4.5,
     int views = 500,
+    bool located = true,
   }) => Business(
-        id: id,
-        name: 'Business $id',
-        category: category,
-        tier: SubscriptionTier.basic,
-        area: 'Dickenson Bay',
-        description: 'x',
-        latitude: 17.1,
-        longitude: -61.8,
-        seededReviewCount: reviews,
-        seededRating: rating,
-        views: views,
-        createdAt: now.subtract(Duration(days: daysOld)),
-      );
+    id: id,
+    name: 'Business $id',
+    category: category,
+    tier: SubscriptionTier.basic,
+    area: 'Dickenson Bay',
+    description: 'x',
+    latitude: located ? 17.1 : null,
+    longitude: located ? -61.8 : null,
+    seededReviewCount: reviews,
+    seededRating: rating,
+    views: views,
+    createdAt: now.subtract(Duration(days: daysOld)),
+  );
 
   group('grace period', () {
     test('a brand new listing is held off the board', () {
@@ -66,7 +67,7 @@ void main() {
 
     test('a listing missing its creation date is treated as brand new', () {
       // Its age cannot be established, so it has not earned a public ranking.
-      final undated = Business(
+      const undated = Business(
         id: 'undated',
         name: 'No date',
         category: BusinessCategory.food,
@@ -125,8 +126,8 @@ void main() {
     test('categories do not bleed into each other', () {
       final board = service.build(
         businesses: [
-          business('food', category: BusinessCategory.food),
-          business('beauty', category: BusinessCategory.beauty),
+          business('food'),
+          business('beauty', category: BusinessCategory.healthBeauty),
         ],
         category: BusinessCategory.food,
         now: now,
@@ -145,12 +146,13 @@ void main() {
         businesses: [
           business(
             'online',
-            category: BusinessCategory.online,
+            category: BusinessCategory.other,
+            located: false,
             daysOld: 400,
             reviews: 99,
           ),
         ],
-        category: BusinessCategory.online,
+        category: BusinessCategory.other,
         now: now,
       );
 
@@ -161,10 +163,11 @@ void main() {
     test('are never offered as a board to browse', () {
       final categories = service.categoriesWithEntries(
         businesses: [
-          business('food', category: BusinessCategory.food),
+          business('food'),
           business(
             'online',
-            category: BusinessCategory.online,
+            category: BusinessCategory.other,
+            located: false,
             reviews: 99,
             views: 9000,
           ),
@@ -173,7 +176,7 @@ void main() {
       );
 
       expect(categories, contains(BusinessCategory.food));
-      expect(categories, isNot(contains(BusinessCategory.online)));
+      expect(categories, isNot(contains(BusinessCategory.other)));
     });
   });
 
@@ -181,20 +184,22 @@ void main() {
     test('a category with only new listings has no board', () {
       // Offering an empty "Top 10" is worse than offering nothing.
       final categories = service.categoriesWithEntries(
-        businesses: [business('new', category: BusinessCategory.beauty, daysOld: 2)],
+        businesses: [
+          business('new', category: BusinessCategory.healthBeauty, daysOld: 2),
+        ],
         now: now,
       );
 
-      expect(categories, isNot(contains(BusinessCategory.beauty)));
+      expect(categories, isNot(contains(BusinessCategory.healthBeauty)));
     });
 
     test('a category with one established listing still gets a board', () {
       final categories = service.categoriesWithEntries(
-        businesses: [business('old', category: BusinessCategory.beauty)],
+        businesses: [business('old', category: BusinessCategory.healthBeauty)],
         now: now,
       );
 
-      expect(categories, contains(BusinessCategory.beauty));
+      expect(categories, contains(BusinessCategory.healthBeauty));
     });
   });
 }

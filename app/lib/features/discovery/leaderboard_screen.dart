@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/widgets/verified_badge.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -16,13 +17,14 @@ class LeaderboardCategoryNotifier extends Notifier<BusinessCategory> {
   @override
   BusinessCategory build() => BusinessCategory.food;
 
-  void show(BusinessCategory category) => state = category;
+  BusinessCategory get category => state;
+  set category(BusinessCategory category) => state = category;
 }
 
 final leaderboardCategoryProvider =
     NotifierProvider<LeaderboardCategoryNotifier, BusinessCategory>(
-  LeaderboardCategoryNotifier.new,
-);
+      LeaderboardCategoryNotifier.new,
+    );
 
 /// The board for the selected category.
 ///
@@ -33,7 +35,7 @@ final leaderboardProvider = Provider<AsyncValue<Leaderboard?>>((ref) {
   final category = ref.watch(leaderboardCategoryProvider);
 
   return businesses.whenData((list) {
-    final board = LeaderboardService().build(
+    final board = const LeaderboardService().build(
       businesses: list,
       category: category,
       // Read the clock once so every business in one build is judged against
@@ -48,14 +50,14 @@ final leaderboardProvider = Provider<AsyncValue<Leaderboard?>>((ref) {
 /// Categories that currently have a board worth showing.
 final leaderboardCategoriesProvider =
     Provider<AsyncValue<List<BusinessCategory>>>((ref) {
-  final businesses = ref.watch(businessListProvider);
-  return businesses.whenData(
-    (list) => LeaderboardService().categoriesWithEntries(
-      businesses: list,
-      now: DateTime.now(),
-    ),
-  );
-});
+      final businesses = ref.watch(businessListProvider);
+      return businesses.whenData(
+        (list) => const LeaderboardService().categoriesWithEntries(
+          businesses: list,
+          now: DateTime.now(),
+        ),
+      );
+    });
 
 /// "Top 10 Food businesses by popularity".
 ///
@@ -92,14 +94,15 @@ class LeaderboardScreen extends ConsumerWidget {
             return const _Message(
               icon: Icons.emoji_events_outlined,
               title: 'No businesses to rank yet',
-              body: 'A listing joins the leaderboard a month after it goes '
+              body:
+                  'A listing joins the leaderboard a month after it goes '
                   'live, so there is time to collect real reviews and views '
                   'first.',
             );
           }
 
-          final categories = categoriesAsync.value ??
-              const <BusinessCategory>[];
+          final categories =
+              categoriesAsync.value ?? const <BusinessCategory>[];
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -201,7 +204,9 @@ class _EntryRow extends StatelessWidget {
                       Flexible(
                         child: Text(
                           b.name,
-                          style: AppText.titleMedium.copyWith(color: palette.ink),
+                          style: AppText.titleMedium.copyWith(
+                            color: palette.ink,
+                          ),
                         ),
                       ),
                       // Featured buys a slot and a badge. It does not buy a
@@ -210,7 +215,7 @@ class _EntryRow extends StatelessWidget {
                       if (b.tier.isVerified)
                         const Padding(
                           padding: EdgeInsets.only(left: Insets.xs),
-                          child: Icon(Icons.verified, size: 15),
+                          child: VerifiedBadge(),
                         ),
                     ],
                   ),
@@ -219,8 +224,8 @@ class _EntryRow extends StatelessWidget {
                     stats.count == 0
                         ? 'No reviews yet'
                         : '${stats.average.toStringAsFixed(1)} · '
-                            '${stats.count} '
-                            '${stats.count == 1 ? 'rating' : 'ratings'}',
+                              '${stats.count} '
+                              '${stats.count == 1 ? 'rating' : 'ratings'}',
                     style: AppText.caption.copyWith(color: palette.muted),
                   ),
                 ],
@@ -250,9 +255,9 @@ class _CategoryChips extends ConsumerWidget {
         children: [
           for (final category in available) ...[
             InkWell(
-              onTap: () => ref
-                  .read(leaderboardCategoryProvider.notifier)
-                  .show(category),
+              onTap: () =>
+                  ref.read(leaderboardCategoryProvider.notifier).category =
+                      category,
               borderRadius: BorderRadius.circular(Corners.pill),
               child: Container(
                 padding: const EdgeInsets.symmetric(
@@ -331,7 +336,7 @@ class _WaitingRoom extends StatelessWidget {
                 entry.eligibleFrom == null
                     ? '${entry.business.name} — joining soon'
                     : '${entry.business.name} — joins '
-                        '${format.format(entry.eligibleFrom!.toLocal())}',
+                          '${format.format(entry.eligibleFrom!.toLocal())}',
                 style: AppText.bodyMedium.copyWith(color: palette.ink),
               ),
             ),

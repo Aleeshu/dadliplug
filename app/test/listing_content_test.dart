@@ -8,20 +8,19 @@ import 'package:flutter_test/flutter_test.dart';
 /// several queries. The rules worth protecting are about what a customer is
 /// told, and when something is left out.
 void main() {
-  final now = DateTime.utc(2026, 6, 1);
+  final now = DateTime.utc(2026, 6);
 
   BusinessAd ad({
     DateTime? startsAt,
     DateTime? endsAt,
-  }) =>
-      BusinessAd(
-        id: 'a1',
-        businessId: 'b1',
-        businessName: "Auntie Mae's",
-        title: 'Lunch special',
-        startsAt: startsAt ?? DateTime.utc(2026, 5, 1),
-        endsAt: endsAt,
-      );
+  }) => BusinessAd(
+    id: 'a1',
+    businessId: 'b1',
+    businessName: "Auntie Mae's",
+    title: 'Lunch special',
+    startsAt: startsAt ?? DateTime.utc(2026, 5),
+    endsAt: endsAt,
+  );
 
   group('advertisement liveness', () {
     test('an ad with no end date keeps running', () {
@@ -29,7 +28,7 @@ void main() {
     });
 
     test('an ad that has not started yet is not live', () {
-      final future = ad(startsAt: DateTime.utc(2026, 7, 1));
+      final future = ad(startsAt: DateTime.utc(2026, 7));
       expect(future.isLiveAt(now), isFalse);
     });
 
@@ -40,7 +39,7 @@ void main() {
 
     test('an ad is live right up to its end date', () {
       // Off-by-one here would either hide a running ad or show an expired one.
-      final ending = ad(endsAt: DateTime.utc(2026, 6, 1));
+      final ending = ad(endsAt: DateTime.utc(2026, 6));
       expect(ending.isLiveAt(now), isFalse);
       expect(ending.isLiveAt(DateTime.utc(2026, 5, 31, 23, 59)), isTrue);
     });
@@ -48,19 +47,19 @@ void main() {
 
   group('events', () {
     BusinessEvent event(DateTime startsAt) => BusinessEvent(
-          id: 'e1',
-          businessId: 'b1',
-          businessName: "Auntie Mae's",
-          title: 'Cuisine night',
-          startsAt: startsAt,
-        );
+      id: 'e1',
+      businessId: 'b1',
+      businessName: "Auntie Mae's",
+      title: 'Cuisine night',
+      startsAt: startsAt,
+    );
 
     test('a past event is past', () {
-      expect(event(DateTime.utc(2026, 5, 1)).isPastAt(now), isTrue);
+      expect(event(DateTime.utc(2026, 5)).isPastAt(now), isTrue);
     });
 
     test('a future event is not past', () {
-      expect(event(DateTime.utc(2026, 7, 1)).isPastAt(now), isFalse);
+      expect(event(DateTime.utc(2026, 7)).isPastAt(now), isFalse);
     });
 
     test('an event starting right now is not yet past', () {

@@ -126,16 +126,16 @@ void main() {
 
   group('report totals', () {
     MonthlyReport reportWith(List<AdPerformance> ads) => MonthlyReport(
-          businessId: 'b1',
-          month: DateTime.utc(2026, 6, 1),
-          listingViews: 0,
-          calls: 0,
-          whatsappTaps: 0,
-          ads: ads,
-          reviews: const StarBreakdown.empty(),
-          verifiedReviews: 0,
-          newVisits: 0,
-        );
+      businessId: 'b1',
+      month: DateTime.utc(2026, 6),
+      listingViews: 0,
+      calls: 0,
+      whatsappTaps: 0,
+      ads: ads,
+      reviews: const StarBreakdown.empty(),
+      verifiedReviews: 0,
+      newVisits: 0,
+    );
 
     test('ad views sum across every advertisement', () {
       final report = reportWith([

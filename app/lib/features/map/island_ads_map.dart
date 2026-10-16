@@ -3,6 +3,7 @@ import 'dart:ui' as ui;
 
 import 'package:antigua_business_map/core/config/map_defaults.dart';
 import 'package:antigua_business_map/models/business.dart';
+import 'package:antigua_business_map/models/business_category.dart';
 import 'package:flutter/material.dart';
 import 'package:google_maps_flutter/google_maps_flutter.dart';
 
@@ -11,9 +12,10 @@ import 'package:google_maps_flutter/google_maps_flutter.dart';
 /// Nothing outside here imports a map SDK. Callers use [IslandAdsMapState]'s
 /// `focusOn` and `resetCamera`, which are provider-agnostic on purpose.
 ///
-/// Pins are Google Maps markers with icons drawn once per colour, rather than
-/// the default teardrop. The teardrop cannot show the tier colours, and a
-/// featured business has to be findable at a glance.
+/// Pins are the Dadliplug design's: a red teardrop with the business's
+/// category icon in white, so a restaurant reads as a restaurant before it is
+/// tapped. Featured listings carry a gold ring so a paying Featured business
+/// is still findable at a glance. Each style is drawn once and reused.
 ///
 /// The caller must not build this without a Maps key
 /// (`AppConfig.hasGoogleMapsKey`). The Android SDK renders blank tiles with no
@@ -45,17 +47,11 @@ class IslandAdsMap extends StatefulWidget {
               id: b.id,
               latitude: b.latitude!,
               longitude: b.longitude!,
-              color: pinColorFor(b),
+              category: b.category,
+              featured: b.tier.holdsFeaturedSlot,
               selected: b.id == selected?.id,
             ),
       ];
-
-  @visibleForTesting
-  static Color pinColorFor(Business b) => switch (b.tier) {
-    SubscriptionTier.featured => MapPinColors.premium,
-    SubscriptionTier.trial => MapPinColors.trial,
-    _ => MapPinColors.basic,
-  };
 
   @override
   State<IslandAdsMap> createState() => IslandAdsMapState();
@@ -68,24 +64,36 @@ class MapPin {
     required this.id,
     required this.latitude,
     required this.longitude,
-    required this.color,
+    required this.category,
+    required this.featured,
     required this.selected,
   });
 
   final String id;
   final double latitude;
   final double longitude;
-  final Color color;
+  final BusinessCategory category;
+
+  /// Holds a Featured slot: drawn with a gold ring.
+  final bool featured;
   final bool selected;
+
+  /// Which drawn icon this pin uses.
+  PinStyle get style => (category, featured, selected);
 }
+
+/// Pins sharing a style share one drawn bitmap.
+typedef PinStyle = (BusinessCategory, bool, bool);
 
 class IslandAdsMapState extends State<IslandAdsMap> {
   GoogleMapController? _controller;
+  Business? _pendingFocus;
 
-  /// Drawn pin icons keyed by colour and selection. Empty until the first
-  /// frame knows the device pixel ratio; markers use the default icon until
-  /// then rather than waiting with no pins at all.
-  final Map<(int, bool), BitmapDescriptor> _icons = {};
+  /// Drawn pin icons by style. Filled lazily for the styles on screen; a
+  /// marker uses the default icon for the moment its style is being drawn,
+  /// rather than the map waiting with no pins at all.
+  final Map<PinStyle, BitmapDescriptor> _icons = {};
+  final Set<PinStyle> _drawing = {};
   double? _iconPixelRatio;
 
   static const _antigua = CameraPosition(
@@ -95,16 +103,22 @@ class IslandAdsMapState extends State<IslandAdsMap> {
 
   static const _cameraDuration = Duration(milliseconds: 550);
 
-  /// Pin diameters in logical pixels. Big enough for a thumb to land on; at
-  /// the old MapLibre radius a pin was a few pixels across and taps missed.
-  static const double _pinSize = 26;
-  static const double _selectedPinSize = 36;
+  /// Pin widths in logical pixels; height is 1.3x. Big enough for a thumb to
+  /// land on.
+  static const double _pinWidth = 34;
+  static const double _selectedPinWidth = 46;
 
   /// Moves the camera to a business. Called when a pin is tapped, so the user
   /// can see where it is rather than guessing from a card.
   void focusOn(Business business) {
+    if (!business.hasLocation) return;
     final controller = _controller;
-    if (controller == null || !business.hasLocation) return;
+    if (controller == null) {
+      // Asked before the native map is ready (opened from Get Directions):
+      // move there as soon as it is.
+      _pendingFocus = business;
+      return;
+    }
     unawaited(
       controller.animateCamera(
         CameraUpdate.newCameraPosition(
@@ -135,7 +149,7 @@ class IslandAdsMapState extends State<IslandAdsMap> {
     final ratio = MediaQuery.devicePixelRatioOf(context);
     if (ratio != _iconPixelRatio) {
       _iconPixelRatio = ratio;
-      unawaited(_drawIcons(ratio));
+      _icons.clear();
     }
   }
 
@@ -168,32 +182,34 @@ class IslandAdsMapState extends State<IslandAdsMap> {
       mapToolbarEnabled: false,
       myLocationButtonEnabled: false,
       compassEnabled: false,
-      onMapCreated: (controller) => _controller = controller,
+      onMapCreated: (controller) {
+        _controller = controller;
+        final pending = _pendingFocus;
+        _pendingFocus = null;
+        if (pending != null) focusOn(pending);
+      },
       // Marker taps do not reach onTap, so this only fires on the map itself.
       onTap: (_) => widget.onDeselect(),
       markers: _markers(),
     );
   }
 
-  Set<Marker> _markers() => {
-    for (final pin in IslandAdsMap.pinsFor(
-      widget.businesses,
-      widget.selected,
-    ))
-      Marker(
-        markerId: MarkerId(pin.id),
-        position: LatLng(pin.latitude, pin.longitude),
-        icon:
-            _icons[(pin.color.toARGB32(), pin.selected)] ??
-            BitmapDescriptor.defaultMarker,
-        anchor: const Offset(0.5, 0.5),
-        // Without this the SDK pans to the pin and opens an empty info window,
-        // fighting focusOn for the camera.
-        consumeTapEvents: true,
-        zIndexInt: pin.selected ? 1 : 0,
-        onTap: () => _onPinTap(pin.id),
-      ),
-  };
+  Set<Marker> _markers() {
+    final pins = IslandAdsMap.pinsFor(widget.businesses, widget.selected);
+    _ensureIcons(pins.map((p) => p.style));
+    return {for (final pin in pins) _marker(pin)};
+  }
+
+  Marker _marker(MapPin pin) => Marker(
+    markerId: MarkerId(pin.id),
+    position: LatLng(pin.latitude, pin.longitude),
+    icon: _icons[pin.style] ?? BitmapDescriptor.defaultMarker,
+    // Without this the SDK pans to the pin and opens an empty info window,
+    // fighting focusOn for the camera.
+    consumeTapEvents: true,
+    zIndexInt: pin.selected ? 1 : 0,
+    onTap: () => _onPinTap(pin.id),
+  );
 
   void _onPinTap(String id) {
     // Matched by id rather than captured: the marker set can be a frame behind
@@ -203,59 +219,89 @@ class IslandAdsMapState extends State<IslandAdsMap> {
     widget.onSelect(matches.first);
   }
 
-  Future<void> _drawIcons(double ratio) async {
-    final colors = {
-      MapPinColors.basic,
-      MapPinColors.premium,
-      MapPinColors.trial,
-    };
-    final icons = <(int, bool), BitmapDescriptor>{};
-    for (final color in colors) {
-      for (final selected in [false, true]) {
-        icons[(color.toARGB32(), selected)] = await _drawPin(
-          color,
-          selected: selected,
-          ratio: ratio,
-        );
-      }
+  void _ensureIcons(Iterable<PinStyle> styles) {
+    final ratio = _iconPixelRatio;
+    if (ratio == null) return;
+    for (final style in styles.toSet()) {
+      if (_icons.containsKey(style) || !_drawing.add(style)) continue;
+      unawaited(
+        _drawPin(style, ratio).then((icon) {
+          _drawing.remove(style);
+          if (!mounted || ratio != _iconPixelRatio) return;
+          setState(() => _icons[style] = icon);
+        }),
+      );
     }
-    if (!mounted || ratio != _iconPixelRatio) return;
-    setState(() => _icons
-      ..clear()
-      ..addAll(icons));
   }
 
-  /// A filled circle with a two-tone edge: a soft dark outer edge for contrast
-  /// against pale land, then a white gap so the pin holds up over sea and
-  /// roads. The selected pin is larger with a gold ring.
-  static Future<BitmapDescriptor> _drawPin(
-    Color fill, {
-    required bool selected,
-    required double ratio,
-  }) async {
-    final logical = selected ? _selectedPinSize : _pinSize;
-    final px = (logical * ratio).ceil();
+  /// A red teardrop with a white edge and the category icon in white.
+  static Future<BitmapDescriptor> _drawPin(PinStyle style, double ratio) async {
+    final (category, featured, selected) = style;
+    final logicalWidth = selected ? _selectedPinWidth : _pinWidth;
+    final logicalHeight = logicalWidth * 1.3;
+    final w = (logicalWidth * ratio).ceil();
+    final h = (logicalHeight * ratio).ceil();
+
     final recorder = ui.PictureRecorder();
     final canvas = Canvas(recorder);
-    final center = Offset(px / 2, px / 2);
-    final radius = px / 2;
+
+    final edge = w * 0.06;
+    final radius = w / 2 - edge;
+    final center = Offset(w / 2, radius + edge);
+    final tip = Offset(w / 2, h - edge);
+
+    // Circle plus a wedge down to the tip: a teardrop.
+    final drop = Path()
+      ..addOval(Rect.fromCircle(center: center, radius: radius))
+      ..moveTo(center.dx - radius * 0.72, center.dy + radius * 0.7)
+      ..lineTo(tip.dx, tip.dy)
+      ..lineTo(center.dx + radius * 0.72, center.dy + radius * 0.7)
+      ..close();
 
     canvas
-      ..drawCircle(
-        center,
-        radius,
-        Paint()..color = selected ? MapPinColors.premium : MapPinColors.edge,
+      ..drawPath(
+        drop,
+        Paint()
+          ..color = Colors.white
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = edge * 2
+          ..strokeJoin = StrokeJoin.round,
       )
-      ..drawCircle(center, radius * 0.82, Paint()..color = Colors.white)
-      ..drawCircle(center, radius * 0.66, Paint()..color = fill);
+      ..drawPath(drop, Paint()..color = MapPinColors.premium);
 
-    final image = await recorder.endRecording().toImage(px, px);
+    if (featured) {
+      canvas.drawCircle(
+        center,
+        radius * 0.8,
+        Paint()
+          ..color = MapPinColors.trial
+          ..style = PaintingStyle.stroke
+          ..strokeWidth = radius * 0.12,
+      );
+    }
+
+    final icon = category.icon;
+    final glyph = TextPainter(
+      textDirection: TextDirection.ltr,
+      text: TextSpan(
+        text: String.fromCharCode(icon.codePoint),
+        style: TextStyle(
+          fontFamily: icon.fontFamily,
+          package: icon.fontPackage,
+          fontSize: radius * 1.05,
+          color: Colors.white,
+        ),
+      ),
+    )..layout();
+    glyph.paint(canvas, center - Offset(glyph.width / 2, glyph.height / 2));
+
+    final image = await recorder.endRecording().toImage(w, h);
     final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
     image.dispose();
     return BitmapDescriptor.bytes(
       bytes!.buffer.asUint8List(),
-      width: logical,
-      height: logical,
+      width: logicalWidth,
+      height: logicalHeight,
     );
   }
 

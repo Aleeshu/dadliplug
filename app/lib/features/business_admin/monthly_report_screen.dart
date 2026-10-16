@@ -333,6 +333,13 @@ class _AdRow extends StatelessWidget {
               valueColor: AlwaysStoppedAnimation(palette.red),
             ),
           ),
+          if (ad.redemptions > 0) ...[
+            const SizedBox(height: Insets.xs),
+            Text(
+              '${ad.redemptions} redeemed at the till',
+              style: AppText.caption.copyWith(color: palette.good),
+            ),
+          ],
         ],
       ),
     );

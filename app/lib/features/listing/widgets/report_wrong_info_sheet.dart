@@ -156,19 +156,27 @@ class _ReportWrongInfoSheetState extends ConsumerState<ReportWrongInfoSheet> {
                 ),
               ),
               const SizedBox(height: Insets.sm),
-              for (final reason in _reasons)
-                RadioListTile<String>(
-                  value: reason,
-                  groupValue: _selectedReason,
-                  onChanged: (val) => setState(() => _selectedReason = val),
-                  title: Text(
-                    reason,
-                    style: AppText.bodyMedium.copyWith(color: palette.ink),
-                  ),
-                  activeColor: palette.ink,
-                  contentPadding: EdgeInsets.zero,
-                  dense: true,
+              RadioGroup<String>(
+                groupValue: _selectedReason,
+                onChanged: (val) => setState(() => _selectedReason = val),
+                child: Column(
+                  children: [
+                    for (final reason in _reasons)
+                      RadioListTile<String>(
+                        value: reason,
+                        title: Text(
+                          reason,
+                          style: AppText.bodyMedium.copyWith(
+                            color: palette.ink,
+                          ),
+                        ),
+                        activeColor: palette.ink,
+                        contentPadding: EdgeInsets.zero,
+                        dense: true,
+                      ),
+                  ],
                 ),
+              ),
               const SizedBox(height: Insets.md),
               TextField(
                 controller: _detailsController,

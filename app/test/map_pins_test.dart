@@ -1,4 +1,3 @@
-import 'package:antigua_business_map/core/config/map_defaults.dart';
 import 'package:antigua_business_map/features/map/island_ads_map.dart';
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/models/business_category.dart';
@@ -53,21 +52,31 @@ void main() {
     expect(pins.where((p) => p.selected).map((p) => p.id), ['b']);
   });
 
-  test('featured pins are the premium colour, others are not', () {
+  test('featured pins are marked, others are not', () {
     // Featured is the tier paying for visibility, so its pin must stand out.
+    // Trial holds the slot too, so a trial business sees what it would buy.
+    final pins = IslandAdsMap.pinsFor([
+      business('f', tier: SubscriptionTier.featured),
+      business('t', tier: SubscriptionTier.trial),
+      business('b'),
+    ], null);
     expect(
-      IslandAdsMap.pinColorFor(
-        business('f', tier: SubscriptionTier.featured),
-      ),
-      MapPinColors.premium,
+      {for (final p in pins) p.id: p.featured},
+      {
+        'f': true,
+        't': true,
+        'b': false,
+      },
     );
-    expect(
-      IslandAdsMap.pinColorFor(business('t', tier: SubscriptionTier.trial)),
-      MapPinColors.trial,
-    );
-    expect(
-      IslandAdsMap.pinColorFor(business('b')),
-      MapPinColors.basic,
-    );
+  });
+
+  test('a pin carries its business category for the icon', () {
+    final pin = IslandAdsMap.pinsFor([business('a')], null).single;
+    expect(pin.category, BusinessCategory.food);
+  });
+
+  test('pins of the same kind share one drawn style', () {
+    final pins = IslandAdsMap.pinsFor([business('a'), business('b')], null);
+    expect(pins[0].style, pins[1].style);
   });
 }

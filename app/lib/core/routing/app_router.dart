@@ -9,13 +9,23 @@ import 'package:antigua_business_map/features/business_admin/business_reviews_sc
 import 'package:antigua_business_map/features/business_admin/monthly_report_screen.dart';
 import 'package:antigua_business_map/features/business_admin/posting_screens.dart';
 import 'package:antigua_business_map/features/discovery/bookmarks_screen.dart';
+import 'package:antigua_business_map/features/discovery/categories_screen.dart';
+import 'package:antigua_business_map/features/home/home_screen.dart';
+import 'package:antigua_business_map/features/more/more_screen.dart';
+import 'package:antigua_business_map/models/business_category.dart';
 import 'package:antigua_business_map/features/discovery/business_content_screens.dart';
 import 'package:antigua_business_map/features/discovery/explore_screen.dart';
 import 'package:antigua_business_map/features/discovery/leaderboard_screen.dart';
 import 'package:antigua_business_map/features/discovery/your_places_screen.dart';
 import 'package:antigua_business_map/features/listing/listing_screen.dart';
 import 'package:antigua_business_map/features/map/map_screen.dart';
+import 'package:antigua_business_map/features/discovery/featured_screen.dart';
+import 'package:antigua_business_map/features/reviews/visit_code_screen.dart';
+import 'package:antigua_business_map/features/events/event_detail_screen.dart';
+import 'package:antigua_business_map/features/events/events_screen.dart';
+import 'package:antigua_business_map/features/discovery/offers_screen.dart';
 import 'package:antigua_business_map/features/search/search_screen.dart';
+import 'package:antigua_business_map/services/listing_filter_service.dart';
 import 'package:antigua_business_map/features/team_admin/billing_screen.dart';
 import 'package:antigua_business_map/features/team_admin/moderation_screen.dart';
 import 'package:antigua_business_map/features/team_admin/ranking_screen.dart';
@@ -30,7 +40,10 @@ import 'package:go_router/go_router.dart';
 /// Route paths, kept in one place so nothing is spelled twice.
 abstract final class Routes {
   // User
-  static const String map = '/';
+  static const String home = '/';
+  static const String map = '/map';
+  static const String categories = '/categories';
+  static const String more = '/more';
   static const String explore = '/explore';
   static const String places = '/places';
   static const String bookmarks = '/bookmarks';
@@ -58,6 +71,8 @@ abstract final class Routes {
 
   // Full-screen, outside the tab bar
   static const String search = '/search';
+  static const String nearMe = '/search?sort=nearest';
+  static const String featured = '/featured';
   static String listing(String businessId) => '/listing/$businessId';
   static const String signIn = '/sign-in';
   static const String signUp = '/sign-up';
@@ -112,11 +127,11 @@ GoRouter _buildRouter({
 }) => GoRouter(
   // plan.md 6a: the first screen asks business or customer. Only on a first
   // run — main.dart records that it has been asked.
-  initialLocation: askAudienceFirst ? Routes.chooseRole : Routes.map,
+  initialLocation: askAudienceFirst ? Routes.chooseRole : Routes.home,
   redirect: (context, state) {
     final location = state.uri.path;
     final requiredRole = AppTabs.roleForLocation(location);
-    final isGuarded = location != Routes.map;
+    final isGuarded = location != Routes.home;
 
     // Team and business areas are gated. Everything else is public, because
     // browsing the map without an account is the whole point.
@@ -133,7 +148,7 @@ GoRouter _buildRouter({
     if (isGuarded &&
         (location == Routes.signIn || location == Routes.signUp) &&
         session.isSignedIn) {
-      return Routes.map;
+      return Routes.home;
     }
 
     return null;
@@ -144,17 +159,54 @@ GoRouter _buildRouter({
           AppShell(location: state.uri.path, session: session, child: child),
       routes: [
         GoRoute(
-          path: Routes.map,
-          builder: (c, s) => MapScreen(
-            session: session,
-            roleSwitcher: roleSwitcher,
-          ),
+          path: Routes.home,
+          builder: (c, s) => const HomeScreen(),
           routes: [
             GoRoute(
               path: 'search',
-              builder: (c, s) => const SearchScreen(),
+              builder: (c, s) {
+                final category = s.uri.queryParameters['category'];
+                return SearchScreen(
+                  initialSort: s.uri.queryParameters['sort'] == 'nearest'
+                      ? ListingSort.nearest
+                      : ListingSort.ranked,
+                  initialCategory: category == null
+                      ? null
+                      : BusinessCategoryX.fromName(category),
+                );
+              },
+            ),
+            GoRoute(
+              path: 'featured',
+              builder: (c, s) => const FeaturedScreen(),
+            ),
+            GoRoute(
+              path: 'offers',
+              builder: (c, s) => const OffersScreen(),
             ),
           ],
+        ),
+        GoRoute(
+          path: Routes.map,
+          builder: (c, s) {
+            final focus = s.uri.queryParameters['focus'];
+            return MapScreen(
+              // Keyed on the target so opening the map for another business
+              // re-applies the focus instead of keeping the old selection.
+              key: ValueKey('map-$focus'),
+              session: session,
+              roleSwitcher: roleSwitcher,
+              focusBusinessId: focus,
+            );
+          },
+        ),
+        GoRoute(
+          path: Routes.categories,
+          builder: (c, s) => const CategoriesScreen(),
+        ),
+        GoRoute(
+          path: Routes.more,
+          builder: (c, s) => MoreScreen(session: session),
         ),
         GoRoute(
           path: Routes.explore,
@@ -170,7 +222,7 @@ GoRouter _buildRouter({
         ),
         GoRoute(
           path: Routes.events,
-          builder: (c, s) => const EventsCalendarScreen(),
+          builder: (c, s) => const EventsScreen(),
         ),
         GoRoute(
           path: Routes.announcements,
@@ -209,7 +261,12 @@ GoRouter _buildRouter({
         ),
         GoRoute(
           path: Routes.businessReviews,
-          builder: (c, s) => const BusinessReviewsScreen(),
+          builder: (c, s) =>
+              BusinessReviewsScreen(businessId: businessIdFor(s)),
+        ),
+        GoRoute(
+          path: '/business/visit-code',
+          builder: (c, s) => VisitCodeScreen(businessId: businessIdFor(s)),
         ),
         GoRoute(
           path: Routes.businessAnnouncements,
@@ -241,8 +298,7 @@ GoRouter _buildRouter({
         ),
         GoRoute(
           path: Routes.businessEvents,
-          builder: (c, s) =>
-              EventsCalendarScreen(businessId: businessIdFor(s)),
+          builder: (c, s) => EventsCalendarScreen(businessId: businessIdFor(s)),
           routes: [
             GoRoute(
               path: 'new',
@@ -288,6 +344,10 @@ GoRouter _buildRouter({
       builder: (c, s) => SignUpScreen(session: session),
     ),
     GoRoute(
+      path: '/event/:id',
+      builder: (c, s) => EventDetailScreen(eventId: s.pathParameters['id']!),
+    ),
+    GoRoute(
       path: Routes.chooseRole,
       builder: (context, state) => ChooseRoleScreen(
         onChosen: (audience) {
@@ -296,7 +356,7 @@ GoRouter _buildRouter({
           if (audience == Audience.business) {
             context.push(Routes.signUp);
           } else {
-            context.go(Routes.map);
+            context.go(Routes.home);
           }
         },
       ),
@@ -319,8 +379,10 @@ GoRouter _buildRouter({
 /// to a sign-in screen they are already signed in to is a loop.
 String? _fallbackFor(AuthSession session, String attemptedLocation) {
   if (!session.isSignedIn) return Routes.signedOutLanding;
-  if (attemptedLocation.startsWith(Routes.teamPrefix)) return Routes.map;
-  if (attemptedLocation.startsWith(Routes.businessDashboard)) return Routes.map;
+  if (attemptedLocation.startsWith(Routes.teamPrefix)) return Routes.home;
+  if (attemptedLocation.startsWith(Routes.businessDashboard)) {
+    return Routes.home;
+  }
   return null;
 }
 
@@ -339,12 +401,23 @@ class AppShell extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Scaffold(
-      body: SafeArea(bottom: false, child: child),
-      bottomNavigationBar: AppTabBar(
-        currentPath: location,
-        session: session,
-        onSelect: (path) => context.go(path),
+    // The team and business tab bars have no Home tab (five is the most the
+    // bar holds), and tabs navigate with `go`, which leaves nothing to pop. So
+    // back from an admin area returns to Home instead of closing the app.
+    final inAdminArea = AppTabs.roleForLocation(location) != UserRole.user;
+
+    return PopScope(
+      canPop: !inAdminArea,
+      onPopInvokedWithResult: (didPop, _) {
+        if (!didPop) context.go(Routes.home);
+      },
+      child: Scaffold(
+        body: SafeArea(bottom: false, child: child),
+        bottomNavigationBar: AppTabBar(
+          currentPath: location,
+          session: session,
+          onSelect: (path) => context.go(path),
+        ),
       ),
     );
   }

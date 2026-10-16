@@ -26,7 +26,7 @@ enum EngagementKind {
 /// once an hour — live in the `record_engagement` database function rather
 /// than here, because a client can be modified and the server cannot.
 class EngagementRecorder {
-  EngagementRecorder({SupabaseClient? client}) : _client = client;
+  EngagementRecorder({this._client});
 
   final SupabaseClient? _client;
 

@@ -56,7 +56,8 @@ class NotSignedInException implements Exception {
   const NotSignedInException();
 
   @override
-  String toString() => 'NotSignedInException: your places needs a signed-in user.';
+  String toString() =>
+      'NotSignedInException: your places needs a signed-in user.';
 }
 
 /// Reads the signed-in user's own history.
@@ -74,7 +75,7 @@ class UserPlacesRepository {
     final client = _client;
     if (client != null) return client;
     if (!AppConfig.supabaseConfigured) {
-      throw StateError(AppConfig.supabaseMissingBuildHint);
+      throw const BackendNotConfigured();
     }
     return Supabase.instance.client;
   }
@@ -102,8 +103,10 @@ class UserPlacesRepository {
   Future<List<UserPlace>> loadPlaces() async {
     final rows = await _require
         .from('visits')
-        .select('id, business_id, visited_at, confirmed_by_business, '
-            'businesses (id, name, category)')
+        .select(
+          'id, business_id, visited_at, confirmed_by_business, '
+          'businesses (id, name, category)',
+        )
         .eq('user_id', _uid)
         .order('visited_at', ascending: false);
 
@@ -118,8 +121,10 @@ class UserPlacesRepository {
   Future<List<ReviewRequestSummary>> loadReviewRequests() async {
     final rows = await _require
         .from('review_requests')
-        .select('id, business_id, status, requested_at, '
-            'businesses (id, name)')
+        .select(
+          'id, business_id, status, requested_at, '
+          'businesses (id, name)',
+        )
         .eq('user_id', _uid)
         .order('requested_at', ascending: false);
 
@@ -135,7 +140,9 @@ class UserPlacesRepository {
     final businessId = row['business_id'] as String?;
     if (business is! Map || businessId == null) return null;
 
-    final requestedAt = DateTime.tryParse(row['requested_at']?.toString() ?? '');
+    final requestedAt = DateTime.tryParse(
+      row['requested_at']?.toString() ?? '',
+    );
     if (requestedAt == null) return null;
 
     return ReviewRequestSummary(
@@ -169,7 +176,7 @@ class UserPlacesRepository {
           visitedAt: visitedAt,
           confirmedByBusiness:
               raw['confirmed_by_business'] == true ||
-                  raw['confirmed_by_business'] == 'true',
+              raw['confirmed_by_business'] == 'true',
         ),
       );
     }
@@ -180,7 +187,10 @@ class UserPlacesRepository {
   /// saved before a category was renamed still renders, as "Other".
   BusinessCategory? _categoryFrom(String? raw) {
     if (raw == null) return null;
-    final normalised = raw.replaceAll('_', '').replaceAll(' ', '').toLowerCase();
+    final normalised = raw
+        .replaceAll('_', '')
+        .replaceAll(' ', '')
+        .toLowerCase();
     for (final category in BusinessCategory.values) {
       final name = category.name.replaceAll('_', '').toLowerCase();
       if (name == normalised) return category;
@@ -237,8 +247,9 @@ final userPlacesProvider = FutureProvider<List<UserPlace>>((ref) async {
   }
 });
 
-final reviewRequestsProvider =
-    FutureProvider<List<ReviewRequestSummary>>((ref) async {
+final reviewRequestsProvider = FutureProvider<List<ReviewRequestSummary>>((
+  ref,
+) async {
   final repo = ref.watch(userPlacesRepositoryProvider);
   if (!_signedIn(repo)) return const [];
   return repo.loadReviewRequests();

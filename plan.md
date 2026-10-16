@@ -1,7 +1,7 @@
-# Plan — IslandAds
+# Plan — IslandAds (app name: Dadliplug)
 
-Status: Phases 0–3 complete, Phase 4 in progress. Planning continues; see
-section 14 for the post-launch backlog.
+Status: Phases 0–3 complete, Phase 4 code complete, Phase 5 in progress.
+Planning continues; see section 14 for the post-launch backlog.
 
 ## 1. Concept
 
@@ -155,7 +155,10 @@ Featured has to carry visible weight rather than extra list items.
 
 **Consumer-facing**
 - Map of Antigua, all active businesses as pins
-- Category filters (8 categories, all industries, online-only has its own)
+- Category filters: the design's nine — Food & Drink, Shopping, Services,
+  Health & Beauty, Entertainment, Automotive, Real Estate, Education, Other
+  (replaced the prototype's eight on 2026-10-15). A business with no location
+  has no pin and no leaderboard place, whatever its category
 - **Near me** — businesses sorted by the viewer's own location. Not a
   locator app; it exists so someone standing in Dickenson Bay is told what is
   around them.
@@ -281,7 +284,10 @@ a business owner manages a listing, a customer browses, and cramming both into
 one tab bar makes both worse.
 
 **Business tabs:** Home · Profile · Reviews · Announcements · Ads
-**Customer tabs:** Home · Bookmarks · Calendar · Announcements
+**Customer tabs:** Home · Categories · Map · Saved · More (Dadliplug design,
+2026-10-15). Events and the Bulletin Board live under More. The Bulletin Board
+is business posts only; user posts (For Sale, Jobs, Lost & found) wait until
+there is moderation and report-a-post for them.
 
 Shared surface (profile, reviews, announcements) behaves differently by role:
 
@@ -530,24 +536,46 @@ through to a confirmed session.
   device (handover section 7).
 
 ### Phase 5 — Discovery (week 8)
-- Featured rail on the map screen, order from ranking score
-- **Featured page** and **verified badge**
-- Search and sort
-- **Near me**, using the viewer's own location
-- **Bookmarks and follow**, with notification opt-in
-- Offers section and badges
-- **Offer codes**
-- **Share to WhatsApp**
-- **Public web page per listing** (server-rendered, for social bios)
+- Featured rail on the map screen, order from ranking score ✅
+- **Featured page** and **verified badge** ✅ — badge explained as a paid
+  placement, never an endorsement; what "verified" should mean is still open
+  (section 15)
+- Search and sort ✅ — Best (earned rank), Near me, Top rated, A–Z. Featured
+  businesses stay in search results at their earned place
+- **Near me**, using the viewer's own location ✅ — coarse, asked only when
+  chosen, never stored
+- **Bookmarks and follow**, with notification opt-in ✅ — Save (heart) plus a
+  per-business bell; alerts show in-app (Home bell badge, Bulletin Board
+  "Following"). **Push waits on a Firebase project**
+- Offers section and badges ✅ — Offers screen, Home "Latest Offers", OFFER tag
+- **Offer codes** ✅ — an ad with a code is an offer; Featured/trial only,
+  enforced by the database; the business taps "Redeemed +1" and redemptions
+  show in the monthly report
+- **Share to WhatsApp** ✅ (with the public page link, for a preview card)
+- **Public web page per listing** ✅ — `https://dadliplug-listing.listing-page.workers.dev/l/<id>`.
+  Rendered by `supabase/functions/listing`; served as HTML by the Cloudflare
+  Worker in `workers/listing-page` (Supabase alone serves it as text/plain).
+  Share to WhatsApp now includes it, so WhatsApp shows a preview card
+- **Events as their own listing** (Dadliplug design): picture, venue, tags,
+  organiser, website, phone, own page, Save Event; calendar with event days
 
-### Phase 6 — Reviews and visits (weeks 9–11)
-- Rating and written review submission
-- **QR-based visit verification** — rotating codes, offline-capable
-- Business reply, dispute, opt-out
-- **Require a reason when declining a request**
-- Report button; team moderation queue
-- **Team audit view: approval rate and decline reasons per business**
-- **Push notification when a review request arrives**
+### Phase 6 — Reviews and visits (weeks 9–11) — in progress
+- Rating and written review submission ✅ — only through `submit_review()`,
+  which requires a checked-in visit (or an approved request)
+- **QR-based visit verification** ✅ — decided 2026-10-15: the **customer
+  scans the till QR** (section 8, option a). Code rotates at Antigua midnight;
+  typed-code fallback; offline scans queue and sync within 3 days
+- Business reply, dispute ✅; opt-out uses the existing `accepts_reviews`
+- **Require a reason when declining a request** ✅ (5+ characters, enforced
+  by the database)
+- Report button; team moderation queue ✅
+- **Team audit view: approval rate and decline reasons per business** ✅
+- **Push notification when a review request arrives** — waits on Firebase
+- Fixed on the way in: a signed-in user could insert a review already marked
+  verified, promote their own review to verified, or insert a visit already
+  confirmed. All writes now go through database functions
+- **Remaining:** see these on a device end to end (show QR → scan → review →
+  reply → report → moderate)
 
 ### Phase 7 — Business admin and billing (weeks 12–14)
 - Claim and verify a listing

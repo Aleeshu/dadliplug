@@ -72,13 +72,13 @@ class _SignedInService implements AuthService {
 }
 
 UserPlace _place(String name, {bool confirmed = false}) => UserPlace(
-      visitId: name,
-      businessId: 'b-$name',
-      businessName: name,
-      category: BusinessCategory.food,
-      visitedAt: DateTime.utc(2026, 3, 4),
-      confirmedByBusiness: confirmed,
-    );
+  visitId: name,
+  businessId: 'b-$name',
+  businessName: name,
+  category: BusinessCategory.food,
+  visitedAt: DateTime.utc(2026, 3, 4),
+  confirmedByBusiness: confirmed,
+);
 
 void main() {
   testWidgets('a signed-out user is asked to sign in, not told they are new', (
@@ -105,7 +105,9 @@ void main() {
 
   testWidgets('a visited business is listed by name', (tester) async {
     final session = _signedIn();
-    await tester.pumpWidget(_app(session: session, places: [_place("Auntie Mae's")]));
+    await tester.pumpWidget(
+      _app(session: session, places: [_place("Auntie Mae's")]),
+    );
     await tester.pumpAndSettle();
 
     expect(find.text("Auntie Mae's"), findsOneWidget);
@@ -170,7 +172,7 @@ void main() {
             businessId: 'b1',
             businessName: 'Barbershop',
             status: ReviewRequestStatus.pending,
-            requestedAt: DateTime.utc(2026, 3, 1),
+            requestedAt: DateTime.utc(2026, 3),
           ),
         ],
       ),
@@ -184,7 +186,9 @@ void main() {
     tester,
   ) async {
     final session = _signedIn();
-    await tester.pumpWidget(_app(session: session, error: Exception('offline')));
+    await tester.pumpWidget(
+      _app(session: session, error: Exception('offline')),
+    );
     await tester.pumpAndSettle();
 
     // "No places yet" would tell a user they have never been anywhere, which
@@ -196,7 +200,9 @@ void main() {
 
   testWidgets('retry re-runs the query', (tester) async {
     final session = _signedIn();
-    await tester.pumpWidget(_app(session: session, error: Exception('offline')));
+    await tester.pumpWidget(
+      _app(session: session, error: Exception('offline')),
+    );
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Try again'));

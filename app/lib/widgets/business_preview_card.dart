@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/widgets/business_image.dart';
+import 'package:antigua_business_map/widgets/verified_badge.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -75,30 +77,65 @@ class BusinessPreviewCard extends StatelessWidget {
           ),
           const SizedBox(height: Insets.md),
 
-          // Business Name & Area
-          Text(
-            business.name,
-            style: AppText.titleLarge.copyWith(color: palette.ink),
-            maxLines: 1,
-            overflow: TextOverflow.ellipsis,
+          // Photo beside the name and area, as in the design's map card.
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              ClipRRect(
+                borderRadius: BorderRadius.circular(Corners.lg),
+                child: SizedBox(
+                  width: 64,
+                  height: 64,
+                  child: BusinessImage(business: business, iconSize: 26),
+                ),
+              ),
+              const SizedBox(width: Insets.lg),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Row(
+                      children: [
+                        Flexible(
+                          child: Text(
+                            business.name,
+                            style: AppText.titleLarge.copyWith(
+                              color: palette.ink,
+                            ),
+                            maxLines: 1,
+                            overflow: TextOverflow.ellipsis,
+                          ),
+                        ),
+                        if (business.tier.isVerified) ...[
+                          const SizedBox(width: Insets.xs),
+                          const VerifiedBadge(size: 17),
+                        ],
+                      ],
+                    ),
+                    if (business.area.isNotEmpty) ...[
+                      const SizedBox(height: Insets.xxs),
+                      Row(
+                        children: [
+                          Icon(
+                            Icons.location_on_outlined,
+                            size: 14,
+                            color: palette.muted,
+                          ),
+                          const SizedBox(width: Insets.xxs),
+                          Text(
+                            business.area,
+                            style: AppText.bodyMedium.copyWith(
+                              color: palette.muted,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+            ],
           ),
-          if (business.area.isNotEmpty) ...[
-            const SizedBox(height: Insets.xxs),
-            Row(
-              children: [
-                Icon(
-                  Icons.location_on_outlined,
-                  size: 14,
-                  color: palette.muted,
-                ),
-                const SizedBox(width: Insets.xxs),
-                Text(
-                  business.area,
-                  style: AppText.bodyMedium.copyWith(color: palette.muted),
-                ),
-              ],
-            ),
-          ],
           const SizedBox(height: Insets.md),
 
           // Promotional offer banner if available

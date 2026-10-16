@@ -3,6 +3,8 @@ import 'package:antigua_business_map/features/auth/profile_screen.dart';
 import 'package:antigua_business_map/models/user.dart';
 import 'package:antigua_business_map/services/auth_service.dart';
 import 'package:antigua_business_map/services/auth_session.dart';
+import 'package:antigua_business_map/services/mock_auth_service.dart'
+    show MockAuthService;
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:flutter_test/flutter_test.dart';
@@ -26,11 +28,11 @@ void main() {
   tearDown(() => session.dispose());
 
   Widget app() => ProviderScope(
-        child: MaterialApp(
-          theme: AppTheme.light,
-          home: ProfileScreen(session: session),
-        ),
-      );
+    child: MaterialApp(
+      theme: AppTheme.light,
+      home: ProfileScreen(session: session),
+    ),
+  );
 
   testWidgets('the profile shows the signed-in user', (tester) async {
     await tester.pumpWidget(app());
@@ -108,8 +110,7 @@ class _FakeService implements AuthService {
   );
 
   @override
-  AppUser? get currentUser =>
-      _signedIn ? _user.copyWith(role: role) : null;
+  AppUser? get currentUser => _signedIn ? _user.copyWith(role: role) : null;
 
   @override
   Stream<AppUser?> get authStateChanges => const Stream.empty();

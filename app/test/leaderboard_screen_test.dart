@@ -32,7 +32,10 @@ class _Repo implements BusinessRepository {
   Future<void> updateBusiness(Business business) async {}
 
   @override
-  Future<void> toggleClosedToday(String businessId, bool isClosed) async {}
+  Future<void> toggleClosedToday(
+    String businessId, {
+    required bool isClosed,
+  }) async {}
 
   @override
   Future<void> reportWrongInfo({
@@ -50,31 +53,30 @@ Business _business(
   int views = 400,
   BusinessCategory category = BusinessCategory.food,
   SubscriptionTier tier = SubscriptionTier.basic,
-}) =>
-    Business(
-      id: name.toLowerCase().replaceAll(' ', ''),
-      name: name,
-      category: category,
-      tier: tier,
-      area: 'Dickenson Bay',
-      description: 'x',
-      latitude: 17.1,
-      longitude: -61.8,
-      seededReviewCount: reviews,
-      seededRating: rating,
-      views: views,
-      createdAt: DateTime.now().subtract(Duration(days: daysOld)),
-    );
+}) => Business(
+  id: name.toLowerCase().replaceAll(' ', ''),
+  name: name,
+  category: category,
+  tier: tier,
+  area: 'Dickenson Bay',
+  description: 'x',
+  latitude: 17.1,
+  longitude: -61.8,
+  seededReviewCount: reviews,
+  seededRating: rating,
+  views: views,
+  createdAt: DateTime.now().subtract(Duration(days: daysOld)),
+);
 
 Widget _app(List<Business> list) => ProviderScope(
-      overrides: [
-        businessRepositoryProvider.overrideWithValue(_Repo(list)),
-      ],
-      child: MaterialApp(
-        theme: AppTheme.light,
-        home: const LeaderboardScreen(),
-      ),
-    );
+  overrides: [
+    businessRepositoryProvider.overrideWithValue(_Repo(list)),
+  ],
+  child: MaterialApp(
+    theme: AppTheme.light,
+    home: const LeaderboardScreen(),
+  ),
+);
 
 void main() {
   testWidgets('lists eligible businesses best first', (tester) async {

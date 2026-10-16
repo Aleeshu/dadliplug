@@ -23,26 +23,25 @@ void main() {
     );
   }
 
-  testWidgets('app boots and shows the map screen', (tester) async {
+  testWidgets('app boots on Home', (tester) async {
     final built = buildApp();
     await tester.pumpWidget(built.app);
     await tester.pumpAndSettle();
 
-    expect(find.text('Antigua'), findsOneWidget);
-    expect(find.text('Open now'), findsOneWidget);
+    expect(find.text('Search businesses, products, services…'), findsOneWidget);
+    expect(find.text('Shopping'), findsOneWidget);
   });
 
-  testWidgets('customer tabs match the navigation in plan.md 6a', (tester) async {
+  testWidgets('customer tabs match the Dadliplug design', (tester) async {
     final built = buildApp();
     await tester.pumpWidget(built.app);
     await tester.pumpAndSettle();
 
-    // Home, Bookmarks, Calendar, Announcements. These names are the spec, not a
+    // Home, Categories, Map, Saved, More. These names are the spec, not a
     // placeholder set, so a change here is a change to the product.
-    expect(find.text('Home'), findsOneWidget);
-    expect(find.text('Bookmarks'), findsOneWidget);
-    expect(find.text('Calendar'), findsOneWidget);
-    expect(find.text('Notices'), findsOneWidget);
+    for (final tab in ['Home', 'Categories', 'Map', 'Saved', 'More']) {
+      expect(find.text(tab), findsOneWidget, reason: tab);
+    }
   });
 
   testWidgets('creating an account signs the user in', (tester) async {
@@ -50,8 +49,8 @@ void main() {
     await tester.pumpWidget(built.app);
     await tester.pumpAndSettle();
 
-    // Navigate profile -> sign-in -> sign-up
-    await tester.tap(find.byIcon(Icons.person_outline));
+    // Navigate More -> sign-in -> sign-up
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Sign in'));
@@ -71,8 +70,10 @@ void main() {
     await tester.tap(find.text('Create account'));
     await tester.pumpAndSettle();
 
-    // Open profile to verify signed in email is displayed
-    await tester.tap(find.byIcon(Icons.person_outline));
+    // Open the account to verify the signed-in email is displayed
+    await tester.tap(find.text('More'));
+    await tester.pumpAndSettle();
+    await tester.tap(find.text('Your account'));
     await tester.pumpAndSettle();
 
     expect(
@@ -88,7 +89,7 @@ void main() {
     await tester.pumpWidget(built.app);
     await tester.pumpAndSettle();
 
-    await tester.tap(find.byIcon(Icons.person_outline));
+    await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
     await tester.tap(find.text('Sign in'));

@@ -17,7 +17,7 @@ class AppTab {
 
 /// Bottom tab sets, per section 6a of plan.md.
 ///
-/// **Customers** get Home, Bookmarks, Calendar, Announcements.
+/// **Customers** get Home, Categories, Map, Saved, More (Dadliplug design).
 /// **Businesses** get Home, Profile, Reviews, Announcements, Ads.
 ///
 /// The split is structural, not cosmetic. A business owner is managing a
@@ -30,10 +30,13 @@ class AppTab {
 abstract final class AppTabs {
   /// Customer navigation.
   static const List<AppTab> user = [
-    AppTab(path: '/', label: 'Home', icon: Icons.place_outlined),
-    AppTab(path: '/bookmarks', label: 'Bookmarks', icon: Icons.bookmark_border),
-    AppTab(path: '/events', label: 'Calendar', icon: Icons.event_outlined),
-    AppTab(path: '/announcements', label: 'Notices', icon: Icons.notifications_none),
+    // The Dadliplug design (2026-10-15). Events and the Bulletin Board moved
+    // under More to make room for Categories and Map.
+    AppTab(path: '/', label: 'Home', icon: Icons.home_outlined),
+    AppTab(path: '/categories', label: 'Categories', icon: Icons.grid_view),
+    AppTab(path: '/map', label: 'Map', icon: Icons.map_outlined),
+    AppTab(path: '/bookmarks', label: 'Saved', icon: Icons.favorite_border),
+    AppTab(path: '/more', label: 'More', icon: Icons.more_horiz),
   ];
 
   /// Business navigation.

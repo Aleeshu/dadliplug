@@ -85,19 +85,20 @@ class AppPalette {
   final Color bezel;
   final bool isDark;
 
+  // Neutrals and red from the Dadliplug design (2026-10-15).
   static const AppPalette light = AppPalette(
-    bg: Color(0xFFECF2F1),
-    app: Color(0xFFF6F9F8),
+    bg: Color(0xFFF3F4F6),
+    app: Color(0xFFF8F9FB),
     surface: Color(0xFFFFFFFF),
-    ink: Color(0xFF0E2530),
-    muted: Color(0xFF576D75),
-    line: Color(0xFFD2DDDB),
+    ink: Color(0xFF111827),
+    muted: Color(0xFF6B7280),
+    line: Color(0xFFE5E7EB),
     sea: Color(0xFFBFE3EB),
     shallow: Color(0xFFD8F0F4),
     land: Color(0xFFE8EAD2),
     landLine: Color(0xFFBDC39C),
     road: Color(0xFFFFFFFF),
-    red: Color(0xFFCE1126),
+    red: Color(0xFFE8253F),
     onRed: Color(0xFFFFFFFF),
     pin: Color(0xFF0E2530),
     pinEdge: Color(0xFFFFFFFF),

@@ -5,6 +5,7 @@ import 'package:antigua_business_map/features/listing/listing_screen.dart'
     show singleBusinessProvider;
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
+import 'package:antigua_business_map/services/push_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -31,6 +32,7 @@ class BusinessDashboardScreen extends ConsumerWidget {
 
   @override
   Widget build(BuildContext context, WidgetRef ref) {
+    PushService.enableForBusiness();
     final palette = context.palette;
 
     if (businessId.isEmpty) {
@@ -41,7 +43,7 @@ class BusinessDashboardScreen extends ConsumerWidget {
           child: Padding(
             padding: const EdgeInsets.all(Insets.giant),
             child: Text(
-              'No listing is linked to your account yet. The IslandAds team '
+              'No listing is linked to your account yet. The Dadliplug team '
               'links it once your listing is set up.',
               textAlign: TextAlign.center,
               style: AppText.bodyLarge.copyWith(color: palette.muted),
@@ -128,6 +130,12 @@ class BusinessDashboardScreen extends ConsumerWidget {
               onTap: () => context.go('/business/events$q'),
             ),
             _Tool(
+              icon: Icons.qr_code_2,
+              title: 'Visit QR for the till',
+              body: 'Customers scan it to check in, which lets them review.',
+              onTap: () => context.push('/business/visit-code$q'),
+            ),
+            _Tool(
               icon: Icons.insert_chart_outlined,
               title: 'Monthly report',
               body: 'Views, calls, WhatsApp taps and reviews this month.',
@@ -181,7 +189,7 @@ class _Summary extends StatelessWidget {
             const SizedBox(height: Insets.sm),
             Text(
               'Payment is overdue. Your listing stays up for 7 days, then it '
-              'is removed. Contact the IslandAds team to settle it.',
+              'is removed. Contact the Dadliplug team to settle it.',
               style: AppText.bodyMedium.copyWith(color: palette.bad),
             ),
           ],

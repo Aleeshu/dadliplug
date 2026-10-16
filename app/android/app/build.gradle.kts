@@ -2,6 +2,9 @@ import java.util.Base64
 
 plugins {
     id("com.android.application")
+    // Push notifications (Firebase Cloud Messaging). Analytics is deliberately
+    // not added: the app promises not to track people (plan.md section 1).
+    id("com.google.gms.google-services")
     // The Flutter Gradle Plugin must be applied after the Android and Kotlin Gradle plugins.
     id("dev.flutter.flutter-gradle-plugin")
 }

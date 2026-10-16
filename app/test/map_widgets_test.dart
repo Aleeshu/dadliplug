@@ -57,7 +57,7 @@ void main() {
       expect(toggledOpenNow, isTrue);
 
       await tester.tap(find.text('Beauty'));
-      expect(toggledCategory, BusinessCategory.beauty);
+      expect(toggledCategory, BusinessCategory.healthBeauty);
     });
 
     testWidgets('an active chip is visually distinct from an inactive one', (
@@ -104,7 +104,7 @@ void main() {
 
       expect(find.text('Sample Restaurant'), findsOneWidget);
       expect(find.text('Dickenson Bay'), findsOneWidget);
-      expect(find.text('Food & drink'), findsOneWidget);
+      expect(find.text('Food & Drink'), findsOneWidget);
       expect(find.text('View Listing'), findsOneWidget);
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('WhatsApp'), findsOneWidget);

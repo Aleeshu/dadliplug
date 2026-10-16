@@ -14,7 +14,9 @@ import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
+import 'package:antigua_business_map/features/map/featured_rail.dart';
 import 'package:antigua_business_map/features/map/island_ads_map.dart';
+import 'package:antigua_business_map/services/listing_filter_service.dart';
 
 /// Shown when the database has no listings yet.
 ///
@@ -60,7 +62,7 @@ class _EmptyListings extends StatelessWidget {
               ),
               const SizedBox(height: Insets.md),
               Text(
-                'IslandAds is new to Antigua. If you run a business, get in '
+                'Dadliplug is new to Antigua. If you run a business, get in '
                 'touch and be one of the first to appear.',
                 textAlign: TextAlign.center,
                 style: AppText.bodyMedium.copyWith(color: palette.muted),
@@ -126,8 +128,12 @@ class MapScreen extends ConsumerStatefulWidget {
   const MapScreen({
     required this.session,
     required this.roleSwitcher,
+    this.focusBusinessId,
     super.key,
   });
+
+  /// Opened from "Get Directions": select this business and centre on it.
+  final String? focusBusinessId;
 
   final AuthSession session;
   final RoleSwitcherController roleSwitcher;
@@ -160,6 +166,15 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     final queryNotifier = ref.read(mapQueryProvider.notifier);
     final businessesAsync = ref.watch(filteredBusinessesProvider);
     final selectedBusiness = ref.watch(selectedBusinessProvider);
+    _applyFocus(businessesAsync.value);
+
+    // The rail follows the active filters, so choosing "Food" does not leave
+    // a featured salon advertised under it. Hidden while a preview card is
+    // up: both live at the bottom and the card is what was asked for.
+    final featured = selectedBusiness == null
+        ? featuredBusinesses(businessesAsync.value ?? const [])
+        : const <Business>[];
+    final showRail = featured.isNotEmpty;
 
     return Scaffold(
       backgroundColor: palette.app,
@@ -244,7 +259,11 @@ class _MapScreenState extends ConsumerState<MapScreen> {
           // 3. Re-center FAB button
           Positioned(
             right: Insets.lg,
-            bottom: selectedBusiness != null ? 280 : Insets.xxl,
+            bottom: selectedBusiness != null
+                ? 280
+                : showRail
+                ? FeaturedRail.height + Insets.md
+                : Insets.xxl,
             child: FloatingActionButton.small(
               heroTag: 'map_recenter',
               backgroundColor: palette.surface,
@@ -255,7 +274,23 @@ class _MapScreenState extends ConsumerState<MapScreen> {
             ),
           ),
 
-          // 4. Pin Preview Card Overlay
+          // 4. Featured rail
+          if (showRail)
+            Positioned(
+              left: 0,
+              right: 0,
+              bottom: 0,
+              child: SafeArea(
+                top: false,
+                child: FeaturedRail(
+                  businesses: featured,
+                  onSelect: _selectBusiness,
+                  onSeeAll: () => context.push('/featured'),
+                ),
+              ),
+            ),
+
+          // 5. Pin Preview Card Overlay
           if (selectedBusiness != null)
             Positioned(
               left: 0,
@@ -325,6 +360,24 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     );
   }
 
+  bool _focusApplied = false;
+
+  /// Selects [MapScreen.focusBusinessId] once the listings have arrived.
+  /// Filters are cleared first, so the business is not hidden behind a
+  /// category the viewer picked earlier.
+  void _applyFocus(List<Business>? businesses) {
+    final id = widget.focusBusinessId;
+    if (_focusApplied || id == null || businesses == null) return;
+    final matches = businesses.where((b) => b.id == id && b.hasLocation);
+    if (matches.isEmpty) return;
+    _focusApplied = true;
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (!mounted) return;
+      ref.read(mapQueryProvider.notifier).clearFilters();
+      _selectBusiness(matches.first);
+    });
+  }
+
   void _selectBusiness(Business business) {
     ref.read(selectedBusinessProvider.notifier).selected = business;
     // Move the map to the pin that was just tapped, so the user sees where it
@@ -339,49 +392,72 @@ class _MapScreenState extends ConsumerState<MapScreen> {
     _mapKey.currentState?.resetCamera();
   }
 
+  /// The design's "Search this area" box, with Near me beside it. The
+  /// account lives under More now, so the header is only about finding.
   Widget _buildHeaderBar(BuildContext context, AppPalette palette) {
-    return Container(
+    return Padding(
       padding: const EdgeInsets.symmetric(
-        horizontal: Insets.lg,
-        vertical: Insets.sm,
-      ),
-      margin: const EdgeInsets.symmetric(
         horizontal: Insets.lg,
         vertical: Insets.xs,
       ),
-      decoration: BoxDecoration(
-        color: palette.surface.withValues(alpha: 0.92),
-        borderRadius: BorderRadius.circular(Corners.xl),
-        border: Border.all(color: palette.line),
-        boxShadow: Shadows.card,
-      ),
       child: Row(
         children: [
-          Text(
-            'Antigua',
-            style: AppText.displayMedium.copyWith(
-              color: palette.ink,
-              fontWeight: FontWeight.w700,
+          Expanded(
+            child: Material(
+              color: palette.surface,
+              elevation: 2,
+              shadowColor: Colors.black26,
+              borderRadius: BorderRadius.circular(Corners.pill),
+              child: InkWell(
+                borderRadius: BorderRadius.circular(Corners.pill),
+                onTap: () => context.push('/search'),
+                child: Container(
+                  height: 48,
+                  padding: const EdgeInsets.symmetric(horizontal: Insets.huge),
+                  child: Row(
+                    children: [
+                      Icon(Icons.search, color: palette.muted),
+                      const SizedBox(width: Insets.md),
+                      Expanded(
+                        child: Text(
+                          'Search this area',
+                          style: AppText.bodyMedium.copyWith(
+                            color: palette.muted,
+                          ),
+                        ),
+                      ),
+                      Icon(
+                        Icons.tune,
+                        color: palette.ink,
+                        size: 20,
+                        semanticLabel: 'Search businesses',
+                      ),
+                    ],
+                  ),
+                ),
+              ),
             ),
           ),
-          const Spacer(),
-          IconButton(
-            onPressed: () => context.push('/search'),
-            icon: const Icon(Icons.search),
-            color: palette.ink,
-            tooltip: 'Search businesses',
+          const SizedBox(width: Insets.md),
+          Material(
+            color: palette.surface,
+            elevation: 2,
+            shadowColor: Colors.black26,
+            shape: const CircleBorder(),
+            child: IconButton(
+              onPressed: () => context.push('/search?sort=nearest'),
+              icon: const Icon(Icons.near_me_outlined),
+              color: palette.red,
+              tooltip: 'Near me',
+            ),
           ),
-          if (widget.roleSwitcher.isEnabled)
+          if (widget.roleSwitcher.isEnabled) ...[
+            const SizedBox(width: Insets.sm),
             RoleSwitcher(
               session: widget.session,
               controller: widget.roleSwitcher,
             ),
-          IconButton(
-            onPressed: () => context.push('/profile'),
-            icon: const Icon(Icons.person_outline),
-            color: palette.ink,
-            tooltip: 'Profile',
-          ),
+          ],
         ],
       ),
     );

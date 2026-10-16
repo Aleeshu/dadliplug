@@ -18,11 +18,16 @@ class AdPerformance {
     required this.title,
     required this.views,
     required this.wasRunning,
+    this.redemptions = 0,
   });
 
   final String adId;
   final String title;
   final int views;
+
+  /// Times the offer code was redeemed at the till this month. Zero for an ad
+  /// with no code.
+  final int redemptions;
 
   /// Whether the ad was live for any part of the month. A zero-view ad that
   /// never ran is different from one that ran and was ignored.
@@ -40,11 +45,11 @@ class StarBreakdown {
   });
 
   const StarBreakdown.empty()
-      : oneStar = 0,
-        twoStar = 0,
-        threeStar = 0,
-        fourStar = 0,
-        fiveStar = 0;
+    : oneStar = 0,
+      twoStar = 0,
+      threeStar = 0,
+      fourStar = 0,
+      fiveStar = 0;
 
   final int oneStar;
   final int twoStar;
@@ -60,22 +65,19 @@ class StarBreakdown {
   /// and showing "0.0" next to an empty list would read as "terrible".
   double? get average {
     if (total == 0) return null;
-    final weighted = oneStar +
-        twoStar * 2 +
-        threeStar * 3 +
-        fourStar * 4 +
-        fiveStar * 5;
+    final weighted =
+        oneStar + twoStar * 2 + threeStar * 3 + fourStar * 4 + fiveStar * 5;
     return weighted / total;
   }
 
   int countFor(int stars) => switch (stars) {
-        1 => oneStar,
-        2 => twoStar,
-        3 => threeStar,
-        4 => fourStar,
-        5 => fiveStar,
-        _ => 0,
-      };
+    1 => oneStar,
+    2 => twoStar,
+    3 => threeStar,
+    4 => fourStar,
+    5 => fiveStar,
+    _ => 0,
+  };
 }
 
 /// One month of a business's results.
@@ -156,7 +158,7 @@ class ReportRepository {
     final client = _client;
     if (client != null) return client;
     if (!AppConfig.supabaseConfigured) {
-      throw StateError(AppConfig.supabaseMissingBuildHint);
+      throw const BackendNotConfigured();
     }
     return Supabase.instance.client;
   }
@@ -173,14 +175,18 @@ class ReportRepository {
   /// but callers should label it as partial.
   static DateTime monthStart(DateTime now, int monthsBack) {
     final antigua = now.toUtc().add(_antiguaOffset);
-    return DateTime.utc(antigua.year, antigua.month - monthsBack, 1)
-        .subtract(_antiguaOffset);
+    return DateTime.utc(
+      antigua.year,
+      antigua.month - monthsBack,
+    ).subtract(_antiguaOffset);
   }
 
   static DateTime monthEnd(DateTime monthStart) {
     final antigua = monthStart.add(_antiguaOffset);
-    return DateTime.utc(antigua.year, antigua.month + 1, 1)
-        .subtract(_antiguaOffset);
+    return DateTime.utc(
+      antigua.year,
+      antigua.month + 1,
+    ).subtract(_antiguaOffset);
   }
 
   /// Builds the report for one month.
@@ -252,11 +258,21 @@ class ReportRepository {
           .lt('occurred_at', to.toIso8601String())
           .count(CountOption.exact);
 
+      final redemptions = await _require
+          .from('engagement_events')
+          .select('id')
+          .eq('ad_id', id)
+          .eq('kind', 'redemption')
+          .gte('occurred_at', from.toIso8601String())
+          .lt('occurred_at', to.toIso8601String())
+          .count(CountOption.exact);
+
       ads.add(
         AdPerformance(
           adId: id,
           title: raw['title']?.toString() ?? 'Untitled',
           views: views.count,
+          redemptions: redemptions.count,
           wasRunning: true,
         ),
       );
@@ -298,7 +314,11 @@ class ReportRepository {
         .gte('created_at', from.toIso8601String())
         .lt('created_at', to.toIso8601String());
 
-    var one = 0, two = 0, three = 0, four = 0, five = 0;
+    var one = 0;
+    var two = 0;
+    var three = 0;
+    var four = 0;
+    var five = 0;
     for (final raw in rows as List<dynamic>) {
       if (raw is! Map) continue;
       // Only verified reviews count. Reporting a rating the verification gate
@@ -346,14 +366,18 @@ final reportRepositoryProvider = Provider<ReportRepository>(
 );
 
 /// The report for a business and month.
+// Inferred: the family type is only nameable via riverpod/src.
+// ignore: specify_nonobvious_property_types
 final monthlyReportProvider =
     FutureProvider.family<MonthlyReport, ({String businessId, int monthsBack})>(
-  (ref, args) => ref.watch(reportRepositoryProvider).build(
-        businessId: args.businessId,
-        now: DateTime.now(),
-        monthsBack: args.monthsBack,
-      ),
-);
+      (ref, args) => ref
+          .watch(reportRepositoryProvider)
+          .build(
+            businessId: args.businessId,
+            now: DateTime.now(),
+            monthsBack: args.monthsBack,
+          ),
+    );
 
 /// What a review's status means for the report.
 ///

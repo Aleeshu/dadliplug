@@ -139,7 +139,7 @@ class _ListingRow extends StatelessWidget {
                     const SizedBox(height: Insets.xxs),
                     Text(
                       '${business.category.shortLabel} · ${business.tier.label}'
-                      '${business.hasLocation || business.category.isMapLess ? '' : ' · no pin'}',
+                      '${business.hasLocation ? '' : ' · no pin'}',
                       style: AppText.caption.copyWith(color: palette.muted),
                     ),
                     // plan.md 9: nudge listings untouched for 60 days. The team

@@ -1,7 +1,11 @@
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
+import 'package:antigua_business_map/features/listing/listing_screen.dart'
+    show singleBusinessProvider;
+import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/services/business_content_repository.dart';
+import 'package:antigua_business_map/widgets/announcement_style.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:intl/intl.dart';
@@ -24,6 +28,7 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
   final _title = TextEditingController();
   final _body = TextEditingController();
   final _link = TextEditingController();
+  final _code = TextEditingController();
   DateTime? _endsAt;
   bool _posting = false;
   String? _error;
@@ -33,6 +38,7 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
     _title.dispose();
     _body.dispose();
     _link.dispose();
+    _code.dispose();
     super.dispose();
   }
 
@@ -45,12 +51,15 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
     });
 
     try {
-      await ref.read(businessContentRepositoryProvider).postAd(
+      await ref
+          .read(businessContentRepositoryProvider)
+          .postAd(
             businessId: widget.businessId,
             title: _title.text,
             body: _body.text,
             linkUrl: _link.text,
             endsAt: _endsAt,
+            offerCode: _code.text,
           );
       if (!mounted) return;
       ref.invalidate(businessAdsProvider(widget.businessId));
@@ -73,6 +82,15 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
+    // Offer codes are a Featured perk; the database enforces it too. Hidden
+    // until the listing has loaded rather than shown and then refused.
+    final canOffer =
+        ref
+            .watch(singleBusinessProvider(widget.businessId))
+            .value
+            ?.tier
+            .holdsFeaturedSlot ??
+        false;
 
     return Scaffold(
       backgroundColor: palette.app,
@@ -128,6 +146,41 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
                 return null;
               },
             ),
+            if (canOffer) ...[
+              const SizedBox(height: Insets.md),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: _Field(
+                      controller: _code,
+                      label: 'Offer code (optional)',
+                      hint: 'LUNCH10',
+                      validator: (value) {
+                        final code = normaliseOfferCode(value);
+                        if (code == null || isValidOfferCode(code)) return null;
+                        return '4 to 10 letters and numbers.';
+                      },
+                    ),
+                  ),
+                  const SizedBox(width: Insets.sm),
+                  Padding(
+                    padding: const EdgeInsets.only(top: Insets.xs),
+                    child: TextButton(
+                      onPressed: () =>
+                          setState(() => _code.text = generateOfferCode()),
+                      child: const Text('Generate'),
+                    ),
+                  ),
+                ],
+              ),
+              Text(
+                'With a code this becomes an offer. Customers say the code at '
+                'the till, and you tap "Redeemed" on the ad so it counts in '
+                'your monthly report.',
+                style: AppText.caption.copyWith(color: palette.muted),
+              ),
+            ],
             const SizedBox(height: Insets.lg),
             _EndDatePicker(
               value: _endsAt,
@@ -174,6 +227,7 @@ class _PostAnnouncementScreenState
   final _formKey = GlobalKey<FormState>();
   final _title = TextEditingController();
   final _body = TextEditingController();
+  AnnouncementKind _kind = AnnouncementKind.business;
   bool _posting = false;
   String? _error;
 
@@ -193,10 +247,13 @@ class _PostAnnouncementScreenState
     });
 
     try {
-      await ref.read(businessContentRepositoryProvider).postAnnouncement(
+      await ref
+          .read(businessContentRepositoryProvider)
+          .postAnnouncement(
             businessId: widget.businessId,
             title: _title.text,
             body: _body.text,
+            kind: _kind,
           );
       if (!mounted) return;
       ref.invalidate(announcementsProvider);
@@ -237,6 +294,20 @@ class _PostAnnouncementScreenState
               'recent one appears on your listing. Use them for closures, '
               'notices and offers.',
               style: AppText.bodyMedium.copyWith(color: palette.muted),
+            ),
+            const SizedBox(height: Insets.lg),
+            Wrap(
+              spacing: Insets.sm,
+              runSpacing: Insets.sm,
+              children: [
+                for (final kind in AnnouncementKind.values)
+                  ChoiceChip(
+                    avatar: Icon(announcementStyle(kind).icon, size: 16),
+                    label: Text(announcementStyle(kind).label),
+                    selected: _kind == kind,
+                    onSelected: (_) => setState(() => _kind = kind),
+                  ),
+              ],
             ),
             const SizedBox(height: Insets.lg),
             _Field(
@@ -289,6 +360,11 @@ class _PostEventScreenState extends ConsumerState<PostEventScreen> {
   final _title = TextEditingController();
   final _body = TextEditingController();
   final _location = TextEditingController();
+  final _tags = TextEditingController();
+  final _image = TextEditingController();
+  final _organizer = TextEditingController();
+  final _website = TextEditingController();
+  final _phone = TextEditingController();
   DateTime? _startsAt;
   DateTime? _endsAt;
   bool _posting = false;
@@ -299,6 +375,9 @@ class _PostEventScreenState extends ConsumerState<PostEventScreen> {
     _title.dispose();
     _body.dispose();
     _location.dispose();
+    for (final c in [_tags, _image, _organizer, _website, _phone]) {
+      c.dispose();
+    }
     super.dispose();
   }
 
@@ -311,7 +390,14 @@ class _PostEventScreenState extends ConsumerState<PostEventScreen> {
     });
 
     try {
-      await ref.read(businessContentRepositoryProvider).postEvent(
+      await ref
+          .read(businessContentRepositoryProvider)
+          .postEvent(
+            imageUrl: _image.text,
+            tags: _tags.text.split(','),
+            organizer: _organizer.text,
+            website: _website.text,
+            phone: _phone.text,
             businessId: widget.businessId,
             title: _title.text,
             body: _body.text,
@@ -433,8 +519,41 @@ class _PostEventScreenState extends ConsumerState<PostEventScreen> {
             const SizedBox(height: Insets.md),
             _Field(
               controller: _location,
-              label: 'Where (optional)',
-              hint: 'Past the roundabout, opposite the market',
+              label: 'Venue (optional)',
+              hint: 'Dickenson Bay',
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _tags,
+              label: 'Tags (optional)',
+              hint: 'Music, Food, Family Friendly',
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _image,
+              label: 'Picture link (optional)',
+              hint: 'https://',
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _organizer,
+              label: 'Organizer (optional)',
+              hint: 'Leave blank to show your business',
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _website,
+              label: 'Website (optional)',
+              hint: 'antiguaevents.com',
+              keyboardType: TextInputType.url,
+            ),
+            const SizedBox(height: Insets.md),
+            _Field(
+              controller: _phone,
+              label: 'Phone (optional)',
+              hint: '+1 268 …',
+              keyboardType: TextInputType.phone,
             ),
             if (_error != null) ...[
               const SizedBox(height: Insets.md),

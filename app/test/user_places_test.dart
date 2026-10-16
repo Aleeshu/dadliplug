@@ -12,15 +12,14 @@ void main() {
     UserPlace build({
       bool confirmed = false,
       BusinessCategory? category = BusinessCategory.food,
-    }) =>
-        UserPlace(
-          visitId: 'v1',
-          businessId: 'b1',
-          businessName: "Auntie Mae's",
-          category: category,
-          visitedAt: DateTime.utc(2026, 3, 4),
-          confirmedByBusiness: confirmed,
-        );
+    }) => UserPlace(
+      visitId: 'v1',
+      businessId: 'b1',
+      businessName: "Auntie Mae's",
+      category: category,
+      visitedAt: DateTime.utc(2026, 3, 4),
+      confirmedByBusiness: confirmed,
+    );
 
     test('a visit alone does not unlock a review', () {
       // The review gate is the product. If a visit were enough, anyone could
@@ -32,15 +31,18 @@ void main() {
       expect(build(confirmed: true).canReview, isTrue);
     });
 
-    test('a confirmed visit still needs the confirmation flag, not the date', () {
-      final recent = UserPlace(
-        visitId: 'v1',
-        businessId: 'b1',
-        businessName: 'A',
-visitedAt: DateTime.utc(2026, 3, 4),
-      );
-      expect(recent.canReview, isFalse);
-    });
+    test(
+      'a confirmed visit still needs the confirmation flag, not the date',
+      () {
+        final recent = UserPlace(
+          visitId: 'v1',
+          businessId: 'b1',
+          businessName: 'A',
+          visitedAt: DateTime.utc(2026, 3, 4),
+        );
+        expect(recent.canReview, isFalse);
+      },
+    );
   });
 
   group('ReviewRequestStatus', () {

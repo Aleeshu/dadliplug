@@ -47,7 +47,8 @@ class YourPlacesScreen extends ConsumerWidget {
           ? _Message(
               icon: Icons.person_outline,
               title: 'Sign in to see your places',
-              body: 'Your visits and any reviews you have asked for are kept '
+              body:
+                  'Your visits and any reviews you have asked for are kept '
                   'on your account.',
               action: FilledButton(
                 onPressed: () => context.push('/sign-in'),
@@ -55,52 +56,53 @@ class YourPlacesScreen extends ConsumerWidget {
               ),
             )
           : placesAsync.when(
-        loading: () => Center(
-          child: CircularProgressIndicator(color: context.palette.red),
-        ),
-        error: (error, _) => _Message(
-          icon: Icons.cloud_off_outlined,
-          title: 'Could not load your places',
-          body: 'Check your connection and try again.',
-          onRetry: () {
-            ref
-              ..invalidate(userPlacesProvider)
-              ..invalidate(reviewRequestsProvider);
-          },
-        ),
-        data: (places) => RefreshIndicator(
-          onRefresh: () async {
-            ref
-              ..invalidate(userPlacesProvider)
-              ..invalidate(reviewRequestsProvider);
-            await ref.read(userPlacesProvider.future);
-          },
-          child: places.isEmpty
-              // The honest empty state. Not "no visits yet" with invented
-              // suggestions to visit somewhere: the list is empty because the
-              // user has not been anywhere the app knows about.
-              ? const _Message(
-                  icon: Icons.explore_outlined,
-                  title: 'No places yet',
-                  body: 'Places you visit show up here, along with any review '
-                      'you have requested.',
-                )
-              : ListView(
-                  padding: const EdgeInsets.all(Insets.lg),
-                  children: [
-                    if (requestsAsync.hasValue &&
-                        requestsAsync.value!.isNotEmpty) ...[
-                      _ReviewRequests(requests: requestsAsync.value!),
-                      const SizedBox(height: Insets.xl),
-                    ],
-                    for (final place in places) ...[
-                      _PlaceTile(place: place),
-                      const SizedBox(height: Insets.sm),
-                    ],
-                  ],
-                ),
-        ),
-      ),
+              loading: () => Center(
+                child: CircularProgressIndicator(color: context.palette.red),
+              ),
+              error: (error, _) => _Message(
+                icon: Icons.cloud_off_outlined,
+                title: 'Could not load your places',
+                body: 'Check your connection and try again.',
+                onRetry: () {
+                  ref
+                    ..invalidate(userPlacesProvider)
+                    ..invalidate(reviewRequestsProvider);
+                },
+              ),
+              data: (places) => RefreshIndicator(
+                onRefresh: () async {
+                  ref
+                    ..invalidate(userPlacesProvider)
+                    ..invalidate(reviewRequestsProvider);
+                  await ref.read(userPlacesProvider.future);
+                },
+                child: places.isEmpty
+                    // The honest empty state. Not "no visits yet" with invented
+                    // suggestions to visit somewhere: the list is empty because the
+                    // user has not been anywhere the app knows about.
+                    ? const _Message(
+                        icon: Icons.explore_outlined,
+                        title: 'No places yet',
+                        body:
+                            'Places you visit show up here, along with any review '
+                            'you have requested.',
+                      )
+                    : ListView(
+                        padding: const EdgeInsets.all(Insets.lg),
+                        children: [
+                          if (requestsAsync.hasValue &&
+                              requestsAsync.value!.isNotEmpty) ...[
+                            _ReviewRequests(requests: requestsAsync.value!),
+                            const SizedBox(height: Insets.xl),
+                          ],
+                          for (final place in places) ...[
+                            _PlaceTile(place: place),
+                            const SizedBox(height: Insets.sm),
+                          ],
+                        ],
+                      ),
+              ),
+            ),
     );
   }
 }
@@ -174,7 +176,10 @@ class _ReviewBadge extends StatelessWidget {
       ),
       child: Text(
         label,
-        style: AppText.labelMedium.copyWith(color: fg, fontWeight: FontWeight.w600),
+        style: AppText.labelMedium.copyWith(
+          color: fg,
+          fontWeight: FontWeight.w600,
+        ),
       ),
     );
   }

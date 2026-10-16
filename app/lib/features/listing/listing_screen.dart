@@ -1,3 +1,10 @@
+import 'package:antigua_business_map/features/events/event_widgets.dart';
+import 'package:antigua_business_map/features/reviews/reviews_section.dart';
+import 'package:antigua_business_map/services/push_service.dart';
+import 'package:antigua_business_map/widgets/category_icon.dart';
+import 'package:antigua_business_map/widgets/offer_code_chip.dart';
+import 'package:antigua_business_map/widgets/verified_badge.dart';
+import 'package:antigua_business_map/core/config/app_config.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -42,7 +49,7 @@ String ratingLabel(Business b) {
   }
   if (verified == 0) {
     return '(${stats.count} ${stats.count == 1 ? 'rating' : 'ratings'} '
-        'from before IslandAds)';
+        'from before Dadliplug)';
   }
   return '(${stats.count} ratings, $verified verified)';
 }
@@ -78,8 +85,7 @@ class ListingScreen extends ConsumerWidget {
     // with a broken ads query still has an address and hours, and hiding those
     // behind an error would be a worse outcome than omitting its adverts.
     final ads = ref.watch(businessAdsProvider(businessId)).value ?? const [];
-    final allAnnouncements =
-        ref.watch(announcementsProvider).value ?? const [];
+    final allAnnouncements = ref.watch(announcementsProvider).value ?? const [];
     final allEvents = ref.watch(upcomingEventsProvider).value ?? const [];
 
     final now = DateTime.now();
@@ -87,8 +93,9 @@ class ListingScreen extends ConsumerWidget {
     final latestAnnouncement = allAnnouncements
         .where((a) => a.businessId == businessId)
         .firstOrNull;
-    final upcomingEvents =
-        allEvents.where((e) => e.businessId == businessId).toList(growable: false);
+    final upcomingEvents = allEvents
+        .where((e) => e.businessId == businessId)
+        .toList(growable: false);
 
     return Scaffold(
       backgroundColor: palette.app,
@@ -122,43 +129,41 @@ class ListingScreen extends ConsumerWidget {
   /// button that opens nothing is worse than no button, because it tells the
   /// customer the business is reachable there when it is not.
   static List<SocialLink> _socialsFor(Business b) => [
-        if (b.website?.isNotEmpty ?? false)
-          SocialLink(
-            label: 'Website',
-            handle: b.website!,
-            icon: Icons.language_outlined,
-            url: Uri.tryParse(
-              b.website!.startsWith('http')
-                  ? b.website!
-                  : 'https://${b.website}',
-            ),
-          ),
-        if (b.instagram?.isNotEmpty ?? false)
-          SocialLink(
-            label: 'Instagram',
-            handle: '@${b.instagram}',
-            icon: Icons.camera_alt_outlined,
-            url: Uri.tryParse('https://instagram.com/${b.instagram}'),
-          ),
-        if (b.facebook?.isNotEmpty ?? false)
-          SocialLink(
-            label: 'Facebook',
-            handle: b.facebook!,
-            icon: Icons.thumb_up_outlined,
-            url: Uri.tryParse(
-              b.facebook!.startsWith('http')
-                  ? b.facebook!
-                  : 'https://facebook.com/${b.facebook}',
-            ),
-          ),
-        if (b.tiktok?.isNotEmpty ?? false)
-          SocialLink(
-            label: 'TikTok',
-            handle: '@${b.tiktok}',
-            icon: Icons.music_note_outlined,
-            url: Uri.tryParse('https://tiktok.com/@${b.tiktok}'),
-          ),
-      ];
+    if (b.website?.isNotEmpty ?? false)
+      SocialLink(
+        label: 'Website',
+        handle: b.website!,
+        icon: Icons.language_outlined,
+        url: Uri.tryParse(
+          b.website!.startsWith('http') ? b.website! : 'https://${b.website}',
+        ),
+      ),
+    if (b.instagram?.isNotEmpty ?? false)
+      SocialLink(
+        label: 'Instagram',
+        handle: '@${b.instagram}',
+        icon: Icons.camera_alt_outlined,
+        url: Uri.tryParse('https://instagram.com/${b.instagram}'),
+      ),
+    if (b.facebook?.isNotEmpty ?? false)
+      SocialLink(
+        label: 'Facebook',
+        handle: b.facebook!,
+        icon: Icons.thumb_up_outlined,
+        url: Uri.tryParse(
+          b.facebook!.startsWith('http')
+              ? b.facebook!
+              : 'https://facebook.com/${b.facebook}',
+        ),
+      ),
+    if (b.tiktok?.isNotEmpty ?? false)
+      SocialLink(
+        label: 'TikTok',
+        handle: '@${b.tiktok}',
+        icon: Icons.music_note_outlined,
+        url: Uri.tryParse('https://tiktok.com/@${b.tiktok}'),
+      ),
+  ];
 }
 
 /// One tappable social account.
@@ -201,6 +206,9 @@ class _ListingContent extends ConsumerStatefulWidget {
 
 class _ListingContentState extends ConsumerState<_ListingContent> {
   int _activePhotoIndex = 0;
+
+  /// About, Photos or Reviews, as in the design.
+  int _tab = 0;
 
   /// Ads already counted on this visit. A rebuild must not count them again;
   /// the server only deduplicates signed-in viewers, so a guest's every
@@ -255,7 +263,7 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
       slivers: [
         // 1. Hero AppBar with Photos or Gradient
         SliverAppBar(
-          expandedHeight: b.photos.isNotEmpty ? 280 : 200,
+          expandedHeight: 260,
           pinned: true,
           backgroundColor: palette.surface,
           foregroundColor: palette.ink,
@@ -267,6 +275,7 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
             onPressed: () => context.pop(),
           ),
           actions: [
+            _AlertButton(businessId: b.id),
             _BookmarkButton(businessId: b.id),
             IconButton(
               icon: CircleAvatar(
@@ -323,10 +332,34 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                 ),
                 const SizedBox(height: Insets.md),
 
-                // Business Name
-                Text(
-                  b.name,
-                  style: AppText.displayMedium.copyWith(color: palette.ink),
+                // Business Name, beside its category icon (the design's logo
+                // circle; a business's own logo comes with photo uploads).
+                Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    CategoryIcon(category: b.category, size: 52),
+                    const SizedBox(width: Insets.xl),
+                    Expanded(
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Flexible(
+                            child: Text(
+                              b.name,
+                              style: AppText.displayMedium.copyWith(
+                                color: palette.ink,
+                              ),
+                            ),
+                          ),
+                          if (b.tier.isVerified)
+                            const Padding(
+                              padding: EdgeInsets.only(left: Insets.sm, top: 6),
+                              child: VerifiedBadge(size: 20),
+                            ),
+                        ],
+                      ),
+                    ),
+                  ],
                 ),
                 if (b.area.isNotEmpty) ...[
                   const SizedBox(height: Insets.xs),
@@ -461,176 +494,199 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                 _buildActionStrip(context, b, palette),
                 const SizedBox(height: Insets.xl),
 
-                // Promotional Offer Card
-                if (b.hasOffer) ...[
-                  _buildOfferCard(b, palette),
-                  const SizedBox(height: Insets.xl),
-                ],
-
-                // Running advertisements. Above everything else, because an
-                // advertisement is the reason a business is on the app and
-                // burying it under the address would defeat the pitch.
-                if (liveAds.isNotEmpty) ...[
-                  _SectionHeader(title: 'Advertisements', palette: palette),
-                  const SizedBox(height: Insets.sm),
-                  for (final ad in liveAds)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Insets.sm),
-                      child: _AdCard(ad: ad),
-                    ),
-                  const SizedBox(height: Insets.lg),
-                ],
-
-                // Latest announcement, if there is one. Only the most recent:
-                // a wall of notices buries the business details, and older ones
-                // live on the Notices tab.
-                if (latestAnnouncement case final announcement?) ...[
-                  _AnnouncementCard(announcement: announcement),
-                  const SizedBox(height: Insets.xl),
-                ],
-
-                // Description / About
-                if (b.description.isNotEmpty) ...[
-                  _SectionHeader(title: 'About', palette: palette),
-                  const SizedBox(height: Insets.sm),
-                  Text(
-                    b.description,
-                    style: AppText.bodyLarge.copyWith(color: palette.ink),
-                  ),
-                  const SizedBox(height: Insets.xl),
-                ],
-
-                // "How to find us" (Landmark Directions)
-                if (b.howToFindUs != null && b.howToFindUs!.isNotEmpty) ...[
-                  _SectionHeader(title: 'How to find us', palette: palette),
-                  const SizedBox(height: Insets.sm),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(Insets.lg),
-                    decoration: BoxDecoration(
-                      color: palette.surface,
-                      borderRadius: BorderRadius.circular(Corners.md),
-                      border: Border.all(color: palette.line),
-                      boxShadow: Shadows.card,
-                    ),
-                    child: Row(
-                      crossAxisAlignment: CrossAxisAlignment.start,
-                      children: [
-                        Icon(
-                          Icons.directions_outlined,
-                          color: palette.blue,
-                          size: 22,
-                        ),
-                        const SizedBox(width: Insets.md),
-                        Expanded(
-                          child: Text(
-                            b.howToFindUs!,
-                            style: AppText.bodyLarge.copyWith(
-                              color: palette.ink,
-                            ),
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                  const SizedBox(height: Insets.xl),
-                ],
-
-                // Amenities / Practical Tags (Cash only, Cards, Parking, etc.)
-                if (b.tags.isNotEmpty) ...[
-                  _SectionHeader(
-                    title: 'Practical info & amenities',
-                    palette: palette,
-                  ),
-                  const SizedBox(height: Insets.sm),
-                  Wrap(
-                    spacing: Insets.sm,
-                    runSpacing: Insets.sm,
-                    children: [
-                      for (final tag in b.tags)
-                        _TagChip(tag: tag, palette: palette),
-                    ],
-                  ),
-                  const SizedBox(height: Insets.xl),
-                ],
-
-                // Opening Hours Section
-                _SectionHeader(title: 'Hours', palette: palette),
-                const SizedBox(height: Insets.sm),
-                _buildHoursCard(b, palette),
+                _ListingTabs(
+                  selected: _tab,
+                  reviewCount: reviewStats(b).count,
+                  onSelect: (i) => setState(() => _tab = i),
+                ),
                 const SizedBox(height: Insets.xl),
 
-                // Menu or Services
-                if (b.menu.isNotEmpty) ...[
-                  _SectionHeader(
-                    title: b.category == BusinessCategory.food
-                        ? 'Menu highlights'
-                        : 'Services & pricing',
-                    palette: palette,
-                  ),
-                  const SizedBox(height: Insets.sm),
-                  _buildMenuCard(b, palette),
-                  const SizedBox(height: Insets.xl),
-                ],
+                if (_tab == 0) ...[
+                  // Promotional Offer Card
+                  if (b.hasOffer) ...[
+                    _buildOfferCard(b, palette),
+                    const SizedBox(height: Insets.xl),
+                  ],
 
-                // Upcoming events. Only ones still to happen: a listing showing
-                // last month's events reads as unmaintained.
-                if (upcomingEvents.isNotEmpty) ...[
-                  _SectionHeader(title: 'Coming up', palette: palette),
-                  const SizedBox(height: Insets.sm),
-                  for (final event in upcomingEvents)
-                    Padding(
-                      padding: const EdgeInsets.only(bottom: Insets.sm),
-                      child: _EventRow(event: event),
+                  // Running advertisements. Above everything else, because an
+                  // advertisement is the reason a business is on the app and
+                  // burying it under the address would defeat the pitch.
+                  if (liveAds.isNotEmpty) ...[
+                    _SectionHeader(title: 'Advertisements', palette: palette),
+                    const SizedBox(height: Insets.sm),
+                    for (final ad in liveAds)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Insets.sm),
+                        child: _AdCard(ad: ad),
+                      ),
+                    const SizedBox(height: Insets.lg),
+                  ],
+
+                  // Latest announcement, if there is one. Only the most recent:
+                  // a wall of notices buries the business details, and older ones
+                  // live on the Notices tab.
+                  if (latestAnnouncement case final announcement?) ...[
+                    _AnnouncementCard(announcement: announcement),
+                    const SizedBox(height: Insets.xl),
+                  ],
+
+                  // Description / About
+                  if (b.description.isNotEmpty) ...[
+                    _SectionHeader(title: 'About', palette: palette),
+                    const SizedBox(height: Insets.sm),
+                    Text(
+                      b.description,
+                      style: AppText.bodyLarge.copyWith(color: palette.ink),
                     ),
-                  const SizedBox(height: Insets.lg),
-                ],
+                    const SizedBox(height: Insets.xl),
+                  ],
 
-                // Social accounts. Where most Antigua businesses are actually
-                // reachable, so this sits above the address rather than below.
-                if (socials.isNotEmpty) ...[
-                  _SectionHeader(title: 'Find them online', palette: palette),
-                  const SizedBox(height: Insets.sm),
-                  _SocialRow(links: socials),
-                  const SizedBox(height: Insets.xl),
-                ],
-
-                // Address & Location card
-                if (b.address != null && b.address!.isNotEmpty) ...[
-                  _SectionHeader(title: 'Location', palette: palette),
-                  const SizedBox(height: Insets.sm),
-                  Container(
-                    width: double.infinity,
-                    padding: const EdgeInsets.all(Insets.lg),
-                    decoration: BoxDecoration(
-                      color: palette.surface,
-                      borderRadius: BorderRadius.circular(Corners.md),
-                      border: Border.all(color: palette.line),
-                      boxShadow: Shadows.card,
-                    ),
-                    child: Row(
-                      children: [
-                        Icon(
-                          Icons.place_outlined,
-                          color: palette.muted,
-                          size: 22,
-                        ),
-                        const SizedBox(width: Insets.md),
-                        Expanded(
-                          child: Text(
-                            b.address!,
-                            style: AppText.bodyMedium.copyWith(
-                              color: palette.ink,
+                  // "How to find us" (Landmark Directions)
+                  if (b.howToFindUs != null && b.howToFindUs!.isNotEmpty) ...[
+                    _SectionHeader(title: 'How to find us', palette: palette),
+                    const SizedBox(height: Insets.sm),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(Insets.lg),
+                      decoration: BoxDecoration(
+                        color: palette.surface,
+                        borderRadius: BorderRadius.circular(Corners.md),
+                        border: Border.all(color: palette.line),
+                        boxShadow: Shadows.card,
+                      ),
+                      child: Row(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Icon(
+                            Icons.directions_outlined,
+                            color: palette.blue,
+                            size: 22,
+                          ),
+                          const SizedBox(width: Insets.md),
+                          Expanded(
+                            child: Text(
+                              b.howToFindUs!,
+                              style: AppText.bodyLarge.copyWith(
+                                color: palette.ink,
+                              ),
                             ),
                           ),
-                        ),
-                        // No Directions button here. Call, WhatsApp and
-                        // Directions all live in the action row below, so a
-                        // second way to reach directions was the same action
-                        // twice on one screen — and the only one of the three
-                        // with a duplicate.
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Insets.xl),
+                  ],
+
+                  // Amenities / Practical Tags (Cash only, Cards, Parking, etc.)
+                  if (b.tags.isNotEmpty) ...[
+                    _SectionHeader(
+                      title: 'Practical info & amenities',
+                      palette: palette,
+                    ),
+                    const SizedBox(height: Insets.sm),
+                    Wrap(
+                      spacing: Insets.sm,
+                      runSpacing: Insets.sm,
+                      children: [
+                        for (final tag in b.tags)
+                          _TagChip(tag: tag, palette: palette),
                       ],
                     ),
+                    const SizedBox(height: Insets.xl),
+                  ],
+
+                  // Opening Hours Section
+                  _SectionHeader(title: 'Hours', palette: palette),
+                  const SizedBox(height: Insets.sm),
+                  _buildHoursCard(b, palette),
+                  const SizedBox(height: Insets.xl),
+
+                  // Menu or Services
+                  if (b.menu.isNotEmpty) ...[
+                    _SectionHeader(
+                      title: b.category == BusinessCategory.food
+                          ? 'Menu highlights'
+                          : 'Services & pricing',
+                      palette: palette,
+                    ),
+                    const SizedBox(height: Insets.sm),
+                    _buildMenuCard(b, palette),
+                    const SizedBox(height: Insets.xl),
+                  ],
+
+                  // Upcoming events. Only ones still to happen: a listing showing
+                  // last month's events reads as unmaintained.
+                  if (upcomingEvents.isNotEmpty) ...[
+                    _SectionHeader(title: 'Coming up', palette: palette),
+                    const SizedBox(height: Insets.sm),
+                    for (final event in upcomingEvents)
+                      Padding(
+                        padding: const EdgeInsets.only(bottom: Insets.sm),
+                        child: _EventRow(event: event),
+                      ),
+                    const SizedBox(height: Insets.lg),
+                  ],
+
+                  // Social accounts. Where most Antigua businesses are actually
+                  // reachable, so this sits above the address rather than below.
+                  if (socials.isNotEmpty) ...[
+                    _SectionHeader(title: 'Find them online', palette: palette),
+                    const SizedBox(height: Insets.sm),
+                    _SocialRow(links: socials),
+                    const SizedBox(height: Insets.xl),
+                  ],
+
+                  // Address & Location card
+                  if (b.address != null && b.address!.isNotEmpty) ...[
+                    _SectionHeader(title: 'Location', palette: palette),
+                    const SizedBox(height: Insets.sm),
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(Insets.lg),
+                      decoration: BoxDecoration(
+                        color: palette.surface,
+                        borderRadius: BorderRadius.circular(Corners.md),
+                        border: Border.all(color: palette.line),
+                        boxShadow: Shadows.card,
+                      ),
+                      child: Row(
+                        children: [
+                          Icon(
+                            Icons.place_outlined,
+                            color: palette.muted,
+                            size: 22,
+                          ),
+                          const SizedBox(width: Insets.md),
+                          Expanded(
+                            child: Text(
+                              b.address!,
+                              style: AppText.bodyMedium.copyWith(
+                                color: palette.ink,
+                              ),
+                            ),
+                          ),
+                          // No Directions button here. Call, WhatsApp and
+                          // Directions all live in the action row below, so a
+                          // second way to reach directions was the same action
+                          // twice on one screen — and the only one of the three
+                          // with a duplicate.
+                        ],
+                      ),
+                    ),
+                    const SizedBox(height: Insets.xl),
+                  ],
+                ],
+
+                if (_tab == 1) ...[
+                  _PhotoGrid(business: b),
+                  const SizedBox(height: Insets.xl),
+                ],
+
+                // Reviews: verified visits only (plan.md sections 7 and 8).
+                if (_tab == 2) ...[
+                  ReviewsSection(
+                    businessId: b.id,
+                    acceptsReviews: b.acceptsReviews,
                   ),
                   const SizedBox(height: Insets.xl),
                 ],
@@ -744,41 +800,45 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
   ) {
     final hasPhone = b.phone != null && b.phone!.isNotEmpty;
     final hasWhatsApp = b.whatsapp != null && b.whatsapp!.isNotEmpty;
-    final hasLocation =
-        b.hasLocation || (b.address != null && b.address!.isNotEmpty);
+    // The map needs coordinates; an address alone cannot be pinned.
+    final hasLocation = b.hasLocation;
 
-    return Row(
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
-        if (hasPhone)
-          Expanded(
-            child: _ActionTile(
-              icon: Icons.phone,
-              label: 'Call',
-              color: palette.ink,
-              onTap: () => _call(b),
+        Row(
+          children: [
+            if (hasPhone)
+              Expanded(
+                child: FilledButton.icon(
+                  onPressed: () => _call(b),
+                  icon: const Icon(Icons.phone, size: 18),
+                  label: const Text('Call'),
+                ),
+              ),
+            if (hasPhone && hasLocation) const SizedBox(width: Insets.md),
+            if (hasLocation)
+              Expanded(
+                child: OutlinedButton.icon(
+                  onPressed: () => context.go('/map?focus=${b.id}'),
+                  icon: const Icon(Icons.directions, size: 18),
+                  label: const Text('Get Directions'),
+                ),
+              ),
+          ],
+        ),
+        if (hasWhatsApp) ...[
+          const SizedBox(height: Insets.md),
+          OutlinedButton.icon(
+            onPressed: () => _whatsApp(b),
+            style: OutlinedButton.styleFrom(
+              foregroundColor: const Color(0xFF128C4A),
+              side: const BorderSide(color: Color(0xFF25D366)),
             ),
+            icon: const Icon(Icons.chat, size: 18),
+            label: const Text('WhatsApp'),
           ),
-        if (hasPhone && (hasWhatsApp || hasLocation))
-          const SizedBox(width: Insets.sm),
-        if (hasWhatsApp)
-          Expanded(
-            child: _ActionTile(
-              icon: Icons.chat,
-              label: 'WhatsApp',
-              color: const Color(0xFF25D366),
-              onTap: () => _whatsApp(b),
-            ),
-          ),
-        if (hasWhatsApp && hasLocation) const SizedBox(width: Insets.sm),
-        if (hasLocation)
-          Expanded(
-            child: _ActionTile(
-              icon: Icons.directions,
-              label: 'Directions',
-              color: palette.blue,
-              onTap: () => _openDirections(b),
-            ),
-          ),
+        ],
       ],
     );
   }
@@ -818,7 +878,7 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                 ),
                 const SizedBox(height: Insets.xs),
                 Text(
-                  'Mention IslandAds when visiting to redeem.',
+                  'Mention Dadliplug when visiting to redeem.',
                   style: AppText.caption.copyWith(color: palette.goldInk),
                 ),
               ],
@@ -1045,7 +1105,7 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
     final rawNumber = b.whatsapp ?? '';
     final clean = rawNumber.replaceAll(RegExp(r'[^\d+]'), '');
     final prefilled = Uri.encodeComponent(
-      'Hi, I found you on IslandAds (${b.name}). Are you open today?',
+      'Hi, I found you on Dadliplug (${b.name}). Are you open today?',
     );
     final uri = Uri.parse('https://wa.me/$clean?text=$prefilled');
     if (await canLaunchUrl(uri)) {
@@ -1053,37 +1113,17 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
     }
   }
 
-  static Future<void> _openDirections(Business b) async {
-    if (b.hasLocation) {
-      final uri = Uri.parse(
-        'https://www.google.com/maps/dir/?api=1&destination=${b.latitude},${b.longitude}',
-      );
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-        return;
-      }
-    }
-    if (b.address != null && b.address!.isNotEmpty) {
-      final query = Uri.encodeComponent('${b.address}, Antigua');
-      final uri = Uri.parse(
-        'https://www.google.com/maps/search/?api=1&query=$query',
-      );
-      if (await canLaunchUrl(uri)) {
-        await launchUrl(uri, mode: LaunchMode.externalApplication);
-      }
-    }
-  }
-
   /// Shares to WhatsApp, where most word of mouth on the island runs
-  /// (plan.md 11). The button used to show a "Sharing…" message and share
-  /// nothing. A rich preview card needs the public web page (Phase 5); until
-  /// then the text carries everything someone needs to find the place.
+  /// (plan.md 11), with the listing's public page so WhatsApp shows a
+  /// preview card.
   static Future<void> _shareListing(Business b) async {
     final lines = [
       '${b.name}${b.area.isEmpty ? '' : ' — ${b.area}'}',
       if (b.phone?.isNotEmpty ?? false) 'Call: ${b.phone}',
       if (b.howToFindUs?.isNotEmpty ?? false) b.howToFindUs!,
-      'Found on IslandAds',
+      // The link makes WhatsApp show a preview card with the photo, and
+      // opens the listing's public page for people without the app.
+      AppConfig.publicListingUrl(b.id),
     ];
     final uri = Uri.parse(
       'https://wa.me/?text=${Uri.encodeComponent(lines.join('\n'))}',
@@ -1117,12 +1157,28 @@ class _AdCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
+          if (ad.imageUrl?.isNotEmpty ?? false) ...[
+            ClipRRect(
+              borderRadius: BorderRadius.circular(Corners.md),
+              child: AspectRatio(
+                aspectRatio: 16 / 9,
+                child: CachedNetworkImage(
+                  imageUrl: ad.imageUrl!,
+                  fit: BoxFit.cover,
+                  // A broken picture link hides itself rather than leaving
+                  // a grey box on the listing.
+                  errorWidget: (_, _, _) => const SizedBox.shrink(),
+                ),
+              ),
+            ),
+            const SizedBox(height: Insets.sm),
+          ],
           Row(
             children: [
               Icon(Icons.campaign_outlined, size: 16, color: palette.red),
               const SizedBox(width: Insets.xs),
               Text(
-                'ADVERTISEMENT',
+                ad.isOffer ? 'OFFER' : 'ADVERTISEMENT',
                 style: AppText.sectionLabel.copyWith(color: palette.red),
               ),
             ],
@@ -1139,6 +1195,10 @@ class _AdCard extends StatelessWidget {
               style: AppText.bodyMedium.copyWith(color: palette.ink),
             ),
           ],
+          if (ad.isOffer) ...[
+            const SizedBox(height: Insets.sm),
+            OfferCodeChip(code: ad.offerCode!),
+          ],
           if (ad.linkUrl?.isNotEmpty ?? false) ...[
             const SizedBox(height: Insets.sm),
             Builder(
@@ -1148,11 +1208,13 @@ class _AdCard extends StatelessWidget {
                 // that throws when tapped — the old null check could never be
                 // false here, so it guarded nothing.
                 final uri = Uri.tryParse(ad.linkUrl!);
-                final usable = uri != null &&
+                final usable =
+                    uri != null &&
                     (uri.scheme == 'http' || uri.scheme == 'https');
                 return InkWell(
                   onTap: usable
-                      ? () => launchUrl(uri, mode: LaunchMode.externalApplication)
+                      ? () =>
+                            launchUrl(uri, mode: LaunchMode.externalApplication)
                       : null,
                   child: Text(
                     ad.linkUrl!,
@@ -1230,64 +1292,7 @@ class _EventRow extends StatelessWidget {
   final BusinessEvent event;
 
   @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-    final local = event.startsAt.toLocal();
-
-    return Container(
-      padding: const EdgeInsets.all(Insets.md),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(Corners.md),
-        border: Border.all(color: palette.line),
-      ),
-      child: Row(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Container(
-            width: 48,
-            padding: const EdgeInsets.symmetric(vertical: Insets.xs),
-            decoration: BoxDecoration(
-              color: palette.app,
-              borderRadius: BorderRadius.circular(Corners.sm),
-              border: Border.all(color: palette.line),
-            ),
-            child: Column(
-              children: [
-                Text(
-                  DateFormat.MMM().format(local).toUpperCase(),
-                  style: AppText.sectionLabel.copyWith(color: palette.red),
-                ),
-                Text(
-                  '${local.day}',
-                  style: AppText.numericLarge.copyWith(color: palette.ink),
-                ),
-              ],
-            ),
-          ),
-          const SizedBox(width: Insets.md),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  event.title,
-                  style: AppText.titleMedium.copyWith(color: palette.ink),
-                ),
-                if (event.locationNote?.isNotEmpty ?? false) ...[
-                  const SizedBox(height: Insets.xxs),
-                  Text(
-                    event.locationNote!,
-                    style: AppText.caption.copyWith(color: palette.muted),
-                  ),
-                ],
-              ],
-            ),
-          ),
-        ],
-      ),
-    );
-  }
+  Widget build(BuildContext context) => EventRow(event: event);
 }
 
 /// The business's social accounts.
@@ -1309,9 +1314,9 @@ class _SocialRow extends StatelessWidget {
             onTap: link.url == null
                 ? null
                 : () => launchUrl(
-                      link.url!,
-                      mode: LaunchMode.externalApplication,
-                    ),
+                    link.url!,
+                    mode: LaunchMode.externalApplication,
+                  ),
             borderRadius: BorderRadius.circular(Corners.md),
             child: Container(
               padding: const EdgeInsets.all(Insets.md),
@@ -1367,7 +1372,9 @@ class _BookmarkButtonState extends ConsumerState<_BookmarkButton> {
     } catch (_) {
       if (mounted) {
         ScaffoldMessenger.of(context).showSnackBar(
-          const SnackBar(content: Text('Could not save. Check your connection.')),
+          const SnackBar(
+            content: Text('Could not save. Check your connection.'),
+          ),
         );
       }
     } finally {
@@ -1379,19 +1386,97 @@ class _BookmarkButtonState extends ConsumerState<_BookmarkButton> {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final saved =
-        ref.watch(followedBusinessIdsProvider).value?.contains(
-          widget.businessId,
-        ) ??
+        ref
+            .watch(followedBusinessIdsProvider)
+            .value
+            ?.contains(
+              widget.businessId,
+            ) ??
         false;
 
     return IconButton(
-      tooltip: saved ? 'Remove bookmark' : 'Bookmark',
+      tooltip: saved ? 'Remove from Saved' : 'Save',
       onPressed: _busy ? null : () => _toggle(saved),
       icon: CircleAvatar(
         backgroundColor: palette.surface.withValues(alpha: 0.85),
         child: Icon(
-          saved ? Icons.bookmark : Icons.bookmark_border,
+          saved ? Icons.favorite : Icons.favorite_border,
           color: saved ? palette.red : palette.ink,
+          size: 20,
+        ),
+      ),
+    );
+  }
+}
+
+/// Opt in to announcement alerts from this business (plan.md 4: follow,
+/// with notification opt-in). Separate from saving: saving is a bookmark,
+/// the bell is a request to be told. Push delivery needs Firebase; until
+/// then the alert shows as a badge on Home and in the Following feed.
+class _AlertButton extends ConsumerStatefulWidget {
+  const _AlertButton({required this.businessId});
+
+  final String businessId;
+
+  @override
+  ConsumerState<_AlertButton> createState() => _AlertButtonState();
+}
+
+class _AlertButtonState extends ConsumerState<_AlertButton> {
+  bool _busy = false;
+
+  Future<void> _toggle(bool on) async {
+    setState(() => _busy = true);
+    try {
+      await ref
+          .read(businessContentRepositoryProvider)
+          .setAlerts(businessId: widget.businessId, notify: !on);
+      ref
+        ..invalidate(alertBusinessIdsProvider)
+        ..invalidate(followedBusinessIdsProvider);
+      if (!on) await PushService.enable();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              on
+                  ? 'Alerts off for this business.'
+                  : 'You will be told when they post an announcement.',
+            ),
+          ),
+        );
+      }
+    } on NotSignedInException {
+      if (mounted) await context.push<void>('/sign-in');
+    } catch (_) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not change alerts.')),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final on =
+        ref
+            .watch(alertBusinessIdsProvider)
+            .value
+            ?.contains(widget.businessId) ??
+        false;
+
+    return IconButton(
+      tooltip: on ? 'Turn off alerts' : 'Alert me to announcements',
+      onPressed: _busy ? null : () => _toggle(on),
+      icon: CircleAvatar(
+        backgroundColor: palette.surface.withValues(alpha: 0.85),
+        child: Icon(
+          on ? Icons.notifications_active : Icons.notifications_none,
+          color: on ? palette.red : palette.ink,
           size: 20,
         ),
       ),
@@ -1475,27 +1560,27 @@ class _TagChip extends StatelessWidget {
     final label = KnownBusinessTags.labelFor(tag);
     final icon = _iconFor(tag);
 
-    return Container(
-      padding: const EdgeInsets.symmetric(
-        horizontal: Insets.md,
-        vertical: Insets.xs,
-      ),
-      decoration: BoxDecoration(
-        color: palette.surface,
-        borderRadius: BorderRadius.circular(Corners.pill),
-        border: Border.all(color: palette.line),
-      ),
-      child: Row(
-        mainAxisSize: MainAxisSize.min,
+    // An icon over its label, as in the design's amenities row.
+    return SizedBox(
+      width: 76,
+      child: Column(
         children: [
-          Icon(icon, size: 14, color: palette.ink),
-          const SizedBox(width: Insets.xs),
+          Container(
+            width: 44,
+            height: 44,
+            decoration: BoxDecoration(
+              color: palette.app,
+              borderRadius: BorderRadius.circular(Corners.xl),
+              border: Border.all(color: palette.line),
+            ),
+            child: Icon(icon, size: 22, color: palette.ink),
+          ),
+          const SizedBox(height: Insets.xs),
           Text(
             label,
-            style: AppText.bodyMedium.copyWith(
-              color: palette.ink,
-              fontWeight: FontWeight.w500,
-            ),
+            textAlign: TextAlign.center,
+            maxLines: 2,
+            style: AppText.caption.copyWith(color: palette.ink),
           ),
         ],
       ),
@@ -1513,53 +1598,6 @@ class _TagChip extends StatelessWidget {
     KnownBusinessTags.outdoorSeating => Icons.deck,
     _ => Icons.check_circle_outline,
   };
-}
-
-class _ActionTile extends StatelessWidget {
-  const _ActionTile({
-    required this.icon,
-    required this.label,
-    required this.color,
-    required this.onTap,
-  });
-
-  final IconData icon;
-  final String label;
-  final Color color;
-  final VoidCallback onTap;
-
-  @override
-  Widget build(BuildContext context) {
-    final palette = context.palette;
-
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(Corners.md),
-      child: Container(
-        padding: const EdgeInsets.symmetric(vertical: Insets.md),
-        decoration: BoxDecoration(
-          color: palette.surface,
-          borderRadius: BorderRadius.circular(Corners.md),
-          border: Border.all(color: palette.line),
-          boxShadow: Shadows.card,
-        ),
-        child: Column(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Icon(icon, color: color, size: 22),
-            const SizedBox(height: Insets.xs),
-            Text(
-              label,
-              style: AppText.labelMedium.copyWith(
-                color: palette.ink,
-                fontWeight: FontWeight.w600,
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
 }
 
 class _NotFoundView extends StatelessWidget {
@@ -1639,6 +1677,117 @@ class _ErrorView extends StatelessWidget {
           ],
         ),
       ),
+    );
+  }
+}
+
+/// About · Photos · Reviews, underlined in red like the design.
+class _ListingTabs extends StatelessWidget {
+  const _ListingTabs({
+    required this.selected,
+    required this.reviewCount,
+    required this.onSelect,
+  });
+
+  final int selected;
+  final int reviewCount;
+  final ValueChanged<int> onSelect;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final labels = [
+      'About',
+      'Photos',
+      if (reviewCount > 0) 'Reviews ($reviewCount)' else 'Reviews',
+    ];
+
+    return DecoratedBox(
+      decoration: BoxDecoration(
+        border: Border(bottom: BorderSide(color: palette.line)),
+      ),
+      child: Row(
+        children: [
+          for (var i = 0; i < labels.length; i++)
+            Expanded(
+              child: InkWell(
+                onTap: () => onSelect(i),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: Insets.lg),
+                  decoration: BoxDecoration(
+                    border: Border(
+                      bottom: BorderSide(
+                        color: i == selected ? palette.red : Colors.transparent,
+                        width: 2.5,
+                      ),
+                    ),
+                  ),
+                  child: Text(
+                    labels[i],
+                    textAlign: TextAlign.center,
+                    style: AppText.labelLarge.copyWith(
+                      color: i == selected ? palette.red : palette.muted,
+                    ),
+                  ),
+                ),
+              ),
+            ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Every photo the listing has, with its caption (and so its credit).
+class _PhotoGrid extends StatelessWidget {
+  const _PhotoGrid({required this.business});
+
+  final Business business;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final photos = business.photos
+        .where((p) => p.url?.isNotEmpty ?? false)
+        .toList();
+
+    if (photos.isEmpty) {
+      return Padding(
+        padding: const EdgeInsets.symmetric(vertical: Insets.giant),
+        child: Text(
+          'No photos yet. The business or the Dadliplug team adds them.',
+          textAlign: TextAlign.center,
+          style: AppText.bodyMedium.copyWith(color: palette.muted),
+        ),
+      );
+    }
+
+    return Column(
+      children: [
+        for (final photo in photos) ...[
+          ClipRRect(
+            borderRadius: BorderRadius.circular(Corners.xl),
+            child: AspectRatio(
+              aspectRatio: 4 / 3,
+              child: CachedNetworkImage(
+                imageUrl: photo.url!,
+                fit: BoxFit.cover,
+                placeholder: (_, _) => ColoredBox(color: palette.line),
+                errorWidget: (_, _, _) => ColoredBox(color: palette.line),
+              ),
+            ),
+          ),
+          if (photo.caption?.isNotEmpty ?? false)
+            Padding(
+              padding: const EdgeInsets.only(top: Insets.xs),
+              child: Text(
+                photo.caption!,
+                style: AppText.caption.copyWith(color: palette.muted),
+              ),
+            ),
+          const SizedBox(height: Insets.lg),
+        ],
+      ],
     );
   }
 }

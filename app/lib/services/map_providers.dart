@@ -15,10 +15,18 @@ final listingAdminRepositoryProvider = Provider<ListingAdminRepository>((ref) {
 });
 
 /// Stream provider for all active business listings.
-final businessListProvider = StreamProvider<List<Business>>((ref) {
-  final repo = ref.watch(businessRepositoryProvider);
-  return repo.watchBusinesses();
-});
+///
+/// Automatic retry is off. Riverpod 3 retries a failed provider by default and
+/// reports loading while it does, so with no connection the map showed a
+/// spinner forever and the "could not load" error, with its retry button,
+/// never appeared. The screens retry by invalidating this provider.
+final businessListProvider = StreamProvider<List<Business>>(
+  (ref) {
+    final repo = ref.watch(businessRepositoryProvider);
+    return repo.watchBusinesses();
+  },
+  retry: (_, _) => null,
+);
 
 /// Notifier managing active map filters ([ListingQuery]).
 class MapQueryNotifier extends Notifier<ListingQuery> {

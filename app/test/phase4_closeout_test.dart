@@ -33,7 +33,7 @@ void main() {
   group('rating label never calls unverified ratings verified', () {
     test('imported ratings only', () {
       final b = base.copyWith(seededRating: 4.2, seededReviewCount: 28);
-      expect(ratingLabel(b), '(28 ratings from before IslandAds)');
+      expect(ratingLabel(b), '(28 ratings from before Dadliplug)');
     });
 
     test('verified reviews only', () {

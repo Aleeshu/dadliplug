@@ -45,8 +45,10 @@ class FakeBusinessRepository implements BusinessRepository {
       throw UnimplementedError('covered against the live database');
 
   @override
-  Future<void> toggleClosedToday(String businessId, bool isClosed) async =>
-      throw UnimplementedError('covered against the live database');
+  Future<void> toggleClosedToday(
+    String businessId, {
+    required bool isClosed,
+  }) async => throw UnimplementedError('covered against the live database');
 
   @override
   Future<void> reportWrongInfo({
@@ -114,7 +116,7 @@ void main() {
         rating: 4.8,
         ratingCount: 50,
       ),
-      _business(id: 'c', category: BusinessCategory.beauty),
+      _business(id: 'c', category: BusinessCategory.healthBeauty),
       _business(
         id: 'd',
         tier: SubscriptionTier.delisted,
@@ -214,7 +216,7 @@ void main() {
           businessListProvider.overrideWithValue(
             AsyncData([
               _business(id: 'a'),
-              _business(id: 'b', category: BusinessCategory.beauty),
+              _business(id: 'b', category: BusinessCategory.healthBeauty),
             ]),
           ),
         ],
@@ -225,11 +227,31 @@ void main() {
 
       container
           .read(mapQueryProvider.notifier)
-          .toggleCategory(BusinessCategory.beauty);
+          .toggleCategory(BusinessCategory.healthBeauty);
 
       final filtered = container.read(filteredBusinessesProvider).value!;
       expect(filtered, hasLength(1));
       expect(filtered.first.id, 'b');
+    });
+
+    test('a failed load ends in an error, not endless loading', () async {
+      // Riverpod 3 retries failed providers by default and reports loading
+      // meanwhile. Offline, that kept the map on a spinner forever and the
+      // "could not load" message never showed.
+      final container = ProviderContainer(
+        overrides: [
+          businessRepositoryProvider.overrideWithValue(_OfflineRepository()),
+        ],
+      );
+      addTearDown(container.dispose);
+
+      final sub = container.listen(businessListProvider, (_, _) {});
+      addTearDown(sub.close);
+      await Future<void>.delayed(const Duration(seconds: 1));
+
+      final state = container.read(businessListProvider);
+      expect(state.hasError, isTrue);
+      expect(state.isLoading, isFalse);
     });
 
     test('an empty database filters to empty', () {
@@ -243,4 +265,11 @@ void main() {
       expect(container.read(filteredBusinessesProvider).value, isEmpty);
     });
   });
+}
+
+/// A repository whose listings never load, as on a phone with no connection.
+class _OfflineRepository extends Fake implements BusinessRepository {
+  @override
+  Stream<List<Business>> watchBusinesses() =>
+      Stream.error(Exception('Failed host lookup'));
 }

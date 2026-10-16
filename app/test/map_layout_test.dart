@@ -39,7 +39,10 @@ class _Repo implements BusinessRepository {
   Future<void> updateBusiness(Business business) async {}
 
   @override
-  Future<void> toggleClosedToday(String businessId, bool isClosed) async {}
+  Future<void> toggleClosedToday(
+    String businessId, {
+    required bool isClosed,
+  }) async {}
 
   @override
   Future<void> reportWrongInfo({
@@ -50,18 +53,18 @@ class _Repo implements BusinessRepository {
 }
 
 Business _business(String id) => Business(
-      id: id,
-      name: 'Business $id',
-      category: BusinessCategory.food,
-      tier: SubscriptionTier.basic,
-      area: 'Dickenson Bay',
-      description: 'x',
-      latitude: 17.1,
-      longitude: -61.8,
-      phone: '+1 268 555 0000',
-    );
+  id: id,
+  name: 'Business $id',
+  category: BusinessCategory.food,
+  tier: SubscriptionTier.basic,
+  area: 'Dickenson Bay',
+  description: 'x',
+  latitude: 17.1,
+  longitude: -61.8,
+  phone: '+1 268 555 0000',
+);
 
-Widget _app(List<Business> businesses) {
+Widget _app(List<Business> businesses, {String? focus}) {
   final session = AuthSession(
     service: MockAuthService(latency: Duration.zero),
   );
@@ -74,6 +77,7 @@ Widget _app(List<Business> businesses) {
       home: MapScreen(
         session: session,
         roleSwitcher: RoleSwitcherController(null),
+        focusBusinessId: focus,
       ),
     ),
   );
@@ -156,7 +160,7 @@ void main() {
 
       // The last category is the one most likely to be cut off on a narrow
       // screen, which is exactly the bug that was reported.
-      expect(find.text('Online'), findsOneWidget);
+      expect(find.text('Other'), findsOneWidget);
 
       await tester.drag(
         find.descendant(
@@ -184,7 +188,8 @@ void main() {
       expect(
         fab.center.dy,
         greaterThan(tallPhone.height * 0.6),
-        reason: 'The recentre button was rendering at the top of the screen, '
+        reason:
+            'The recentre button was rendering at the top of the screen, '
             'over the filter chips, because the Stack was sizing itself to its '
             'content instead of filling the body.',
       );
@@ -205,7 +210,8 @@ void main() {
       expect(
         heading.center.dy,
         greaterThan(tallPhone.height * 0.45),
-        reason: 'The empty state was stacking at the top, behind the header '
+        reason:
+            'The empty state was stacking at the top, behind the header '
             'and chips, instead of sitting in the free space below them.',
       );
     });
@@ -258,13 +264,15 @@ void main() {
       expect(
         colors.first.a,
         lessThan(0.1),
-        reason: 'The top of the scrim must stay transparent so the map is '
+        reason:
+            'The top of the scrim must stay transparent so the map is '
             'visible above the empty-state copy.',
       );
       expect(
         colors[1].a,
         greaterThan(0.85),
-        reason: 'The middle must be opaque enough to read the copy against '
+        reason:
+            'The middle must be opaque enough to read the copy against '
             'map tiles.',
       );
     });
@@ -286,7 +294,9 @@ void main() {
       await tester.pumpWidget(
         ProviderScope(
           overrides: [
-            businessRepositoryProvider.overrideWithValue(_Repo([_business('a')])),
+            businessRepositoryProvider.overrideWithValue(
+              _Repo([_business('a')]),
+            ),
           ],
           child: MaterialApp(
             theme: AppTheme.light,
@@ -303,5 +313,23 @@ void main() {
 
       expect(tester.takeException(), isNull);
     });
+  });
+
+  testWidgets('Get Directions opens the map on that business', (tester) async {
+    // "Directions" stays inside the app: the map tab opens with the
+    // business selected and its card showing, not the Google Maps app.
+    tester.view.physicalSize = tallPhone;
+    tester.view.devicePixelRatio = 1;
+    addTearDown(tester.view.reset);
+
+    await tester.pumpWidget(_app([_business('a'), _business('b')], focus: 'b'));
+    await tester.pump();
+    await tester.pump();
+
+    final container = ProviderScope.containerOf(
+      tester.element(find.byType(MapScreen)),
+    );
+    expect(container.read(selectedBusinessProvider)?.id, 'b');
+    expect(find.text('Business b'), findsWidgets);
   });
 }

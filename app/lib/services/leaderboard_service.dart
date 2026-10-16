@@ -138,10 +138,12 @@ class LeaderboardService {
     required List<Business> businesses,
     required DateTime now,
   }) => BusinessCategory.values
-      .where((c) => !c.isMapLess)
       .where(
-        (c) =>
-            build(businesses: businesses, category: c, now: now).entries.isNotEmpty,
+        (c) => build(
+          businesses: businesses,
+          category: c,
+          now: now,
+        ).entries.isNotEmpty,
       )
       .toList(growable: false);
 
@@ -157,7 +159,9 @@ class LeaderboardService {
   }
 
   LeaderboardExclusion? _exclusionFor(Business business, DateTime now) {
-    if (business.category.isMapLess) {
+    // No location, no local ranking: an online-only shop is not competing
+    // with the restaurant down the road for "Top 10 Food".
+    if (!business.hasLocation) {
       return LeaderboardExclusion.notRankable;
     }
     if (_daysSinceListing(business, now) < _grace.inDays) {

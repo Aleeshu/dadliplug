@@ -1,0 +1,6 @@
+<?xml version="1.0" encoding="utf-8"?>
+<resources>
+    <!-- Matches SplashScreen.top in lib/features/splash/splash_screen.dart. -->
+    <color name="splash_background">#0565B9</color>
+    <color name="ic_launcher_background">#0565B9</color>
+</resources>

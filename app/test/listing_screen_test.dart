@@ -33,7 +33,10 @@ class FakeTestRepository implements BusinessRepository {
   }
 
   @override
-  Future<void> toggleClosedToday(String businessId, bool isClosed) async {
+  Future<void> toggleClosedToday(
+    String businessId, {
+    required bool isClosed,
+  }) async {
     final b = businesses[businessId];
     if (b != null) {
       businesses[businessId] = b.copyWith(isClosedToday: isClosed);
@@ -137,18 +140,18 @@ void main() {
       // placeholder when the listing has no photo yet. Asserting an exact count
       // here would break the moment a business uploads a picture, without
       // anything actually being wrong.
-      expect(find.text('Food & drink'), findsWidgets);
+      expect(find.text('Food & Drink'), findsWidgets);
       expect(find.text(r'$$'), findsOneWidget);
       expect(find.text('4.8'), findsOneWidget);
       // Seeded ratings have passed no visit gate, so they must not be called
       // verified (handover 6.2).
-      expect(find.text('(15 ratings from before IslandAds)'), findsOneWidget);
+      expect(find.text('(15 ratings from before Dadliplug)'), findsOneWidget);
       expect(find.textContaining('verified reviews'), findsNothing);
 
       // 2. Action buttons
       expect(find.text('Call'), findsOneWidget);
       expect(find.text('WhatsApp'), findsOneWidget);
-      expect(find.text('Directions'), findsOneWidget);
+      expect(find.text('Get Directions'), findsOneWidget);
 
       // 3. Special offer banner
       expect(find.text('SPECIAL OFFER'), findsOneWidget);

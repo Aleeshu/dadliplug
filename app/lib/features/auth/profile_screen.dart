@@ -541,6 +541,26 @@ class _RoleExplainerState extends State<_RoleExplainer> {
           ),
         ),
 
+        // The only way into the admin areas against Supabase. The header's
+        // role switcher exists for the mock only, so without these a real
+        // team admin had the role and no route to any of its screens.
+        if (widget.session.canAccessTeamDashboard()) ...[
+          const SizedBox(height: Insets.lg),
+          FilledButton.icon(
+            onPressed: () => context.go('/team/listings'),
+            icon: const Icon(Icons.shield_outlined, size: 18),
+            label: const Text('Team tools'),
+          ),
+        ],
+        if (widget.session.canAccessBusinessDashboard()) ...[
+          const SizedBox(height: Insets.md),
+          OutlinedButton.icon(
+            onPressed: () => context.go('/business'),
+            icon: const Icon(Icons.storefront_outlined, size: 18),
+            label: const Text('Business tools'),
+          ),
+        ],
+
         // Only offered to someone who is not already an admin. The database
         // refuses it once an admin exists, so this is a convenience rather
         // than the gate — but a button that silently does nothing is worse

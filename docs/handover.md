@@ -3,6 +3,11 @@
 Written for Claude Code picking this project up cold. Read this before changing
 anything.
 
+**Name:** the app is called **Dadliplug** (renamed 2026-10-15). Code, docs and
+the package id still say IslandAds / `com.antiguamap.antigua_business_map`; the
+package id must not change, because the Maps key restriction and the Android
+OAuth client are both tied to it. Only user-visible text was renamed.
+
 **State at handover:** 2026-10-14. Analyzer clean, 172 tests passing. Phases
 0–3 complete, Phase 4 code complete. The map (now Google Maps), pin taps and
 Google sign-in are confirmed on a phone. The business posting-to-report path
@@ -300,6 +305,49 @@ key shows "NO MAPS KEY" instead of the SDK's silent blank tiles.
   nothing sets that build setting yet.
 - The MapLibre-specific traps (selection-filter wire format, bounded camera
   blanking on tall screens) no longer apply. Camera bounds are back on.
+
+### 6.7 Push notifications (Firebase) — wired, not yet seen on a device
+
+Firebase project `antiguamap-511219-9cb87` (a separate Google Cloud project
+from `antiguamap-511219`, which holds Maps and sign-in). Messaging only; no
+Analytics, by design.
+
+- `app/android/app/google-services.json` is **gitignored**. Re-download it from
+  Firebase → Project settings → Android app to build on another machine.
+- The admin service-account key lives only as the Supabase secret
+  `FIREBASE_SERVICE_ACCOUNT`. It was pasted into a chat on 2026-10-15: generate
+  a new key, `supabase secrets set` it, and delete the old one.
+- Flow: insert into `business_announcements` / `review_requests` → trigger
+  queues `push_outbox` and pings `functions/v1/push` → function sends unsent
+  rows via FCM v1. Failures land in `push_outbox.error`.
+- Permission is asked when turning on a business's bell, or on opening
+  Business tools — never at first launch.
+- iOS needs an Apple Developer account and an APNs key first.
+
+### 6.8 Public listing pages (Cloudflare Worker)
+
+`https://dadliplug-listing.listing-page.workers.dev/l/<business-id>`. The page
+is rendered by `supabase/functions/listing`; Supabase serves function output
+on its own domain as `text/plain` + `nosniff`, so the Worker in
+`workers/listing-page` re-serves it as HTML. Deploy with `npx wrangler deploy`
+from that folder (Cloudflare login is on this PC). The URL is set in
+`AppConfig.publicListingUrl`; change it there if the subdomain is renamed.
+
+### 6.9 Editor diagnostics (Zed)
+
+The project opens in Zed. `.zed/settings.json` hands `supabase/functions` to
+the Deno language server (needs Zed's Deno extension); without it those files
+show false errors about `Deno` and `jsr:` imports. Python under `scripts/` is
+checked by basedpyright and is clean. Dart: `flutter analyze` reports no
+issues at all, infos included; keep it that way.
+
+### 6.10 Dadliplug design — what is done
+
+Done: palette, Home, Categories, five-tab bar, splash, icon, logo, Featured
+cards, business page (Call / Get Directions, About · Photos · Reviews, amenity
+tiles), Events calendar and event page, Saved (Businesses / Events / Offers),
+Bulletin Board post kinds, Map header ("Search this area"), category pins.
+Not yet: Map's bottom business card restyle.
 
 ---
 

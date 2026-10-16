@@ -1,0 +1,7 @@
+# Cloudflare Worker for public listing pages. Deploy from this folder with
+#   npx wrangler deploy
+# Served at https://dadliplug-listing.<account-subdomain>.workers.dev/l/<id>
+name = "dadliplug-listing"
+main = "src/index.js"
+compatibility_date = "2026-10-01"
+workers_dev = true

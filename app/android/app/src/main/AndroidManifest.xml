@@ -11,8 +11,16 @@
          makes. Location is never stored. -->
     <uses-permission android:name="android.permission.ACCESS_COARSE_LOCATION"/>
 
+    <!-- Scanning a business's visit QR at the till (plan.md section 8). Used
+         only while the scanner is open; no photos are taken or kept. -->
+    <uses-permission android:name="android.permission.CAMERA"/>
+
+    <!-- Android 13+: alerts you opted into (a business's bell, review
+         requests for your own business). Asked when you opt in. -->
+    <uses-permission android:name="android.permission.POST_NOTIFICATIONS"/>
+
     <application
-        android:label="IslandAds"
+        android:label="Dadliplug"
         android:name="${applicationName}"
         android:icon="@mipmap/ic_launcher">
         <activity
