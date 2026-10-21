@@ -132,48 +132,7 @@ int compareByRank(Business a, Business b) {
   return (position: index + 1, of: same.length);
 }
 
-/// The Featured board.
-///
-/// Ten slots, and businesses rotate through them by least-recently-featured.
-/// A business that held a slot last week waits six weeks before it can
-/// return, so the ten premium subscribers on the island each see their turn
-/// instead of the same names sitting on the board forever.
-///
-/// This is the one place in the app where the rotation is not strictly "top
-/// by score" — a brand new premium subscriber needs a slot to justify the
-/// price, and a score of zero puts them last. Score breaks ties within each
-/// eligibility band.
-List<Business> selectSpotlight({
-  required List<Business> businesses,
-  required int currentWeek,
-  int slots = 10,
-}) {
-  final eligible = businesses.where((b) => b.tier.isVisible).toList()
-    ..sort((a, b) {
-      final byLastSeen = a.lastSpotlightWeek.compareTo(b.lastSpotlightWeek);
-      if (byLastSeen != 0) return byLastSeen;
-      return compareByRank(a, b);
-    });
-
-  return eligible.take(slots).toList(growable: false);
-}
-
-/// The 10 slots for the coming week, given who held them last week.
-List<Business> advanceSpotlight({
-  required List<Business> businesses,
-  required List<Business> previousWeek,
-  required int currentWeek,
-  int slots = 10,
-}) {
-  final chosen = selectSpotlight(
-    businesses: businesses,
-    currentWeek: currentWeek,
-    slots: slots,
-  );
-  // copyWith, not a hand-built constructor. The hand-built copy silently
-  // dropped every field added after it was written — tags, socials, the
-  // closed-today flag and createdAt — so a Spotlight business lost them.
-  return chosen
-      .map((b) => b.copyWith(isSpotlight: true, lastSpotlightWeek: currentWeek))
-      .toList(growable: false);
-}
+// The Spotlight board is chosen by the database: public.rotate_spotlight()
+// in supabase/migrations/20261022100000_phase8_ranking.sql, every Monday.
+// A Dart copy lived here and drifted from it (it let every tier in), so it
+// was removed rather than kept in step.

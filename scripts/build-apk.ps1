@@ -79,7 +79,13 @@ if ($Mirror) {
 Set-Location $buildRoot
 
 Write-Host "Building IslandAds in $buildRoot ..."
+# Gradle's JDK prints warnings on stderr ("A restricted method in
+# java.lang.System has been called"). Under 'Stop', Windows PowerShell turns
+# any stderr line from a native command into a terminating error, so the
+# build died on a warning. The exit code is the real verdict.
+$ErrorActionPreference = 'Continue'
 & flutter @args
+$ErrorActionPreference = 'Stop'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $mode = if ($Release) { 'release' } else { 'debug' }

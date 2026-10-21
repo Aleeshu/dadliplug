@@ -608,7 +608,7 @@ through to a confirmed session.
   slot requests, read receipts, the events calendar and Spotlight are the
   candidates to move past launch if the weeks do not hold.
 
-### Phase 8 — Ranking (week 15)
+### Phase 8 — Ranking (week 15) ✅
 - Score from rating volume/average and engagement ✅ — live verified reviews now
   count (they did not before: listing rows carried only imported ratings)
 - **Per-category leaderboard**, "Top 10 Food businesses by popularity"
@@ -623,7 +623,8 @@ through to a confirmed session.
   so the comparison is meaningless
 - **A category with nothing eligible gets no board**, rather than an empty
   "Top 10"
-- **Featured buys a slot and a badge, never a position.** Covered by a test
+- **Featured buys a slot and a badge, never a position.** Covered by a test ✅
+  — test/phase8_rules_test.dart: leaderboard, search and Featured page
 - **Rank inputs count unique users.** Exclude owner and team devices from views,
   calls and taps, or a business can tap its own number to climb.
 - Recomputed on a schedule, not per request ✅ — nightly snapshot (pg_cron
@@ -633,7 +634,7 @@ through to a confirmed session.
 - **Team Ranking screen** ✅ — every listing per category with its score parts,
   grace/online-only status, weekly movement, and a flag when calls and taps
   outrun views (repeated guest taps)
-- Drives search order and the order inside the Featured page
+- Drives search order and the order inside the Featured page ✅
 
 ### Phase 9 — Validate the business model (week 16)
 - **Start now, not at week 16.** Run these alongside the build, because every

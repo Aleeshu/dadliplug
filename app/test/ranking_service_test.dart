@@ -146,51 +146,6 @@ void main() {
       expect(reviewStats(b).count, 4);
     });
   });
-
-  group('spotlight rotation', () {
-    final many = List.generate(
-      15,
-      (i) => makeBusiness(
-        id: 'b$i',
-        tier: SubscriptionTier.featured,
-        lastSpotlightWeek: i < 10 ? 1 : -1,
-      ),
-    );
-
-    test('holds ten slots', () {
-      expect(selectSpotlight(businesses: many, currentWeek: 2).length, 10);
-    });
-
-    test('serves the least recently featured first', () {
-      final chosen = selectSpotlight(businesses: many, currentWeek: 2);
-      // The ten that were featured in week 1 should be back in week 2, since
-      // the five that never had a slot have the older timestamp.
-      expect(chosen.first.id, 'b10');
-    });
-
-    test('advancing a week stamps the new holders', () {
-      final next = advanceSpotlight(
-        businesses: many,
-        previousWeek: [],
-        currentWeek: 5,
-      );
-      expect(next.every((b) => b.lastSpotlightWeek == 5), isTrue);
-      expect(next.every((b) => b.isSpotlight), isTrue);
-    });
-
-    test('delisted businesses never take a slot', () {
-      final withDead = [
-        ...many,
-        makeBusiness(
-          id: 'dead',
-          tier: SubscriptionTier.delisted,
-          lastSpotlightWeek: -5,
-        ),
-      ];
-      final chosen = selectSpotlight(businesses: withDead, currentWeek: 2);
-      expect(chosen.any((b) => b.id == 'dead'), isFalse);
-    });
-  });
 }
 
 extension on Business {

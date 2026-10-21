@@ -1,4 +1,6 @@
+import java.io.FileInputStream
 import java.util.Base64
+import java.util.Properties
 
 plugins {
     id("com.android.application")
@@ -25,6 +27,19 @@ val dartDefines: Map<String, String> =
         ?.toMap()
         ?: emptyMap()
 
+// The Play upload key, from android/key.properties (gitignored):
+//   storeFile=C:/path/outside/the/repo/dadliplug-upload.jks
+//   storePassword=...
+//   keyAlias=upload
+//   keyPassword=...
+// Without it a release build still works for testing, signed with the debug
+// key, and says so; the Play Console refuses debug-signed uploads.
+val keyProperties = Properties().apply {
+    val file = rootProject.file("key.properties")
+    if (file.exists()) FileInputStream(file).use { load(it) }
+}
+val hasUploadKey = keyProperties.getProperty("storeFile") != null
+
 android {
     namespace = "com.antiguamap.antigua_business_map"
     compileSdk = flutter.compileSdkVersion
@@ -36,7 +51,9 @@ android {
     }
 
     defaultConfig {
-        // TODO: Specify your own unique Application ID (https://developer.android.com/studio/build/application-id.html).
+        // Permanent once the app is on Play. Changing it also means
+        // re-registering the Android app in Firebase (google-services.json) and
+        // the Android OAuth client for Google sign-in.
         applicationId = "com.antiguamap.antigua_business_map"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
@@ -51,11 +68,25 @@ android {
         manifestPlaceholders["googleMapsApiKey"] = dartDefines["GOOGLE_MAPS_API_KEY"] ?: ""
     }
 
+    signingConfigs {
+        if (hasUploadKey) {
+            create("upload") {
+                storeFile = file(keyProperties.getProperty("storeFile"))
+                storePassword = keyProperties.getProperty("storePassword")
+                keyAlias = keyProperties.getProperty("keyAlias")
+                keyPassword = keyProperties.getProperty("keyPassword")
+            }
+        }
+    }
+
     buildTypes {
         release {
-            // TODO: Add your own signing config for the release build.
-            // Signing with the debug keys for now, so `flutter run --release` works.
-            signingConfig = signingConfigs.getByName("debug")
+            signingConfig = if (hasUploadKey) {
+                signingConfigs.getByName("upload")
+            } else {
+                logger.warn("No android/key.properties: release is debug-signed and cannot go to Play.")
+                signingConfigs.getByName("debug")
+            }
         }
     }
 }

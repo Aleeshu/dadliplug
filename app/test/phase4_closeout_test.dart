@@ -108,27 +108,6 @@ void main() {
     });
   });
 
-  test('Spotlight keeps every field of the business it promotes', () {
-    final b = base.copyWith(
-      tags: ['cash_only'],
-      instagram: 'shack',
-      isClosedToday: true,
-      createdAt: DateTime.utc(2026),
-    );
-    final next = advanceSpotlight(
-      businesses: [b],
-      previousWeek: const [],
-      currentWeek: 7,
-    ).single;
-
-    expect(next.isSpotlight, isTrue);
-    expect(next.lastSpotlightWeek, 7);
-    expect(next.tags, ['cash_only']);
-    expect(next.instagram, 'shack');
-    expect(next.isClosedToday, isTrue);
-    expect(next.createdAt, DateTime.utc(2026));
-  });
-
   test('the team gets a Listings tab', () {
     expect(
       AppTabs.teamAdmin.map((t) => t.path),
