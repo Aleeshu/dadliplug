@@ -325,6 +325,8 @@ class SupabaseBusinessRepository
           : (map['offer'] as String).trim(),
       seededRating: (map['seeded_rating'] as num?)?.toDouble() ?? 0,
       seededReviewCount: (map['seeded_review_count'] as num?)?.toInt() ?? 0,
+      liveReviewCount: (map['review_count'] as num?)?.toInt() ?? 0,
+      liveRatingSum: (map['review_rating_sum'] as num?)?.toInt() ?? 0,
       views: (map['views'] as num?)?.toInt() ?? 0,
       calls: (map['calls'] as num?)?.toInt() ?? 0,
       whatsappTaps: (map['whatsapp_taps'] as num?)?.toInt() ?? 0,

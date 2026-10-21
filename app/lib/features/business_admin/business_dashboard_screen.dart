@@ -8,6 +8,7 @@ import 'package:antigua_business_map/services/opening_hours_service.dart';
 import 'package:antigua_business_map/services/billing.dart';
 import 'package:antigua_business_map/services/push_service.dart';
 import 'package:antigua_business_map/services/rank_explainer.dart';
+import 'package:antigua_business_map/services/ranking_repository.dart';
 import 'package:antigua_business_map/services/specials.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
 import 'package:antigua_business_map/models/business_category.dart';
@@ -501,6 +502,9 @@ class _RankCard extends ConsumerWidget {
       return const SizedBox.shrink();
     }
     final r = explainRank(business, all);
+    final movement = weeklyMovement(
+      ref.watch(rankHistoryProvider(business.id)).value ?? const [],
+    );
 
     return Container(
       padding: const EdgeInsets.all(Insets.xl),
@@ -516,6 +520,15 @@ class _RankCard extends ConsumerWidget {
             '${ordinal(r.position)} of ${r.of} in ${business.category.label}',
             style: AppText.titleMedium.copyWith(color: palette.ink),
           ),
+          if (movement case final m? when m != 0)
+            Text(
+              m > 0
+                  ? 'Up $m ${m == 1 ? 'place' : 'places'} this week'
+                  : 'Down ${-m} ${m == -1 ? 'place' : 'places'} this week',
+              style: AppText.labelMedium.copyWith(
+                color: m > 0 ? palette.good : palette.bad,
+              ),
+            ),
           Text(
             r.pointsToNext == null
                 ? 'Top of your category, with ${r.total} points.'

@@ -6,6 +6,7 @@ import 'package:antigua_business_map/services/business_content_repository.dart';
 import 'package:antigua_business_map/services/listing_filter_service.dart';
 import 'package:antigua_business_map/widgets/offer_code_chip.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
+import 'package:antigua_business_map/services/ranking_repository.dart';
 import 'package:antigua_business_map/widgets/business_card.dart';
 import 'package:antigua_business_map/widgets/category_icon.dart';
 import 'package:antigua_business_map/widgets/dadliplug_logo.dart';
@@ -58,6 +59,7 @@ class HomeScreen extends ConsumerWidget {
             _CategoryRow(),
             SizedBox(height: Insets.giant),
             _FeaturedSection(),
+            _SpotlightSection(),
             _OffersSection(),
           ],
         ),
@@ -346,6 +348,58 @@ class _FeaturedSection extends ConsumerWidget {
             ),
           ],
         ),
+      ),
+    );
+  }
+}
+
+/// This week's Spotlight: ten businesses taking turns (plan.md section 3).
+///
+/// Says plainly that it rotates, so nobody reads a slot as a ranking. Hidden
+/// when empty or on an error; it is a bonus row, not Home's purpose.
+class _SpotlightSection extends ConsumerWidget {
+  const _SpotlightSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final spotlight = ref.watch(spotlightProvider).value ?? const [];
+    if (spotlight.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Insets.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Insets.huge),
+            child: Text(
+              "This Week's Spotlight",
+              style: AppText.titleLarge.copyWith(color: palette.ink),
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Insets.huge, 2, Insets.huge, 0),
+            child: Text(
+              'Businesses take turns here. A new set every Monday.',
+              style: AppText.caption.copyWith(color: palette.muted),
+            ),
+          ),
+          const SizedBox(height: Insets.sm),
+          SizedBox(
+            height: 232,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(
+                horizontal: Insets.huge,
+                vertical: Insets.xs,
+              ),
+              itemCount: spotlight.length,
+              separatorBuilder: (_, _) => const SizedBox(width: Insets.xl),
+              itemBuilder: (_, i) => BusinessCard(business: spotlight[i]),
+            ),
+          ),
+        ],
       ),
     );
   }

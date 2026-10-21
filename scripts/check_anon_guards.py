@@ -48,6 +48,9 @@ GUARDED: dict[str, dict[str, object]] = {
         "p_role": "probe",
     },
     "decide_claim": {"p_claim": NOBODY, "p_approve": True},
+    "rotate_spotlight": {},
+    "snapshot_ranks": {},
+    "refresh_review_totals": {"p_business": NOBODY},
 }
 
 

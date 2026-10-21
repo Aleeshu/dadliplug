@@ -46,7 +46,7 @@ final singleBusinessProvider = FutureProvider.family<Business?, String>(
 /// itself on (handover 6.2). They are counted, and labelled for what they are.
 String ratingLabel(Business b) {
   final stats = reviewStats(b);
-  final verified = b.visibleReviews.length;
+  final verified = b.liveReviewCount + b.visibleReviews.length;
   final imported = b.seededReviewCount;
 
   if (imported == 0) {

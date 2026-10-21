@@ -600,14 +600,17 @@ through to a confirmed session.
 - **3-day trial with a 7-day hold on expiry**, data preserved until the hold ends ✅
   — advanced daily by pg_cron. Decided: held listings stay visible (overdue);
   after the hold they are hidden, not deleted
-- Spotlight board: 10 rotating slots
+- Spotlight board: 10 rotating slots ✅ — rotated by pg_cron every Monday 00:10;
+  Featured plans first, Basic fills empty slots; Home shows "This Week's
+  Spotlight"; Team -> Spotlight shows the board, who is next, and Rotate now
 - **Scope check (proposed, not decided):** this phase carries ads, announcements,
   events, quotes, slots, reports, billing and Spotlight in three weeks. Quote and
   slot requests, read receipts, the events calendar and Spotlight are the
   candidates to move past launch if the weeks do not hold.
 
 ### Phase 8 — Ranking (week 15)
-- Score from rating volume/average and engagement
+- Score from rating volume/average and engagement ✅ — live verified reviews now
+  count (they did not before: listing rows carried only imported ratings)
 - **Per-category leaderboard**, "Top 10 Food businesses by popularity"
 - **One-month grace period, decided.** A listing stays off the board for 30 days
   after it goes live. Ranked honestly a new listing has no reviews and no views,
@@ -623,7 +626,13 @@ through to a confirmed session.
 - **Featured buys a slot and a badge, never a position.** Covered by a test
 - **Rank inputs count unique users.** Exclude owner and team devices from views,
   calls and taps, or a business can tap its own number to climb.
-- Recomputed on a schedule, not per request
+- Recomputed on a schedule, not per request ✅ — nightly snapshot (pg_cron
+  00:20) gives weekly movement to owners and the team. Order on screen is
+  still computed live: at island scale it is cheap, and a review shows at
+  once. SQL and Dart formulas pinned by test/ranking_parity_test.dart
+- **Team Ranking screen** ✅ — every listing per category with its score parts,
+  grace/online-only status, weekly movement, and a flag when calls and taps
+  outrun views (repeated guest taps)
 - Drives search order and the order inside the Featured page
 
 ### Phase 9 — Validate the business model (week 16)

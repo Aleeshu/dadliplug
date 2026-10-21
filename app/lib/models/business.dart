@@ -199,6 +199,8 @@ class Business {
     this.lastSpotlightWeek = -1,
     this.seededRating = 0,
     this.seededReviewCount = 0,
+    this.liveReviewCount = 0,
+    this.liveRatingSum = 0,
     this.reviews = const [],
     this.views = 0,
     this.calls = 0,
@@ -268,6 +270,12 @@ class Business {
   /// count render without a second query — a listing screen needs them
   /// immediately, and on a small island the network is often slow.
   final List<Review> reviews;
+
+  /// Verified reviews written in the app, and their star total, as kept on
+  /// the listing row by the database. Listings arrive without their review
+  /// rows, so without these a live review never moved the rating or rank.
+  final int liveReviewCount;
+  final int liveRatingSum;
 
   final int views;
   final int calls;
@@ -363,7 +371,8 @@ class Business {
   /// view, and a call stronger still.
   int get engagement => views + 5 * (calls + whatsappTaps);
 
-  int get totalReviewCount => seededReviewCount + visibleReviews.length;
+  int get totalReviewCount =>
+      seededReviewCount + liveReviewCount + visibleReviews.length;
 
   List<Review> get visibleReviews =>
       reviews.where((r) => r.isVisible).toList(growable: false);
@@ -391,6 +400,8 @@ class Business {
     int? lastSpotlightWeek,
     double? seededRating,
     int? seededReviewCount,
+    int? liveReviewCount,
+    int? liveRatingSum,
     List<Review>? reviews,
     int? views,
     int? calls,
@@ -427,6 +438,8 @@ class Business {
     lastSpotlightWeek: lastSpotlightWeek ?? this.lastSpotlightWeek,
     seededRating: seededRating ?? this.seededRating,
     seededReviewCount: seededReviewCount ?? this.seededReviewCount,
+    liveReviewCount: liveReviewCount ?? this.liveReviewCount,
+    liveRatingSum: liveRatingSum ?? this.liveRatingSum,
     reviews: reviews ?? this.reviews,
     views: views ?? this.views,
     calls: calls ?? this.calls,

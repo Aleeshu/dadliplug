@@ -4,6 +4,9 @@ import 'package:antigua_business_map/models/business.dart';
 
 /// The popularity score, ported exactly from the prototype's `score()`.
 ///
+/// Mirrored in SQL as `public.rank_score` for the nightly snapshot and the
+/// Spotlight rotation; test/ranking_parity_test.dart pins the two together.
+///
 /// The whole product promise is that rank is earned, not bought, so this
 /// function is the most important piece of logic in the app and should not be
 /// changed casually. If it changes, the ranking a business earned silently
@@ -54,10 +57,15 @@ class RankingScore {
 ///
 /// Blends the ratings seeded before launch with the live ones, so a business
 /// that imported twenty reviews is not shown as "0.0" on day one.
+///
+/// Live reviews come from the totals on the listing row, plus any review rows
+/// attached to the model (tests, and the rank explainer's what-ifs). The
+/// repository never attaches rows, so nothing is counted twice.
 ({int count, double average}) reviewStats(Business b) {
   final live = b.visibleReviews;
-  final liveCount = live.length;
-  final liveSum = live.fold<int>(0, (sum, r) => sum + r.rating);
+  final liveCount = b.liveReviewCount + live.length;
+  final liveSum =
+      b.liveRatingSum + live.fold<int>(0, (sum, r) => sum + r.rating);
 
   final count = b.seededReviewCount + liveCount;
   if (count == 0) return (count: 0, average: 0);
