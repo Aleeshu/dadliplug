@@ -103,6 +103,14 @@ class IslandAdsMapState extends State<IslandAdsMap> {
 
   static const _cameraDuration = Duration(milliseconds: 550);
 
+  /// Hides every point of interest and transit stop Google draws, keeping
+  /// roads, coastline and place names.
+  static const String _mapStyle = '''
+[
+  {"featureType": "poi", "stylers": [{"visibility": "off"}]},
+  {"featureType": "transit", "stylers": [{"visibility": "off"}]}
+]''';
+
   /// Pin widths in logical pixels; height is 1.3x. Big enough for a thumb to
   /// land on.
   static const double _pinWidth = 34;
@@ -191,6 +199,10 @@ class IslandAdsMapState extends State<IslandAdsMap> {
       // Marker taps do not reach onTap, so this only fires on the map itself.
       onTap: (_) => widget.onDeselect(),
       markers: _markers(),
+      // Only our pins. Google's own business and transit icons would sit next
+      // to the listings with Google's data (often stale hours), which is the
+      // opposite of the accuracy this app sells.
+      style: _mapStyle,
     );
   }
 
