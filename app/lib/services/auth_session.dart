@@ -126,6 +126,21 @@ class AuthSession extends ChangeNotifier {
     return true;
   }
 
+  /// Re-reads the role and listings from the database.
+  ///
+  /// Both are granted by the team while the app may be open (a listing claim
+  /// approved, say). Called when the app returns to the foreground, so a new
+  /// owner sees the business tabs without signing out and in.
+  Future<void> refresh() async {
+    if (!isSignedIn) return;
+    try {
+      _setUser(await _service.reloadUser());
+    } on Object catch (e) {
+      // No signal: keep what we have and try again next time.
+      debugPrint('Profile refresh skipped: $e');
+    }
+  }
+
   void _setUser(AppUser? user) {
     // Compare on the fields that change what a screen shows. The previous
     // check ignored businessIds, so a role or ownership change that kept the

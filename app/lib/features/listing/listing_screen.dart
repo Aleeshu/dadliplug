@@ -1,5 +1,6 @@
 import 'package:antigua_business_map/features/events/event_widgets.dart';
 import 'package:antigua_business_map/features/reviews/reviews_section.dart';
+import 'package:antigua_business_map/features/listing/claim_sheet.dart';
 import 'package:antigua_business_map/features/listing/request_sheet.dart';
 import 'package:antigua_business_map/services/push_service.dart';
 import 'package:antigua_business_map/services/requests.dart';
@@ -1133,6 +1134,8 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
               ),
             ),
           ),
+          const SizedBox(height: Insets.sm),
+          ClaimPrompt(business: b),
         ],
       ),
     );

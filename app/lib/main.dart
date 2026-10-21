@@ -134,10 +134,14 @@ class _AntiguaMapAppState extends State<AntiguaMapApp> {
     super.initState();
     // A tapped notification opens the screen it is about.
     PushService.onOpenRoute = _router.push;
+    _lifecycle = AppLifecycleListener(onResume: widget.session.refresh);
   }
+
+  late final AppLifecycleListener _lifecycle;
 
   @override
   void dispose() {
+    _lifecycle.dispose();
     widget.session.dispose();
     super.dispose();
   }

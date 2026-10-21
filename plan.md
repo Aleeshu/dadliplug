@@ -578,7 +578,9 @@ through to a confirmed session.
   reply → report → moderate)
 
 ### Phase 7 — Business admin and billing (weeks 12–14)
-- Claim and verify a listing
+- Claim and verify a listing ✅ — "Own this business?" on every listing; the team
+  verifies by calling the number already listed, then approves in
+  Moderation -> Claims, which grants business admin for that listing
 - Edit hours, photos, menu, description, offers, specials, socials
 - **Move and customise the map pin** (Basic and above; Growing keeps the default
   pin, and the team corrects its position on request)

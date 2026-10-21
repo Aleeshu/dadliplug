@@ -41,6 +41,13 @@ GUARDED: dict[str, dict[str, object]] = {
     "submit_review": {"p_business": NOBODY, "p_rating": 5, "p_body": "probe"},
     "report_review": {"p_review": NOBODY, "p_reason": "probe"},
     "register_push_token": {"p_token": "probe"},
+    "request_claim": {
+        "p_business": NOBODY,
+        "p_name": "probe",
+        "p_phone": "2685550000",
+        "p_role": "probe",
+    },
+    "decide_claim": {"p_claim": NOBODY, "p_approve": True},
 }
 
 
