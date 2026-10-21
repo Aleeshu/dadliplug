@@ -3,6 +3,7 @@ import 'package:antigua_business_map/features/reviews/reviews_section.dart';
 import 'package:antigua_business_map/features/listing/request_sheet.dart';
 import 'package:antigua_business_map/services/push_service.dart';
 import 'package:antigua_business_map/services/requests.dart';
+import 'package:antigua_business_map/services/specials.dart';
 import 'package:antigua_business_map/services/reviews_repository.dart';
 import 'package:antigua_business_map/widgets/category_icon.dart';
 import 'package:antigua_business_map/widgets/offer_code_chip.dart';
@@ -492,6 +493,16 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                   ),
                   const SizedBox(height: Insets.lg),
                 ],
+
+                // Today's special. Hidden on a closed day: it cannot be had.
+                if (!b.isClosedToday)
+                  if (todaysSpecial(b) case final special?) ...[
+                    _SpecialBanner(
+                      text: special.text,
+                      soldOut: special.soldOut,
+                    ),
+                    const SizedBox(height: Insets.lg),
+                  ],
 
                 // Action Buttons Strip: Call, WhatsApp, Directions
                 _buildActionStrip(context, b, palette),
@@ -1821,6 +1832,61 @@ class _PhotoGrid extends StatelessWidget {
           const SizedBox(height: Insets.lg),
         ],
       ],
+    );
+  }
+}
+
+/// "Today's special" on a listing, struck through once sold out.
+class _SpecialBanner extends StatelessWidget {
+  const _SpecialBanner({required this.text, required this.soldOut});
+
+  final String text;
+  final bool soldOut;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(Insets.lg),
+      decoration: BoxDecoration(
+        color: soldOut ? palette.surface : palette.warnBg,
+        borderRadius: BorderRadius.circular(Corners.md),
+        border: Border.all(color: soldOut ? palette.line : palette.warn),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            Icons.local_dining,
+            size: 22,
+            color: soldOut ? palette.muted : palette.warn,
+          ),
+          const SizedBox(width: Insets.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  soldOut ? "TODAY'S SPECIAL: SOLD OUT" : "TODAY'S SPECIAL",
+                  style: AppText.labelMedium.copyWith(
+                    color: soldOut ? palette.muted : palette.warn,
+                    fontWeight: FontWeight.w800,
+                  ),
+                ),
+                const SizedBox(height: Insets.xxs),
+                Text(
+                  text,
+                  style: AppText.bodyLarge.copyWith(
+                    color: soldOut ? palette.muted : palette.ink,
+                    decoration: soldOut ? TextDecoration.lineThrough : null,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
     );
   }
 }

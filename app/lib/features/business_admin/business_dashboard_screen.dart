@@ -8,6 +8,7 @@ import 'package:antigua_business_map/services/opening_hours_service.dart';
 import 'package:antigua_business_map/services/billing.dart';
 import 'package:antigua_business_map/services/push_service.dart';
 import 'package:antigua_business_map/services/rank_explainer.dart';
+import 'package:antigua_business_map/services/specials.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
 import 'package:antigua_business_map/models/business_category.dart';
 import 'package:flutter/material.dart';
@@ -101,6 +102,8 @@ class BusinessDashboardScreen extends ConsumerWidget {
               )
             else ...[
               _PlanBanner(business: business),
+              const SizedBox(height: Insets.md),
+              _SpecialCard(business: business),
               const SizedBox(height: Insets.md),
               _RankCard(business: business),
               const SizedBox(height: Insets.md),
@@ -358,6 +361,125 @@ class _PlanBanner extends StatelessWidget {
               ],
             ),
           ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Today's special: post it, mark it sold out, take it down.
+///
+/// On the dashboard rather than in the listing editor because it changes
+/// daily and should take seconds. It expires on its own at midnight.
+class _SpecialCard extends ConsumerStatefulWidget {
+  const _SpecialCard({required this.business});
+
+  final Business business;
+
+  @override
+  ConsumerState<_SpecialCard> createState() => _SpecialCardState();
+}
+
+class _SpecialCardState extends ConsumerState<_SpecialCard> {
+  final _text = TextEditingController();
+  bool _busy = false;
+
+  @override
+  void dispose() {
+    _text.dispose();
+    super.dispose();
+  }
+
+  Future<void> _run(
+    Future<void> Function(SpecialsRepository repo) write,
+  ) async {
+    setState(() => _busy = true);
+    try {
+      await write(ref.read(specialsRepositoryProvider));
+      _text.clear();
+      ref
+        ..invalidate(singleBusinessProvider(widget.business.id))
+        ..invalidate(businessListProvider);
+    } on Object {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(
+            content: Text('Could not update the special. Check your signal.'),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final id = widget.business.id;
+    final special = todaysSpecial(widget.business);
+
+    return Container(
+      padding: const EdgeInsets.all(Insets.xl),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.xl),
+        border: Border.all(color: palette.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.stretch,
+        children: [
+          Text(
+            "Today's special",
+            style: AppText.titleMedium.copyWith(color: palette.ink),
+          ),
+          Text(
+            'Shown on your listing until midnight. Locals check back for it.',
+            style: AppText.caption.copyWith(color: palette.muted),
+          ),
+          const SizedBox(height: Insets.md),
+          if (special != null) ...[
+            Text(
+              special.text,
+              style: AppText.bodyLarge.copyWith(
+                color: special.soldOut ? palette.muted : palette.ink,
+                decoration: special.soldOut ? TextDecoration.lineThrough : null,
+              ),
+            ),
+            SwitchListTile(
+              contentPadding: EdgeInsets.zero,
+              title: const Text('Sold out'),
+              value: special.soldOut,
+              onChanged: _busy
+                  ? null
+                  : (v) => _run((r) => r.setSoldOut(id, soldOut: v)),
+            ),
+            Align(
+              alignment: Alignment.centerLeft,
+              child: TextButton.icon(
+                onPressed: _busy ? null : () => _run((r) => r.clear(id)),
+                icon: const Icon(Icons.delete_outline, size: 18),
+                label: const Text('Take it down'),
+              ),
+            ),
+          ] else ...[
+            TextField(
+              controller: _text,
+              maxLength: kSpecialMaxLength,
+              decoration: const InputDecoration(
+                hintText: r'e.g. Catch of the day: grilled snapper, EC$45',
+              ),
+            ),
+            FilledButton(
+              onPressed: _busy
+                  ? null
+                  : () {
+                      final text = _text.text.trim();
+                      if (text.isNotEmpty) _run((r) => r.post(id, text));
+                    },
+              child: const Text('Post special'),
+            ),
+          ],
         ],
       ),
     );

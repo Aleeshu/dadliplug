@@ -211,6 +211,9 @@ class Business {
     this.trialEndsAt,
     this.paidUntil,
     this.holdUntil,
+    this.special,
+    this.specialPostedAt,
+    this.specialSoldOut = false,
     this.createdAt,
     this.instagram,
     this.facebook,
@@ -295,6 +298,16 @@ class Business {
 
   /// When an overdue listing is delisted unless paid.
   final DateTime? holdUntil;
+
+  /// Today's special ("catch of the day"), as posted. Use `todaysSpecial` in
+  /// services/specials.dart to read it: one from an earlier day is stale.
+  final String? special;
+
+  /// When [special] was posted, stamped by the server.
+  final DateTime? specialPostedAt;
+
+  /// The owner marked today's special sold out.
+  final bool specialSoldOut;
 
   /// When the listing was created.
   ///
@@ -426,6 +439,9 @@ class Business {
     trialEndsAt: trialEndsAt,
     paidUntil: paidUntil,
     holdUntil: holdUntil,
+    special: special,
+    specialPostedAt: specialPostedAt,
+    specialSoldOut: specialSoldOut,
     createdAt: createdAt ?? this.createdAt,
     instagram: instagram ?? this.instagram,
     facebook: facebook ?? this.facebook,

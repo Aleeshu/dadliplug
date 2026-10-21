@@ -585,12 +585,13 @@ through to a confirmed session.
 - **Posting advertisements**, with views counted per ad
 - **Announcements**, with read receipts
 - **Events calendar**, per business and aggregated for customers
-- **Daily specials posting**
+- **Daily specials posting** ✅ — dashboard card; expires at island midnight,
+  posting time stamped by the server; sold-out toggle
 - **Request a quote** (trades) and **request a slot** (tours, salons), both
-  delivered on WhatsApp
+  delivered on WhatsApp ✅ — viewings for property; counts as a WhatsApp tap
 - Analytics: views, calls, taps, review count
 - **Monthly report**, issued at month end: views per ad plus a 1–5 star breakdown
-- **Rank explainer**: position within category and what would move it
+- **Rank explainer**: position within category and what would move it ✅
 - **Three-tier subscription state** (Growing / Basic / Featured) set by the team
   when a transfer lands ✅ — Team tools -> Billing; each payment logged with who
   recorded it and the transfer reference
