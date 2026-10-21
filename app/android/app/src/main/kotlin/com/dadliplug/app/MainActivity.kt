@@ -1,4 +1,4 @@
-package com.antiguamap.antigua_business_map
+package com.dadliplug.app
 
 import io.flutter.embedding.android.FlutterActivity
 

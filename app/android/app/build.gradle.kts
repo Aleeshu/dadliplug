@@ -41,7 +41,7 @@ val keyProperties = Properties().apply {
 val hasUploadKey = keyProperties.getProperty("storeFile") != null
 
 android {
-    namespace = "com.antiguamap.antigua_business_map"
+    namespace = "com.dadliplug.app"
     compileSdk = flutter.compileSdkVersion
     ndkVersion = flutter.ndkVersion
 
@@ -54,7 +54,7 @@ android {
         // Permanent once the app is on Play. Changing it also means
         // re-registering the Android app in Firebase (google-services.json) and
         // the Android OAuth client for Google sign-in.
-        applicationId = "com.antiguamap.antigua_business_map"
+        applicationId = "com.dadliplug.app"
         // You can update the following values to match your application needs.
         // For more information, see: https://flutter.dev/to/review-gradle-config.
         minSdk = flutter.minSdkVersion

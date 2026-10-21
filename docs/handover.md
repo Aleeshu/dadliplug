@@ -3,10 +3,10 @@
 Written for Claude Code picking this project up cold. Read this before changing
 anything.
 
-**Name:** the app is called **Dadliplug** (renamed 2026-10-15). Code, docs and
-the package id still say IslandAds / `com.antiguamap.antigua_business_map`; the
-package id must not change, because the Maps key restriction and the Android
-OAuth client are both tied to it. Only user-visible text was renamed.
+**Name:** the app is called **Dadliplug** (renamed 2026-10-15). Some code and
+docs still say IslandAds. The package id became `com.dadliplug.app` on
+2026-10-22, before publishing; Firebase, the Android OAuth client and the Maps
+key restriction must be registered to it (docs/android-signing.md).
 
 **State at handover:** 2026-10-14. Analyzer clean, 172 tests passing. Phases
 0–3 complete, Phase 4 code complete. The map (now Google Maps), pin taps and
