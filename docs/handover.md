@@ -349,6 +349,26 @@ tiles), Events calendar and event page, Saved (Businesses / Events / Offers),
 Bulletin Board post kinds, Map header ("Search this area"), category pins.
 Not yet: Map's bottom business card restyle.
 
+### 6.11 Role checks returned NULL for anonymous callers — fixed 2026-10-21
+
+`is_team_admin()` and `administers()` returned NULL (not false) with no
+session, and `if not public.is_team_admin() then raise` does not fire on NULL.
+For about a day, anonymous API calls could start trials, read a business's
+till visit code, answer review requests, record redemptions and read the
+review audit. Fixed at the root (`20261021140000`): both now return strictly
+true/false. RLS policies and triggers were never affected (NULL fails closed
+there). **After any migration that adds a guarded function, run
+`python scripts/check_anon_guards.py`** and add the function to its list.
+
+### 6.12 Billing (Phase 7)
+
+Trial (3 days) -> paid -> overdue, held 7 days -> delisted, advanced daily
+at 00:05 Antigua time by pg_cron (`advance_subscriptions`). The team records
+bank transfers in Team tools -> Billing (`record_payment`, logged with who
+recorded it). Held listings stay visible as overdue; delisted ones are hidden,
+never deleted by the timer. `tier` keeps the plan; `subscription_status` is
+the state. Listings set up before billing have no dates and never expire.
+
 ---
 
 ## 7. What to do next

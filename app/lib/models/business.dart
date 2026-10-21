@@ -207,6 +207,10 @@ class Business {
     this.tags = const [],
     this.isClosedToday = false,
     this.lastVerifiedAt,
+    this.plan,
+    this.trialEndsAt,
+    this.paidUntil,
+    this.holdUntil,
     this.createdAt,
     this.instagram,
     this.facebook,
@@ -278,6 +282,19 @@ class Business {
 
   /// Timestamp when the listing details were last verified by team or owner.
   final DateTime? lastVerifiedAt;
+
+  /// The plan the business is on, kept while [tier] says trial or overdue so
+  /// paying restores exactly what it had. Null for rows from before billing.
+  final SubscriptionTier? plan;
+
+  /// When the 3-day trial ends. Set by the team's "start trial".
+  final DateTime? trialEndsAt;
+
+  /// When the paid period runs out. Null for listings set up before billing.
+  final DateTime? paidUntil;
+
+  /// When an overdue listing is delisted unless paid.
+  final DateTime? holdUntil;
 
   /// When the listing was created.
   ///
@@ -405,6 +422,10 @@ class Business {
     tags: tags ?? this.tags,
     isClosedToday: isClosedToday ?? this.isClosedToday,
     lastVerifiedAt: lastVerifiedAt ?? this.lastVerifiedAt,
+    plan: plan,
+    trialEndsAt: trialEndsAt,
+    paidUntil: paidUntil,
+    holdUntil: holdUntil,
     createdAt: createdAt ?? this.createdAt,
     instagram: instagram ?? this.instagram,
     facebook: facebook ?? this.facebook,

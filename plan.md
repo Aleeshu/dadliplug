@@ -592,8 +592,11 @@ through to a confirmed session.
 - **Monthly report**, issued at month end: views per ad plus a 1–5 star breakdown
 - **Rank explainer**: position within category and what would move it
 - **Three-tier subscription state** (Growing / Basic / Featured) set by the team
-  when a transfer lands
-- **3-day trial with a 7-day hold on expiry**, data preserved until the hold ends
+  when a transfer lands ✅ — Team tools -> Billing; each payment logged with who
+  recorded it and the transfer reference
+- **3-day trial with a 7-day hold on expiry**, data preserved until the hold ends ✅
+  — advanced daily by pg_cron. Decided: held listings stay visible (overdue);
+  after the hold they are hidden, not deleted
 - Spotlight board: 10 rotating slots
 - **Scope check (proposed, not decided):** this phase carries ads, announcements,
   events, quotes, slots, reports, billing and Spotlight in three weeks. Quote and

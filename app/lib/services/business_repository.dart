@@ -333,6 +333,15 @@ class SupabaseBusinessRepository
       tags: _parseTags(map['tags']),
       isClosedToday: (map['is_closed_today'] as bool?) ?? false,
       lastVerifiedAt: _parseDateTime(map['last_verified_at']),
+      plan: switch (map['tier']) {
+        final String t
+            when const {'growing', 'basic', 'featured'}.contains(t) =>
+          SubscriptionTierX.fromName(t),
+        _ => null,
+      },
+      trialEndsAt: _parseDateTime(map['trial_ends_at']),
+      paidUntil: _parseDateTime(map['paid_until']),
+      holdUntil: _parseDateTime(map['hold_until']),
       createdAt: _parseDateTime(map['created_at']),
       instagram: _blankToNull(map['instagram']),
       facebook: _blankToNull(map['facebook']),

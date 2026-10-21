@@ -5,6 +5,7 @@ import 'package:antigua_business_map/features/listing/listing_screen.dart'
     show singleBusinessProvider;
 import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
+import 'package:antigua_business_map/services/billing.dart';
 import 'package:antigua_business_map/services/push_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -95,8 +96,11 @@ class BusinessDashboardScreen extends ConsumerWidget {
                 'This listing could not be found. It may have been removed.',
                 style: AppText.bodyLarge.copyWith(color: palette.muted),
               )
-            else
+            else ...[
+              _PlanBanner(business: business),
+              const SizedBox(height: Insets.md),
               _Summary(business: business, palette: palette),
+            ],
             if (otherBusinessIds.length > 1) ...[
               const SizedBox(height: Insets.md),
               _Switcher(
@@ -286,6 +290,70 @@ class _Tool extends StatelessWidget {
             ),
           ),
         ),
+      ),
+    );
+  }
+}
+
+/// Where the subscription stands, at the top of the owner's dashboard:
+/// trial days left, renewal coming, or the hold before delisting. Payment is
+/// by bank transfer to the team, which records it.
+class _PlanBanner extends StatelessWidget {
+  const _PlanBanner({required this.business});
+
+  final Business business;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    final status = billingStatus(business);
+    final (fg, bg) = switch (status.tone) {
+      BillingTone.ok => (palette.good, palette.goodBg),
+      BillingTone.warn => (palette.warn, palette.warnBg),
+      BillingTone.bad => (palette.bad, palette.badBg),
+    };
+
+    return Container(
+      padding: const EdgeInsets.all(Insets.xl),
+      decoration: BoxDecoration(
+        color: bg,
+        borderRadius: BorderRadius.circular(Corners.xl),
+      ),
+      child: Row(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Icon(
+            status.tone == BillingTone.ok
+                ? Icons.check_circle_outline
+                : Icons.schedule,
+            color: fg,
+          ),
+          const SizedBox(width: Insets.md),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  status.title,
+                  style: AppText.titleSmall.copyWith(color: fg),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  status.detail,
+                  style: AppText.bodyMedium.copyWith(color: palette.ink),
+                ),
+                if (status.tone != BillingTone.ok) ...[
+                  const SizedBox(height: Insets.xs),
+                  Text(
+                    'Pay by bank transfer and message the Dadliplug team; we '
+                    'record it the same day.',
+                    style: AppText.caption.copyWith(color: palette.muted),
+                  ),
+                ],
+              ],
+            ),
+          ),
+        ],
       ),
     );
   }
