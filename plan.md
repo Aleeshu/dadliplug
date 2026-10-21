@@ -659,6 +659,13 @@ already fixed and unvalidated is the risk this phase exists to remove.
 - Bulk import for the first listings; photo cleanup on upload
 
 ### Phase 11 — Release (weeks 18–19)
+- **Done ahead of time (2026-10-22):** delete account in the app (both stores
+  require it); hide a reviewer (App Store 1.2); privacy policy, terms and
+  account-deletion pages, bundled in the app and served by the Worker at
+  /privacy, /terms, /delete-account; terms linked at sign-up; About with
+  licences and photo credits. **Before submitting:** a lawyer reads the
+  policy and terms against the Data Protection Act 2013; set SUPPORT_EMAIL
+  in .env and the Worker; deploy the Worker
 - TestFlight beta, Play Store internal testing
 - Privacy policy and store assets; check obligations under Antigua's data
   protection law before collecting accounts and reviews
@@ -707,12 +714,15 @@ function for the whole "we maintain the accuracy" promise.
 
 **Add before launch** (the ones not already in the phases)
 - Storm banner: team-run notice during hurricane season, linking to the
-  official weather service, plus a "reopened after the storm" status
+  official weather service, plus a "reopened after the storm" status ✅ —
+  Team -> Listings -> Notices; storm or general, with an end time; shown on
+  Home and the map. "Reopened" is the business's own closed-today toggle
 - Curated collections: team-written lists such as "Best pepperpot" or
   "Open on Sunday". This is local knowledge Google does not have, and it is
-  shareable, which is most of the value.
+  shareable, which is most of the value. ✅ — "The Team's Picks" on Home,
+  shareable to WhatsApp; edited in Team -> Listings -> Collections
 - Open-late and Open-Sunday filters. On a small island these beat a general
-  open-now filter.
+  open-now filter. ✅ — on the map and in search
 
 **Getting users to open it**
 - **Essentials layer.** A free, team-maintained set of places that are not paid

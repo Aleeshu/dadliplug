@@ -33,6 +33,13 @@ class TeamListingsScreen extends ConsumerWidget {
         title: const Text('Listings'),
         backgroundColor: palette.app,
         surfaceTintColor: Colors.transparent,
+        actions: [
+          IconButton(
+            tooltip: 'Notices and collections',
+            icon: const Icon(Icons.campaign_outlined),
+            onPressed: () => context.push('/team/content'),
+          ),
+        ],
       ),
       floatingActionButton: FloatingActionButton.extended(
         heroTag: 'team_new_listing',

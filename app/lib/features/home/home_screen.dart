@@ -6,7 +6,9 @@ import 'package:antigua_business_map/services/business_content_repository.dart';
 import 'package:antigua_business_map/services/listing_filter_service.dart';
 import 'package:antigua_business_map/widgets/offer_code_chip.dart';
 import 'package:antigua_business_map/services/map_providers.dart';
+import 'package:antigua_business_map/services/prelaunch_repository.dart';
 import 'package:antigua_business_map/services/ranking_repository.dart';
+import 'package:antigua_business_map/widgets/notice_banner.dart';
 import 'package:antigua_business_map/widgets/business_card.dart';
 import 'package:antigua_business_map/widgets/category_icon.dart';
 import 'package:antigua_business_map/widgets/dadliplug_logo.dart';
@@ -46,6 +48,14 @@ class HomeScreen extends ConsumerWidget {
                 ],
               ),
             ),
+            NoticeBanner(
+              padding: EdgeInsets.fromLTRB(
+                Insets.huge,
+                0,
+                Insets.huge,
+                Insets.md,
+              ),
+            ),
             Padding(
               padding: EdgeInsets.symmetric(horizontal: Insets.huge),
               child: _SearchBar(),
@@ -60,6 +70,7 @@ class HomeScreen extends ConsumerWidget {
             SizedBox(height: Insets.giant),
             _FeaturedSection(),
             _SpotlightSection(),
+            _CollectionsSection(),
             _OffersSection(),
           ],
         ),
@@ -397,6 +408,82 @@ class _SpotlightSection extends ConsumerWidget {
               itemCount: spotlight.length,
               separatorBuilder: (_, _) => const SizedBox(width: Insets.xl),
               itemBuilder: (_, i) => BusinessCard(business: spotlight[i]),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// The team's collections ("Best pepperpot"), as tappable tiles.
+class _CollectionsSection extends ConsumerWidget {
+  const _CollectionsSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final collections = ref.watch(homeCollectionsProvider).value ?? const [];
+    if (collections.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(top: Insets.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Insets.huge),
+            child: Text(
+              "The Team's Picks",
+              style: AppText.titleLarge.copyWith(color: palette.ink),
+            ),
+          ),
+          const SizedBox(height: Insets.sm),
+          SizedBox(
+            height: 120,
+            child: ListView.separated(
+              scrollDirection: Axis.horizontal,
+              padding: const EdgeInsets.symmetric(horizontal: Insets.huge),
+              itemCount: collections.length,
+              separatorBuilder: (_, _) => const SizedBox(width: Insets.md),
+              itemBuilder: (context, i) {
+                final (c, businesses) = collections[i];
+                return SizedBox(
+                  width: 220,
+                  child: Material(
+                    color: palette.goldBg,
+                    borderRadius: BorderRadius.circular(Corners.xl),
+                    child: InkWell(
+                      borderRadius: BorderRadius.circular(Corners.xl),
+                      onTap: () => context.push('/collection/${c.id}'),
+                      child: Padding(
+                        padding: const EdgeInsets.all(Insets.lg),
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              c.title,
+                              maxLines: 2,
+                              overflow: TextOverflow.ellipsis,
+                              style: AppText.titleMedium.copyWith(
+                                color: palette.goldInk,
+                              ),
+                            ),
+                            const Spacer(),
+                            Text(
+                              '${businesses.length} '
+                              '${businesses.length == 1 ? 'place' : 'places'}',
+                              style: AppText.labelMedium.copyWith(
+                                color: palette.goldInk,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  ),
+                );
+              },
             ),
           ),
         ],

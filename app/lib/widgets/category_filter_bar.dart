@@ -11,6 +11,10 @@ class CategoryFilterBar extends StatelessWidget {
     required this.openNowOnly,
     required this.onCategoryToggled,
     required this.onOpenNowToggled,
+    this.openLateOnly = false,
+    this.openSundayOnly = false,
+    this.onOpenLateToggled,
+    this.onOpenSundayToggled,
     this.onClearAll,
     super.key,
   });
@@ -19,6 +23,10 @@ class CategoryFilterBar extends StatelessWidget {
   final bool openNowOnly;
   final ValueChanged<BusinessCategory> onCategoryToggled;
   final ValueChanged<bool> onOpenNowToggled;
+  final bool openLateOnly;
+  final bool openSundayOnly;
+  final ValueChanged<bool>? onOpenLateToggled;
+  final ValueChanged<bool>? onOpenSundayToggled;
   final VoidCallback? onClearAll;
 
   @override
@@ -43,6 +51,28 @@ class CategoryFilterBar extends StatelessWidget {
             activeBgColor: palette.goodBg,
           ),
           const SizedBox(width: Insets.sm),
+          if (onOpenLateToggled case final toggle?) ...[
+            _FilterChip(
+              label: 'Open late',
+              icon: Icons.nightlife,
+              isSelected: openLateOnly,
+              onTap: () => toggle(!openLateOnly),
+              activeColor: palette.good,
+              activeBgColor: palette.goodBg,
+            ),
+            const SizedBox(width: Insets.sm),
+          ],
+          if (onOpenSundayToggled case final toggle?) ...[
+            _FilterChip(
+              label: 'Open Sunday',
+              icon: Icons.wb_sunny_outlined,
+              isSelected: openSundayOnly,
+              onTap: () => toggle(!openSundayOnly),
+              activeColor: palette.good,
+              activeBgColor: palette.goodBg,
+            ),
+            const SizedBox(width: Insets.sm),
+          ],
 
           // "All" chip when categories are selected
           if (selectedCategories.isNotEmpty && onClearAll != null) ...[

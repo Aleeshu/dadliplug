@@ -3,6 +3,7 @@ import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
 import 'package:antigua_business_map/features/reviews/check_in_sheet.dart';
 import 'package:antigua_business_map/models/review.dart';
+import 'package:antigua_business_map/services/prelaunch_repository.dart';
 import 'package:antigua_business_map/services/reviews_repository.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
@@ -61,7 +62,13 @@ class ReviewsSection extends ConsumerWidget {
             style: AppText.bodyMedium.copyWith(color: palette.muted),
           ),
           data: (all) {
-            final visible = all.where((r) => r.isVisible).toList();
+            // Reviews from people this viewer blocked are hidden from them
+            // (App Store guideline 1.2). Still counted in the rating.
+            final blocked =
+                ref.watch(blockedUsersProvider).value ?? const <String>{};
+            final visible = all
+                .where((r) => r.isVisible && !blocked.contains(r.userId))
+                .toList();
             if (visible.isEmpty) {
               return Text(
                 'No reviews yet.',
@@ -199,17 +206,69 @@ class ReviewCard extends ConsumerWidget {
             alignment: Alignment.centerRight,
             child:
                 trailing ??
-                TextButton(
-                  onPressed: () => _report(context, ref),
-                  child: Text(
-                    'Report',
-                    style: AppText.caption.copyWith(color: palette.muted),
-                  ),
+                Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    // Not on your own review, and not signed out: a block
+                    // belongs to an account.
+                    if (ref.read(prelaunchRepositoryProvider).currentUserId
+                        case final me? when me != review.userId)
+                      TextButton(
+                        onPressed: () => _block(context, ref),
+                        child: Text(
+                          'Hide this person',
+                          style: AppText.caption.copyWith(
+                            color: palette.muted,
+                          ),
+                        ),
+                      ),
+                    TextButton(
+                      onPressed: () => _report(context, ref),
+                      child: Text(
+                        'Report',
+                        style: AppText.caption.copyWith(color: palette.muted),
+                      ),
+                    ),
+                  ],
                 ),
           ),
         ],
       ),
     );
+  }
+
+  Future<void> _block(BuildContext context, WidgetRef ref) async {
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => AlertDialog(
+        title: const Text("Hide this person's reviews?"),
+        content: const Text(
+          'You will no longer see reviews they write, on any listing. '
+          'If a review is abusive, report it too so the team can act.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(c, false),
+            child: const Text('Cancel'),
+          ),
+          FilledButton(
+            onPressed: () => Navigator.pop(c, true),
+            child: const Text('Hide'),
+          ),
+        ],
+      ),
+    );
+    if (ok != true) return;
+    try {
+      await ref.read(prelaunchRepositoryProvider).block(review.userId);
+      ref.invalidate(blockedUsersProvider);
+    } on Object {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not hide them. Try again.')),
+        );
+      }
+    }
   }
 
   Future<void> _report(BuildContext context, WidgetRef ref) async {

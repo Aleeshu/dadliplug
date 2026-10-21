@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/widgets/notice_banner.dart';
 import 'package:antigua_business_map/core/config/app_config.dart';
 import 'package:antigua_business_map/core/routing/app_tabs.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
@@ -267,12 +268,21 @@ class _MapScreenState extends ConsumerState<MapScreen> {
               mainAxisSize: MainAxisSize.min,
               children: [
                 _buildHeaderBar(context, palette),
+                const NoticeBanner(
+                  padding: EdgeInsets.symmetric(horizontal: Insets.lg),
+                ),
                 CategoryFilterBar(
                   selectedCategories: query.categories,
                   openNowOnly: query.openNowOnly,
                   onCategoryToggled: queryNotifier.toggleCategory,
                   onOpenNowToggled: (openNow) =>
                       queryNotifier.setOpenNowOnly(openNowOnly: openNow),
+                  openLateOnly: query.openLateOnly,
+                  openSundayOnly: query.openSundayOnly,
+                  onOpenLateToggled: (v) =>
+                      queryNotifier.setOpenLateOnly(value: v),
+                  onOpenSundayToggled: (v) =>
+                      queryNotifier.setOpenSundayOnly(value: v),
                   onClearAll: queryNotifier.clearFilters,
                 ),
               ],

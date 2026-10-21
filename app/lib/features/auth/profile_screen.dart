@@ -1,3 +1,5 @@
+import 'package:supabase_flutter/supabase_flutter.dart' show PostgrestException;
+import 'package:antigua_business_map/services/prelaunch_repository.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/features/auth/auth_widgets.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
@@ -88,6 +90,8 @@ class ProfileScreen extends ConsumerWidget {
 
                 const SizedBox(height: Insets.giant),
                 _RoleExplainer(session: session),
+                const SizedBox(height: Insets.giant),
+                _DeleteAccount(session: session),
               ],
             ),
     );
@@ -473,16 +477,16 @@ class AuthPrompt extends StatelessWidget {
   }
 }
 
-class _RoleExplainer extends StatefulWidget {
+class _RoleExplainer extends ConsumerStatefulWidget {
   const _RoleExplainer({required this.session});
 
   final AuthSession session;
 
   @override
-  State<_RoleExplainer> createState() => _RoleExplainerState();
+  ConsumerState<_RoleExplainer> createState() => _RoleExplainerState();
 }
 
-class _RoleExplainerState extends State<_RoleExplainer> {
+class _RoleExplainerState extends ConsumerState<_RoleExplainer> {
   bool _claiming = false;
   String? _claimError;
 
@@ -561,11 +565,11 @@ class _RoleExplainerState extends State<_RoleExplainer> {
           ),
         ],
 
-        // Only offered to someone who is not already an admin. The database
-        // refuses it once an admin exists, so this is a convenience rather
-        // than the gate — but a button that silently does nothing is worse
-        // than no button, hence the error message below.
-        if (role == UserRole.user) ...[
+        // Only offered while the island has no team admin at all. The
+        // database refuses it once one exists, so this is not the gate; but
+        // every customer seeing "Become a team admin" after launch would be.
+        if (role == UserRole.user &&
+            (ref.watch(bootstrapOpenProvider).value ?? false)) ...[
           const SizedBox(height: Insets.lg),
           OutlinedButton.icon(
             onPressed: _claiming ? null : _claim,
@@ -600,4 +604,105 @@ class _RoleExplainerState extends State<_RoleExplainer> {
       'Team admin. You can moderate reviews and manage subscriptions.',
     UserRole.user => 'Regular user. You can browse, visit and review.',
   };
+}
+
+/// Delete the account from inside the app, as both stores require.
+class _DeleteAccount extends ConsumerStatefulWidget {
+  const _DeleteAccount({required this.session});
+
+  final AuthSession session;
+
+  @override
+  ConsumerState<_DeleteAccount> createState() => _DeleteAccountState();
+}
+
+class _DeleteAccountState extends ConsumerState<_DeleteAccount> {
+  bool _busy = false;
+
+  Future<void> _delete() async {
+    final typed = TextEditingController();
+    final ok = await showDialog<bool>(
+      context: context,
+      builder: (c) => StatefulBuilder(
+        builder: (c, setDialogState) => AlertDialog(
+          title: const Text('Delete your account?'),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text(
+                'This permanently deletes your account, your reviews, your '
+                'check-ins, saved places and follows. It cannot be undone. '
+                'A business you manage is not deleted; the team keeps it.',
+              ),
+              const SizedBox(height: Insets.md),
+              TextField(
+                controller: typed,
+                onChanged: (_) => setDialogState(() {}),
+                decoration: const InputDecoration(
+                  labelText: 'Type DELETE to confirm',
+                ),
+              ),
+            ],
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(c, false),
+              child: const Text('Cancel'),
+            ),
+            FilledButton(
+              style: FilledButton.styleFrom(
+                backgroundColor: context.palette.bad,
+              ),
+              onPressed: typed.text.trim() == 'DELETE'
+                  ? () => Navigator.pop(c, true)
+                  : null,
+              child: const Text('Delete'),
+            ),
+          ],
+        ),
+      ),
+    );
+    typed.dispose();
+    if (ok != true) return;
+
+    setState(() => _busy = true);
+    try {
+      await ref.read(prelaunchRepositoryProvider).deleteMyAccount();
+      await widget.session.signOut();
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Your account has been deleted.')),
+        );
+      }
+    } on Object catch (error) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            content: Text(
+              error is PostgrestException && error.message.isNotEmpty
+                  ? error.message
+                  : 'Could not delete the account. Check your signal.',
+            ),
+          ),
+        );
+      }
+    } finally {
+      if (mounted) setState(() => _busy = false);
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Align(
+      alignment: Alignment.centerLeft,
+      child: TextButton.icon(
+        onPressed: _busy ? null : _delete,
+        style: TextButton.styleFrom(foregroundColor: palette.bad),
+        icon: const Icon(Icons.delete_forever_outlined, size: 18),
+        label: Text(_busy ? 'Deleting…' : 'Delete account'),
+      ),
+    );
+  }
 }

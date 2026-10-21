@@ -13,29 +13,46 @@ class ListingQuery {
   const ListingQuery({
     this.categories = const {},
     this.openNowOnly = false,
+    this.openLateOnly = false,
+    this.openSundayOnly = false,
     this.search = '',
     this.sort = ListingSort.ranked,
   });
 
   final Set<BusinessCategory> categories;
   final bool openNowOnly;
+
+  /// Open until 21:00 or later on at least one day. On a small island
+  /// "where can I still eat at ten" beats a general open-now (plan.md 14c).
+  final bool openLateOnly;
+
+  /// Open on Sundays, when most of St. John's is shut.
+  final bool openSundayOnly;
   final String search;
   final ListingSort sort;
 
   ListingQuery copyWith({
     Set<BusinessCategory>? categories,
     bool? openNowOnly,
+    bool? openLateOnly,
+    bool? openSundayOnly,
     String? search,
     ListingSort? sort,
   }) => ListingQuery(
     categories: categories ?? this.categories,
     openNowOnly: openNowOnly ?? this.openNowOnly,
+    openLateOnly: openLateOnly ?? this.openLateOnly,
+    openSundayOnly: openSundayOnly ?? this.openSundayOnly,
     search: search ?? this.search,
     sort: sort ?? this.sort,
   );
 
   bool get isFiltering =>
-      categories.isNotEmpty || openNowOnly || search.trim().isNotEmpty;
+      categories.isNotEmpty ||
+      openNowOnly ||
+      openLateOnly ||
+      openSundayOnly ||
+      search.trim().isNotEmpty;
 }
 
 enum ListingSort {
@@ -92,6 +109,20 @@ List<Business> featuredBusinesses(List<Business> businesses) =>
         .toList()
       ..sort(compareByRank);
 
+/// The hour from which a closing time counts as "late".
+const kLateHour = 21.0;
+
+/// Open until [kLateHour] or later. A closing time earlier than the opening
+/// time runs past midnight (opens 18:00, closes 02:00), which is late too.
+/// Hours that are not set (no days) are not late: unknown is not open.
+bool isOpenLate(Business b) {
+  final h = b.hours;
+  if (h.days.isEmpty) return false;
+  return h.closesAt >= kLateHour || h.closesAt < h.opensAt;
+}
+
+bool isOpenSunday(Business b) => b.hours.days.contains(DateTime.sunday);
+
 class ListingFilter {
   /// Whether a business passes the query, ignoring sort.
   static bool matches(Business b, ListingQuery q) {
@@ -102,6 +133,8 @@ class ListingFilter {
     }
 
     if (q.openNowOnly && !openInfo(b).isOpen) return false;
+    if (q.openLateOnly && !isOpenLate(b)) return false;
+    if (q.openSundayOnly && !isOpenSunday(b)) return false;
 
     final term = q.search.trim().toLowerCase();
     if (term.isNotEmpty && !_haystack(b).contains(term)) return false;

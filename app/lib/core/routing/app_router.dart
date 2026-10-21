@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/features/more/legal_screens.dart';
+import 'package:antigua_business_map/features/team_admin/content_screen.dart';
 import 'package:antigua_business_map/core/routing/app_tabs.dart';
 import 'package:antigua_business_map/features/auth/choose_role_screen.dart';
 import 'package:antigua_business_map/features/auth/profile_screen.dart';
@@ -26,6 +28,7 @@ import 'package:antigua_business_map/features/events/events_screen.dart';
 import 'package:antigua_business_map/features/discovery/offers_screen.dart';
 import 'package:antigua_business_map/features/search/search_screen.dart';
 import 'package:antigua_business_map/services/listing_filter_service.dart';
+import 'package:antigua_business_map/features/discovery/collection_screen.dart';
 import 'package:antigua_business_map/features/team_admin/billing_screen.dart';
 import 'package:antigua_business_map/features/team_admin/moderation_screen.dart';
 import 'package:antigua_business_map/features/team_admin/ranking_screen.dart';
@@ -312,6 +315,7 @@ GoRouter _buildRouter({
           builder: (c, s) => const ModerationScreen(),
           routes: [
             GoRoute(path: 'billing', builder: (c, s) => const BillingScreen()),
+            GoRoute(path: 'content', builder: (c, s) => const ContentScreen()),
             GoRoute(path: 'ranking', builder: (c, s) => const RankingScreen()),
             GoRoute(
               path: 'spotlight',
@@ -362,8 +366,28 @@ GoRouter _buildRouter({
       ),
     ),
     GoRoute(
+      path: '/privacy',
+      builder: (c, s) => const LegalScreen(
+        asset: 'assets/legal/privacy.md',
+        title: 'Privacy policy',
+      ),
+    ),
+    GoRoute(
+      path: '/terms',
+      builder: (c, s) => const LegalScreen(
+        asset: 'assets/legal/terms.md',
+        title: 'Terms of use',
+      ),
+    ),
+    GoRoute(path: '/about', builder: (c, s) => const AboutScreen()),
+    GoRoute(
       path: Routes.profile,
       builder: (c, s) => ProfileScreen(session: session),
+    ),
+    GoRoute(
+      path: '/collection/:id',
+      builder: (c, s) =>
+          CollectionScreen(collectionId: s.pathParameters['id']!),
     ),
     GoRoute(
       path: '/listing/:id',

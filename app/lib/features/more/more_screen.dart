@@ -81,6 +81,12 @@ class MoreScreen extends StatelessWidget {
                 label: 'Team tools',
                 onTap: () => context.go('/team/listings'),
               ),
+            const Divider(height: Insets.giant),
+            _Item(
+              icon: Icons.info_outline,
+              label: 'About, privacy and terms',
+              onTap: () => context.push('/about'),
+            ),
             const SizedBox(height: Insets.giant),
             Center(
               child: Column(

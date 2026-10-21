@@ -107,6 +107,33 @@ class _SignUpScreenState extends State<SignUpScreen> {
                             )
                           : const Text('Create account'),
                     ),
+                    const SizedBox(height: Insets.md),
+                    Wrap(
+                      alignment: WrapAlignment.center,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        Text(
+                          'By creating an account you agree to the',
+                          style: AppText.caption.copyWith(
+                            color: palette.muted,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => context.push('/terms'),
+                          child: const Text('Terms'),
+                        ),
+                        Text(
+                          'and',
+                          style: AppText.caption.copyWith(
+                            color: palette.muted,
+                          ),
+                        ),
+                        TextButton(
+                          onPressed: () => context.push('/privacy'),
+                          child: const Text('Privacy policy'),
+                        ),
+                      ],
+                    ),
 
                     const SizedBox(height: Insets.giant),
                     Row(

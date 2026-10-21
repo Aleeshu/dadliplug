@@ -5,14 +5,81 @@
 // browser shows the HTML source instead of a page. This Worker fetches it and
 // serves it as HTML, nothing more: no data of its own, no keys.
 
+import privacy from "../../../app/assets/legal/privacy.md";
+import terms from "../../../app/assets/legal/terms.md";
+import deleteAccount from "../../../app/assets/legal/delete-account.md";
+
+// /privacy, /terms and /delete-account: the public URLs the Play Store and
+// App Store listings require. Same text as the app's in-app pages.
+const LEGAL = {
+  "/privacy": privacy,
+  "/terms": terms,
+  "/delete-account": deleteAccount,
+};
+
+const escape = (s) =>
+  s.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
+const inline = (s) => escape(s).replace(/\*\*(.+?)\*\*/g, "<strong>$1</strong>");
+
+// The small Markdown subset the legal files use: headings, "-" and "1."
+// lists, paragraphs. Mirrors parseLegal() in the app.
+function renderLegal(source, contact) {
+  const out = [];
+  let para = [];
+  let list = null;
+  const flush = () => {
+    if (para.length) out.push(`<p>${inline(para.join(" "))}</p>`);
+    para = [];
+    if (list) out.push(`</${list}>`);
+    list = null;
+  };
+  for (const raw of source.replaceAll("{{CONTACT}}", contact).split("\n")) {
+    const line = raw.trimEnd();
+    let m;
+    if (!line.trim()) flush();
+    else if ((m = line.match(/^(#{1,3}) (.*)$/))) {
+      flush();
+      out.push(`<h${m[1].length}>${inline(m[2])}</h${m[1].length}>`);
+    } else if ((m = line.match(/^(- |\d+\. )(.*)$/))) {
+      const kind = m[1] === "- " ? "ul" : "ol";
+      if (para.length) { out.push(`<p>${inline(para.join(" "))}</p>`); para = []; }
+      if (list !== kind) { if (list) out.push(`</${list}>`); out.push(`<${kind}>`); list = kind; }
+      out.push(`<li>${inline(m[2])}</li>`);
+    } else para.push(line.trim());
+  }
+  flush();
+  return (
+    "<!doctype html><html lang=en><meta charset=utf-8>" +
+    "<meta name=viewport content='width=device-width,initial-scale=1'>" +
+    "<title>Dadliplug</title><style>body{font-family:system-ui,sans-serif;" +
+    "max-width:720px;margin:0 auto;padding:24px;line-height:1.5;color:#1a1a1a}" +
+    "h1{font-size:28px}h2{margin-top:28px}</style><body>" +
+    out.join("\n") +
+    "</body></html>"
+  );
+}
+
 const ORIGIN =
   "https://ftenxsusyuiqatnvasny.supabase.co/functions/v1/listing";
 
 const UUID = /^[0-9a-f]{8}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{4}-[0-9a-f]{12}$/i;
 
 export default {
-  async fetch(request) {
+  async fetch(request, env) {
     const url = new URL(request.url);
+    const legal = LEGAL[url.pathname.replace(/\/$/, "")];
+    if (legal) {
+      const email = (env && env.SUPPORT_EMAIL) || "";
+      const contact = email
+        ? `Email ${email}.`
+        : 'Use "Report wrong info" on any listing, or message the Dadliplug team on WhatsApp.';
+      return new Response(renderLegal(legal, contact), {
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "public, max-age=3600",
+        },
+      });
+    }
     const match = url.pathname.match(/^\/l\/([^/]+)\/?$/);
     const id = match ? match[1] : url.searchParams.get("id");
 

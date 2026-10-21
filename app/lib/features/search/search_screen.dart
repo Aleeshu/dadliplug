@@ -145,6 +145,44 @@ class _SearchScreenState extends ConsumerState<SearchScreen> {
                 ],
               ),
             ),
+          // When-is-it-open filters. Late and Sunday beat a bare "open now"
+          // on an island where most places shut early and on Sundays.
+          SingleChildScrollView(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.fromLTRB(
+              Insets.huge,
+              Insets.md,
+              Insets.huge,
+              0,
+            ),
+            child: Row(
+              children: [
+                FilterChip(
+                  label: const Text('Open now'),
+                  selected: _query.openNowOnly,
+                  onSelected: (v) => setState(
+                    () => _query = _query.copyWith(openNowOnly: v),
+                  ),
+                ),
+                const SizedBox(width: Insets.sm),
+                FilterChip(
+                  label: const Text('Open late'),
+                  selected: _query.openLateOnly,
+                  onSelected: (v) => setState(
+                    () => _query = _query.copyWith(openLateOnly: v),
+                  ),
+                ),
+                const SizedBox(width: Insets.sm),
+                FilterChip(
+                  label: const Text('Open Sunday'),
+                  selected: _query.openSundayOnly,
+                  onSelected: (v) => setState(
+                    () => _query = _query.copyWith(openSundayOnly: v),
+                  ),
+                ),
+              ],
+            ),
+          ),
           _SortBar(
             selected: _query.sort,
             locating: _locating,

@@ -47,6 +47,14 @@ class MapQueryNotifier extends Notifier<ListingQuery> {
     state = state.copyWith(openNowOnly: openNowOnly);
   }
 
+  void setOpenLateOnly({required bool value}) {
+    state = state.copyWith(openLateOnly: value);
+  }
+
+  void setOpenSundayOnly({required bool value}) {
+    state = state.copyWith(openSundayOnly: value);
+  }
+
   void setSearch(String search) {
     state = state.copyWith(search: search);
   }

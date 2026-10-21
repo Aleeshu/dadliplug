@@ -5,3 +5,12 @@ name = "dadliplug-listing"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
+
+# The legal pages are the same Markdown files the app bundles, imported as
+# text so the app and the web never disagree.
+rules = [{ type = "Text", globs = ["**/*.md"], fallthrough = true }]
+
+[vars]
+# Shown as the contact line on the legal pages. Set alongside SUPPORT_EMAIL
+# in the app's .env.
+SUPPORT_EMAIL = ""
