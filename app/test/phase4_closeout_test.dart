@@ -5,7 +5,6 @@ import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/models/business_category.dart';
 import 'package:antigua_business_map/models/review.dart';
 import 'package:antigua_business_map/services/business_repository.dart';
-import 'package:antigua_business_map/services/ranking_service.dart';
 import 'package:flutter_test/flutter_test.dart';
 
 /// Pins the bugs fixed while closing out Phase 4, so they cannot come back
