@@ -1,6 +1,8 @@
 import 'package:antigua_business_map/features/events/event_widgets.dart';
 import 'package:antigua_business_map/features/reviews/reviews_section.dart';
+import 'package:antigua_business_map/features/listing/request_sheet.dart';
 import 'package:antigua_business_map/services/push_service.dart';
+import 'package:antigua_business_map/services/requests.dart';
 import 'package:antigua_business_map/services/reviews_repository.dart';
 import 'package:antigua_business_map/widgets/category_icon.dart';
 import 'package:antigua_business_map/widgets/offer_code_chip.dart';
@@ -847,6 +849,28 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
             icon: const Icon(Icons.chat, size: 18),
             label: const Text('WhatsApp'),
           ),
+          // Quotes for trades, slots for salons, tours, classes, viewings.
+          if (requestKindFor(b.category) != null) ...[
+            const SizedBox(height: Insets.md),
+            OutlinedButton.icon(
+              onPressed: () => RequestSheet.show(
+                context,
+                b,
+                onSent: () => _recorder.record(b.id, EngagementKind.whatsapp),
+              ),
+              style: OutlinedButton.styleFrom(
+                foregroundColor: palette.ink,
+                side: BorderSide(color: palette.line),
+              ),
+              icon: Icon(
+                requestKindFor(b.category) == RequestKind.quote
+                    ? Icons.request_quote_outlined
+                    : Icons.event_available_outlined,
+                size: 18,
+              ),
+              label: Text(requestLabel(b)),
+            ),
+          ],
         ],
       ],
     );

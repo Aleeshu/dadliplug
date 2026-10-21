@@ -7,6 +7,9 @@ import 'package:antigua_business_map/models/business.dart';
 import 'package:antigua_business_map/services/opening_hours_service.dart';
 import 'package:antigua_business_map/services/billing.dart';
 import 'package:antigua_business_map/services/push_service.dart';
+import 'package:antigua_business_map/services/rank_explainer.dart';
+import 'package:antigua_business_map/services/map_providers.dart';
+import 'package:antigua_business_map/models/business_category.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter_riverpod/flutter_riverpod.dart';
 import 'package:go_router/go_router.dart';
@@ -98,6 +101,8 @@ class BusinessDashboardScreen extends ConsumerWidget {
               )
             else ...[
               _PlanBanner(business: business),
+              const SizedBox(height: Insets.md),
+              _RankCard(business: business),
               const SizedBox(height: Insets.md),
               _Summary(business: business, palette: palette),
             ],
@@ -352,6 +357,100 @@ class _PlanBanner extends StatelessWidget {
                 ],
               ],
             ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+/// Where the listing ranks in its category, and what would move it.
+class _RankCard extends ConsumerWidget {
+  const _RankCard({required this.business});
+
+  final Business business;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final all = ref.watch(businessListProvider).value;
+    if (all == null || !all.any((b) => b.id == business.id)) {
+      // Not listed publicly right now (held or delisted): no rank to show.
+      return const SizedBox.shrink();
+    }
+    final r = explainRank(business, all);
+
+    return Container(
+      padding: const EdgeInsets.all(Insets.xl),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.xl),
+        border: Border.all(color: palette.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            '${ordinal(r.position)} of ${r.of} in ${business.category.label}',
+            style: AppText.titleMedium.copyWith(color: palette.ink),
+          ),
+          Text(
+            r.pointsToNext == null
+                ? 'Top of your category, with ${r.total} points.'
+                : '${r.total} points; ${r.pointsToNext} behind the next place.',
+            style: AppText.caption.copyWith(color: palette.muted),
+          ),
+          const SizedBox(height: Insets.md),
+          for (final f in r.factors) ...[
+            Row(
+              children: [
+                Expanded(
+                  child: Text(
+                    '${f.name} (${f.weightPercent}%)',
+                    style: AppText.labelMedium.copyWith(color: palette.ink),
+                  ),
+                ),
+                Text(
+                  '${(f.score * 100).round()}%',
+                  style: AppText.caption.copyWith(color: palette.muted),
+                ),
+              ],
+            ),
+            const SizedBox(height: 4),
+            ClipRRect(
+              borderRadius: BorderRadius.circular(Corners.sm),
+              child: LinearProgressIndicator(
+                value: f.score,
+                minHeight: 6,
+                backgroundColor: palette.line,
+                valueColor: AlwaysStoppedAnimation(palette.red),
+              ),
+            ),
+            const SizedBox(height: 2),
+            Text(
+              f.explanation,
+              style: AppText.caption.copyWith(color: palette.muted),
+            ),
+            const SizedBox(height: Insets.md),
+          ],
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Icon(Icons.trending_up, size: 18, color: palette.good),
+              const SizedBox(width: Insets.sm),
+              Expanded(
+                child: Text(
+                  r.suggestion,
+                  style: AppText.bodyMedium.copyWith(color: palette.ink),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.sm),
+          Text(
+            'Rank is earned, never bought: a Featured plan puts you on the '
+            'Featured page, not higher here.',
+            style: AppText.caption.copyWith(color: palette.muted),
           ),
         ],
       ),
