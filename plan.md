@@ -449,6 +449,28 @@ not count.
 Each phase ends in something demonstrable. Do not start the next until the
 previous runs on a real phone.
 
+### Status at 2026-10-22
+
+**8 of 13 phases complete (0–5, 8, plus 6 in code); 4 in progress; 1 not
+started.** The engineering is nearly all done. What is left is mostly not
+code: device checks, owner conversations, onboarding, and store paperwork.
+
+| Phase | Status | What is left |
+| --- | --- | --- |
+| 0 Decisions and paperwork | ✅ | Apple Developer account not yet opened (needed for iOS) |
+| 1 Scaffold | ✅ | — |
+| 2 Auth and accounts | ✅ | Google sign-in on a real phone under com.dadliplug.app; three more team admin accounts |
+| 3 Map core | ✅ | — |
+| 4 Business listings | ✅ | — |
+| 5 Discovery | ✅ | — |
+| 6 Reviews and visits | ✅ code | End-to-end check on two phones (QR → review → reply → report → moderate) |
+| 7 Business admin and billing | Nearly | Move and customise the map pin (Basic and above) |
+| 8 Ranking | ✅ | — |
+| 9 Validate the business model | In progress | Tools built; the twenty owner conversations |
+| 10 Seed content and field testing | In progress | Tools built; onboard 5–10 businesses; photo upload with resizing |
+| 11 Release | In progress | Store requirements built; Play upload key made; iOS project prepared; legal review, Worker deploy, Apple account, iOS build on CI, store listings, submission |
+| 12 Public launch and growth | Not started | — |
+
 ### Phase 0 — Decisions and paperwork ✅
 - Company registered, bank account open, equal-split agreement in writing
 - Apple Developer and Google Play accounts
@@ -500,7 +522,7 @@ through to a confirmed session.
 - Layout verified on device; the map renders behind the empty state rather than
   being replaced by it
 
-### Phase 4 — Business listings (weeks 6–7)
+### Phase 4 — Business listings (weeks 6–7) ✅
 - Listing screen: photos, description/bio, menu/services, hours, price, location
 - **Social links on the profile** — Instagram, Facebook, TikTok, website, plus a
   separate WhatsApp business line. Handles stored bare so nothing can render as
@@ -535,7 +557,7 @@ through to a confirmed session.
   verified live. **Remaining:** walk the whole posting-to-report path on a
   device (handover section 7).
 
-### Phase 5 — Discovery (week 8)
+### Phase 5 — Discovery (week 8) ✅
 - Featured rail on the map screen, order from ranking score ✅
 - **Featured page** and **verified badge** ✅ — badge explained as a paid
   placement, never an endorsement; what "verified" should mean is still open
@@ -559,7 +581,7 @@ through to a confirmed session.
 - **Events as their own listing** (Dadliplug design): picture, venue, tags,
   organiser, website, phone, own page, Save Event; calendar with event days
 
-### Phase 6 — Reviews and visits (weeks 9–11) — in progress
+### Phase 6 — Reviews and visits (weeks 9–11) ✅ code — device check pending
 - Rating and written review submission ✅ — only through `submit_review()`,
   which requires a checked-in visit (or an approved request)
 - **QR-based visit verification** ✅ — decided 2026-10-15: the **customer
@@ -577,7 +599,7 @@ through to a confirmed session.
 - **Remaining:** see these on a device end to end (show QR → scan → review →
   reply → report → moderate)
 
-### Phase 7 — Business admin and billing (weeks 12–14)
+### Phase 7 — Business admin and billing (weeks 12–14) — nearly: pin move open
 - Claim and verify a listing ✅ — "Own this business?" on every listing; the team
   verifies by calling the number already listed, then approves in
   Moderation -> Claims, which grants business admin for that listing
@@ -636,7 +658,7 @@ through to a confirmed session.
   outrun views (repeated guest taps)
 - Drives search order and the order inside the Featured page ✅
 
-### Phase 9 — Validate the business model (week 16)
+### Phase 9 — Validate the business model (week 16) — in progress
 - **Start now, not at week 16.** Run these alongside the build, because every
   phase before this one is engineering and the answers can change what gets built.
   This phase is where the pricing test is closed out and the decisions are made.
@@ -658,7 +680,7 @@ Placed here deliberately. Every phase before it has been engineering, and not
 one has been commercial. Launching at Phase 10 with pricing and positioning
 already fixed and unvalidated is the risk this phase exists to remove.
 
-### Phase 10 — Seed content and field testing (week 17)
+### Phase 10 — Seed content and field testing (week 17) — in progress
 - Onboard the first 5–10 businesses; verify listings in person — tools ✅:
   Team -> Listings -> ⋮ -> "Verified in person / by phone today", logged with
   who and how (listing_verifications)
@@ -674,7 +696,7 @@ already fixed and unvalidated is the risk this phase exists to remove.
   Photo cleanup on upload: open — photos are still URLs; in-app upload with
   resizing needs an image-picker plugin
 
-### Phase 11 — Release (weeks 18–19)
+### Phase 11 — Release (weeks 18–19) — in progress
 - **Done ahead of time (2026-10-22):** delete account in the app (both stores
   require it); hide a reviewer (App Store 1.2); privacy policy, terms and
   account-deletion pages, bundled in the app and served by the Worker at
