@@ -1,4 +1,4 @@
-# Builds IslandAds with the right dart-defines loaded from .env.
+# Builds Dadliplug with the right dart-defines loaded from .env.
 #
 # Exists because the defines are easy to forget and forgetting them silently
 # produces a build with mock auth instead of Supabase, which is a confusing
@@ -78,7 +78,7 @@ if ($Mirror) {
 
 Set-Location $buildRoot
 
-Write-Host "Building IslandAds in $buildRoot ..."
+Write-Host "Building Dadliplug in $buildRoot ..."
 # Gradle's JDK prints warnings on stderr ("A restricted method in
 # java.lang.System has been called"). Under 'Stop', Windows PowerShell turns
 # any stderr line from a native command into a terminating error, so the
@@ -92,11 +92,11 @@ $mode = if ($Release) { 'release' } else { 'debug' }
 $apk = Join-Path $buildRoot "build\app\outputs\flutter-apk\app-$mode.apk"
 $dest = Join-Path $root 'builds'
 New-Item -ItemType Directory -Path $dest -Force | Out-Null
-Copy-Item $apk (Join-Path $dest "islandads-$mode.apk") -Force
+Copy-Item $apk (Join-Path $dest "dadliplug-$mode.apk") -Force
 
-Write-Host "APK: $dest\islandads-$mode.apk"
+Write-Host "APK: $dest\dadliplug-$mode.apk"
 
 if ($Install) {
-  $built = Join-Path $dest "islandads-$mode.apk"
+  $built = Join-Path $dest "dadliplug-$mode.apk"
   & adb install -r $built
 }
