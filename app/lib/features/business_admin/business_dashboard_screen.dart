@@ -163,6 +163,14 @@ class BusinessDashboardScreen extends ConsumerWidget {
               onTap: () => context.go('/business/events$q'),
             ),
             _Tool(
+              icon: Icons.push_pin_outlined,
+              title: 'Your map pin',
+              body:
+                  'Move it to your door, and use a photo as the pin '
+                  '(Basic and Featured).',
+              onTap: () => context.push('/business/pin$q'),
+            ),
+            _Tool(
               icon: Icons.qr_code_2,
               title: 'Visit QR for the till',
               body: 'Customers scan it to check in, which lets them review.',

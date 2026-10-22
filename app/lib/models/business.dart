@@ -217,6 +217,7 @@ class Business {
     this.specialPostedAt,
     this.specialSoldOut = false,
     this.isProspect = false,
+    this.pinImageUrl,
     this.createdAt,
     this.instagram,
     this.facebook,
@@ -321,6 +322,18 @@ class Business {
   /// Pre-built by the team for a sales pitch and not public yet. Only the
   /// team can see it; the owner sees it through a preview link.
   final bool isProspect;
+
+  /// A photo shown inside the map pin, chosen by the owner. Basic, Featured
+  /// and trials only ([canCustomisePin]); ignored on Growing.
+  final String? pinImageUrl;
+
+  /// Basic and Featured may move their pin and give it a photo; a trial gets
+  /// every paid tool. Growing keeps the default pin (plan.md section 3). The
+  /// database enforces the same rule (protect_pin_fields).
+  bool get canCustomisePin =>
+      tier == SubscriptionTier.trial ||
+      (plan ?? tier) == SubscriptionTier.basic ||
+      (plan ?? tier) == SubscriptionTier.featured;
 
   /// When the listing was created.
   ///
@@ -461,6 +474,7 @@ class Business {
     specialPostedAt: specialPostedAt,
     specialSoldOut: specialSoldOut,
     isProspect: isProspect,
+    pinImageUrl: pinImageUrl,
     createdAt: createdAt ?? this.createdAt,
     instagram: instagram ?? this.instagram,
     facebook: facebook ?? this.facebook,

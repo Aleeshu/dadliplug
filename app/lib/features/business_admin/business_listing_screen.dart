@@ -441,37 +441,51 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
               maxLines: 2,
             ),
             _field(_address, 'Address (if there is one)', palette),
+            // Owners move the pin on a map (Basic and Featured), not by typing
+            // coordinates; the team keeps the raw fields for data entry.
+            if (!widget.isTeam)
+              Padding(
+                padding: const EdgeInsets.only(bottom: Insets.md),
+                child: OutlinedButton.icon(
+                  onPressed: () => context.push(
+                    '/business/pin?business=${widget.businessId}',
+                  ),
+                  icon: const Icon(Icons.push_pin_outlined, size: 18),
+                  label: const Text('Move your pin on the map'),
+                ),
+              ),
             // Left blank for a business with no walk-in location; it then
             // has no pin.
-            Row(
-              children: [
-                Expanded(
-                  child: _field(
-                    _latitude,
-                    'Latitude',
-                    palette,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
+            if (widget.isTeam)
+              Row(
+                children: [
+                  Expanded(
+                    child: _field(
+                      _latitude,
+                      'Latitude',
+                      palette,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      validator: (v) => _coordinate(v, 16.9, 17.8),
                     ),
-                    validator: (v) => _coordinate(v, 16.9, 17.8),
                   ),
-                ),
-                const SizedBox(width: Insets.md),
-                Expanded(
-                  child: _field(
-                    _longitude,
-                    'Longitude',
-                    palette,
-                    keyboardType: const TextInputType.numberWithOptions(
-                      decimal: true,
-                      signed: true,
+                  const SizedBox(width: Insets.md),
+                  Expanded(
+                    child: _field(
+                      _longitude,
+                      'Longitude',
+                      palette,
+                      keyboardType: const TextInputType.numberWithOptions(
+                        decimal: true,
+                        signed: true,
+                      ),
+                      validator: (v) => _coordinate(v, -62.0, -61.6),
                     ),
-                    validator: (v) => _coordinate(v, -62.0, -61.6),
                   ),
-                ),
-              ],
-            ),
+                ],
+              ),
             const SizedBox(height: Insets.md),
 
             _Header('Contact', palette),

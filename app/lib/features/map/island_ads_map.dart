@@ -50,6 +50,9 @@ class IslandAdsMap extends StatefulWidget {
               category: b.category,
               featured: b.tier.holdsFeaturedSlot,
               selected: b.id == selected?.id,
+              // A lapsed Basic listing that drops to Growing loses its photo
+              // pin here too, not only in the editor.
+              imageUrl: b.canCustomisePin ? b.pinImageUrl : null,
             ),
       ];
 
@@ -67,6 +70,7 @@ class MapPin {
     required this.category,
     required this.featured,
     required this.selected,
+    this.imageUrl,
   });
 
   final String id;
@@ -78,12 +82,15 @@ class MapPin {
   final bool featured;
   final bool selected;
 
+  /// The owner's photo, drawn inside the pin in place of the category icon.
+  final String? imageUrl;
+
   /// Which drawn icon this pin uses.
-  PinStyle get style => (category, featured, selected);
+  PinStyle get style => (category, featured, selected, imageUrl);
 }
 
-/// Pins sharing a style share one drawn bitmap.
-typedef PinStyle = (BusinessCategory, bool, bool);
+/// Pins sharing a style share one drawn bitmap. A photo pin is its own style.
+typedef PinStyle = (BusinessCategory, bool, bool, String?);
 
 class IslandAdsMapState extends State<IslandAdsMap> {
   GoogleMapController? _controller;
@@ -246,9 +253,34 @@ class IslandAdsMapState extends State<IslandAdsMap> {
     }
   }
 
-  /// A red teardrop with a white edge and the category icon in white.
+  /// The owner's pin photo, or null if it cannot be loaded (the pin then
+  /// falls back to the category icon rather than going missing).
+  static Future<ui.Image?> _loadPhoto(String url) async {
+    final completer = Completer<ui.Image?>();
+    final stream = NetworkImage(url).resolve(ImageConfiguration.empty);
+    late final ImageStreamListener listener;
+    listener = ImageStreamListener(
+      (info, _) {
+        if (!completer.isCompleted) completer.complete(info.image.clone());
+        stream.removeListener(listener);
+      },
+      onError: (_, _) {
+        if (!completer.isCompleted) completer.complete(null);
+        stream.removeListener(listener);
+      },
+    );
+    stream.addListener(listener);
+    return completer.future.timeout(
+      const Duration(seconds: 10),
+      onTimeout: () => null,
+    );
+  }
+
+  /// A red teardrop with a white edge and the category icon in white, or the
+  /// owner's photo in a circle for Basic and Featured listings that chose one.
   static Future<BitmapDescriptor> _drawPin(PinStyle style, double ratio) async {
-    final (category, featured, selected) = style;
+    final (category, featured, selected, imageUrl) = style;
+    final photo = imageUrl == null ? null : await _loadPhoto(imageUrl);
     final logicalWidth = selected ? _selectedPinWidth : _pinWidth;
     final logicalHeight = logicalWidth * 1.3;
     final w = (logicalWidth * ratio).ceil();
@@ -292,6 +324,38 @@ class IslandAdsMapState extends State<IslandAdsMap> {
       );
     }
 
+    if (photo != null) {
+      // Cover-fit the photo into the round head of the pin.
+      final inner = radius * (featured ? 0.74 : 0.86);
+      final side = photo.width < photo.height ? photo.width : photo.height;
+      final src = Rect.fromCenter(
+        center: Offset(photo.width / 2, photo.height / 2),
+        width: side.toDouble(),
+        height: side.toDouble(),
+      );
+      canvas
+        ..save()
+        ..clipPath(
+          Path()..addOval(Rect.fromCircle(center: center, radius: inner)),
+        )
+        ..drawImageRect(
+          photo,
+          src,
+          Rect.fromCircle(center: center, radius: inner),
+          Paint()..filterQuality = FilterQuality.medium,
+        )
+        ..restore();
+      photo.dispose();
+      final image = await recorder.endRecording().toImage(w, h);
+      final bytes = await image.toByteData(format: ui.ImageByteFormat.png);
+      image.dispose();
+      return BitmapDescriptor.bytes(
+        bytes!.buffer.asUint8List(),
+        width: logicalWidth,
+        height: logicalHeight,
+      );
+    }
+
     final icon = category.icon;
     final glyph = TextPainter(
       textDirection: TextDirection.ltr,
@@ -323,4 +387,55 @@ class IslandAdsMapState extends State<IslandAdsMap> {
     _controller = null;
     super.dispose();
   }
+}
+
+/// A map with one pin the owner drags, or moves by tapping where it belongs.
+/// Lives here so the map SDK stays in this one file.
+class PinPickerMap extends StatefulWidget {
+  const PinPickerMap({
+    required this.initial,
+    required this.onMoved,
+    super.key,
+  });
+
+  /// Where the pin starts: the current position, or the island's centre.
+  final ({double latitude, double longitude}) initial;
+  final ValueChanged<({double latitude, double longitude})> onMoved;
+
+  @override
+  State<PinPickerMap> createState() => _PinPickerMapState();
+}
+
+class _PinPickerMapState extends State<PinPickerMap> {
+  late LatLng _at = LatLng(widget.initial.latitude, widget.initial.longitude);
+
+  void _move(LatLng to) {
+    setState(() => _at = to);
+    widget.onMoved((latitude: to.latitude, longitude: to.longitude));
+  }
+
+  @override
+  Widget build(BuildContext context) => GoogleMap(
+    initialCameraPosition: CameraPosition(target: _at, zoom: 17),
+    minMaxZoomPreference: const MinMaxZoomPreference(
+      MapConfig.cameraMinZoom,
+      MapConfig.cameraMaxZoom,
+    ),
+    zoomControlsEnabled: false,
+    mapToolbarEnabled: false,
+    myLocationButtonEnabled: false,
+    compassEnabled: false,
+    // Satellite with labels: the owner recognises their own roof and car park
+    // far more easily than a road map with no buildings.
+    mapType: MapType.hybrid,
+    onTap: _move,
+    markers: {
+      Marker(
+        markerId: const MarkerId('pin'),
+        position: _at,
+        draggable: true,
+        onDragEnd: _move,
+      ),
+    },
+  );
 }

@@ -451,8 +451,8 @@ previous runs on a real phone.
 
 ### Status at 2026-10-22
 
-**8 of 13 phases complete (0–5, 8, plus 6 in code); 4 in progress; 1 not
-started.** The engineering is nearly all done. What is left is mostly not
+**9 of 13 phases complete (0–5, 7, 8, plus 6 in code); 3 in progress; 1
+not started.** The engineering is nearly all done. What is left is mostly not
 code: device checks, owner conversations, onboarding, and store paperwork.
 
 | Phase | Status | What is left |
@@ -464,7 +464,7 @@ code: device checks, owner conversations, onboarding, and store paperwork.
 | 4 Business listings | ✅ | — |
 | 5 Discovery | ✅ | — |
 | 6 Reviews and visits | ✅ code | End-to-end check on two phones (QR → review → reply → report → moderate) |
-| 7 Business admin and billing | Nearly | Move and customise the map pin (Basic and above) |
+| 7 Business admin and billing | ✅ | — |
 | 8 Ranking | ✅ | — |
 | 9 Validate the business model | In progress | Tools built; the twenty owner conversations |
 | 10 Seed content and field testing | In progress | Tools built; onboard 5–10 businesses; photo upload with resizing |
@@ -599,22 +599,26 @@ through to a confirmed session.
 - **Remaining:** see these on a device end to end (show QR → scan → review →
   reply → report → moderate)
 
-### Phase 7 — Business admin and billing (weeks 12–14) — nearly: pin move open
+### Phase 7 — Business admin and billing (weeks 12–14) ✅
 - Claim and verify a listing ✅ — "Own this business?" on every listing; the team
   verifies by calling the number already listed, then approves in
   Moderation -> Claims, which grants business admin for that listing
-- Edit hours, photos, menu, description, offers, specials, socials
+- Edit hours, photos, menu, description, offers, specials, socials ✅
 - **Move and customise the map pin** (Basic and above; Growing keeps the default
-  pin, and the team corrects its position on request)
-- **Posting advertisements**, with views counted per ad
-- **Announcements**, with read receipts
-- **Events calendar**, per business and aggregated for customers
+  pin, and the team corrects its position on request) ✅ — owner drags the pin
+  on a satellite map and can use one of their photos as the pin; Growing sees
+  "ask the team". Enforced in the database (protect_pin_fields)
+- **Posting advertisements**, with views counted per ad ✅
+- **Announcements**, with read receipts ✅
+- **Events calendar**, per business and aggregated for customers ✅
 - **Daily specials posting** ✅ — dashboard card; expires at island midnight,
   posting time stamped by the server; sold-out toggle
 - **Request a quote** (trades) and **request a slot** (tours, salons), both
   delivered on WhatsApp ✅ — viewings for property; counts as a WhatsApp tap
-- Analytics: views, calls, taps, review count
+- Analytics: views, calls, taps, review count ✅ (monthly report)
 - **Monthly report**, issued at month end: views per ad plus a 1–5 star breakdown
+  ✅ — in the dashboard for any month. Not yet pushed to the owner at month end
+  (a "your October report is ready" notification is a small follow-up)
 - **Rank explainer**: position within category and what would move it ✅
 - **Three-tier subscription state** (Growing / Basic / Featured) set by the team
   when a transfer lands ✅ — Team tools -> Billing; each payment logged with who

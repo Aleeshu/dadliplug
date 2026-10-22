@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/business_admin/pin_editor_screen.dart';
 import 'package:antigua_business_map/features/more/get_listed_screen.dart';
 import 'package:antigua_business_map/features/team_admin/leads_screen.dart';
 import 'package:antigua_business_map/features/more/legal_screens.dart';
@@ -250,6 +251,10 @@ GoRouter _buildRouter({
               otherBusinessIds: session.user?.businessIds ?? const [],
             );
           },
+        ),
+        GoRoute(
+          path: '/business/pin',
+          builder: (c, s) => PinEditorScreen(businessId: businessIdFor(s)),
         ),
         GoRoute(
           path: Routes.businessListing,
