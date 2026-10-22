@@ -80,7 +80,11 @@ class _SignUpScreenState extends State<SignUpScreen> {
                   children: [
                     const AuthHeader(
                       title: 'Create an account',
-                      subtitle: 'To leave a review, you need an account.',
+                      // Owners arrive here from "I run a business" too, so
+                      // the reason is not only reviews.
+                      subtitle:
+                          'Review places you have visited, save your '
+                          'favourites, or manage your business.',
                     ),
                     const SizedBox(height: Insets.giant),
 
@@ -108,25 +112,23 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           : const Text('Create account'),
                     ),
                     const SizedBox(height: Insets.md),
-                    Wrap(
-                      alignment: WrapAlignment.center,
-                      crossAxisAlignment: WrapCrossAlignment.center,
+                    // One sentence, two links. A Wrap of buttons broke it
+                    // across lines at the button padding, mid-sentence.
+                    Text(
+                      'By creating an account you agree to the',
+                      textAlign: TextAlign.center,
+                      style: AppText.caption.copyWith(color: palette.muted),
+                    ),
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.center,
                       children: [
-                        Text(
-                          'By creating an account you agree to the',
-                          style: AppText.caption.copyWith(
-                            color: palette.muted,
-                          ),
-                        ),
                         TextButton(
                           onPressed: () => context.push('/terms'),
-                          child: const Text('Terms'),
+                          child: const Text('Terms of use'),
                         ),
                         Text(
                           'and',
-                          style: AppText.caption.copyWith(
-                            color: palette.muted,
-                          ),
+                          style: AppText.caption.copyWith(color: palette.muted),
                         ),
                         TextButton(
                           onPressed: () => context.push('/privacy'),
