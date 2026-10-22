@@ -216,6 +216,7 @@ class Business {
     this.special,
     this.specialPostedAt,
     this.specialSoldOut = false,
+    this.isProspect = false,
     this.createdAt,
     this.instagram,
     this.facebook,
@@ -316,6 +317,10 @@ class Business {
 
   /// The owner marked today's special sold out.
   final bool specialSoldOut;
+
+  /// Pre-built by the team for a sales pitch and not public yet. Only the
+  /// team can see it; the owner sees it through a preview link.
+  final bool isProspect;
 
   /// When the listing was created.
   ///
@@ -455,6 +460,7 @@ class Business {
     special: special,
     specialPostedAt: specialPostedAt,
     specialSoldOut: specialSoldOut,
+    isProspect: isProspect,
     createdAt: createdAt ?? this.createdAt,
     instagram: instagram ?? this.instagram,
     facebook: facebook ?? this.facebook,

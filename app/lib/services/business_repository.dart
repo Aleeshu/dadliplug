@@ -293,7 +293,9 @@ class SupabaseBusinessRepository
   List<Business> _visible(List<Map<String, dynamic>> rows) {
     return rows
         .map(_fromMap)
-        .where((b) => b.tier.isVisible)
+        // A team member's session can read pre-built listings; customers'
+        // screens must not show them, even on the team's own phone.
+        .where((b) => b.tier.isVisible && !b.isProspect)
         .toList(growable: false);
   }
 
@@ -347,6 +349,7 @@ class SupabaseBusinessRepository
       special: map['special'] as String?,
       specialPostedAt: _parseDateTime(map['special_posted_at']),
       specialSoldOut: (map['special_sold_out'] as bool?) ?? false,
+      isProspect: (map['is_prospect'] as bool?) ?? false,
       createdAt: _parseDateTime(map['created_at']),
       instagram: _blankToNull(map['instagram']),
       facebook: _blankToNull(map['facebook']),

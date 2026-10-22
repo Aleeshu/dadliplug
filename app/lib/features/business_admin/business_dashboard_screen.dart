@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/core/config/app_config.dart';
+import 'package:url_launcher/url_launcher.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -48,11 +50,29 @@ class BusinessDashboardScreen extends ConsumerWidget {
         body: Center(
           child: Padding(
             padding: const EdgeInsets.all(Insets.giant),
-            child: Text(
-              'No listing is linked to your account yet. The Dadliplug team '
-              'links it once your listing is set up.',
-              textAlign: TextAlign.center,
-              style: AppText.bodyLarge.copyWith(color: palette.muted),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Text(
+                  'No listing is linked to your account yet. The Dadliplug '
+                  'team links it once your listing is set up.',
+                  textAlign: TextAlign.center,
+                  style: AppText.bodyLarge.copyWith(color: palette.muted),
+                ),
+                const SizedBox(height: Insets.xl),
+                FilledButton.icon(
+                  onPressed: () => context.push('/get-listed'),
+                  icon: const Icon(Icons.storefront_outlined, size: 18),
+                  label: const Text('Get your business listed'),
+                ),
+                const SizedBox(height: Insets.sm),
+                TextButton(
+                  onPressed: () => context.push('/search'),
+                  child: const Text(
+                    'Already on Dadliplug? Find it and claim it',
+                  ),
+                ),
+              ],
             ),
           ),
         ),
@@ -154,6 +174,22 @@ class BusinessDashboardScreen extends ConsumerWidget {
               body: 'Views, calls, WhatsApp taps and reviews this month.',
               onTap: () => context.push('/business/report$q'),
             ),
+            // plan.md Phase 10, "WhatsApp intake": the number owners text
+            // for hours changes and closures, named so the team knows which
+            // listing without asking.
+            if (AppConfig.teamWhatsApp.isNotEmpty)
+              _Tool(
+                icon: Icons.chat_outlined,
+                title: 'Tell the team on WhatsApp',
+                body: 'New hours, a closure, a change: we update it for you.',
+                onTap: () => launchUrl(
+                  Uri.parse(
+                    'https://wa.me/${AppConfig.teamWhatsApp}?text='
+                    '${Uri.encodeComponent('Hi Dadliplug team, an update for ${businessAsync.value?.name ?? 'my listing'}: ')}',
+                  ),
+                  mode: LaunchMode.externalApplication,
+                ),
+              ),
             _Tool(
               icon: Icons.visibility_outlined,
               title: 'See it as a customer',

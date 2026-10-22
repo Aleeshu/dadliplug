@@ -42,6 +42,15 @@ abstract final class AppConfig {
   static String publicListingUrl(String businessId) =>
       'https://dadliplug-listing.listing-page.workers.dev/l/$businessId';
 
+  /// Private preview of a pre-built listing, sent to the owner before it is
+  /// public. The token is the only key; the team can replace it.
+  static String prospectPreviewUrl(String token) =>
+      'https://dadliplug-listing.listing-page.workers.dev/p/$token';
+
+  /// The team's WhatsApp number, digits only with country code, for owners
+  /// to send changes and closures (plan.md Phase 10, "WhatsApp intake").
+  static const String teamWhatsApp = String.fromEnvironment('TEAM_WHATSAPP');
+
   /// Actionable description of a missing-credentials build.
   ///
   /// Carried by [BackendNotConfigured].

@@ -82,6 +82,12 @@ class MoreScreen extends StatelessWidget {
                 onTap: () => context.go('/team/listings'),
               ),
             const Divider(height: Insets.giant),
+            if (!session.canAccessBusinessDashboard())
+              _Item(
+                icon: Icons.storefront_outlined,
+                label: 'Get your business listed',
+                onTap: () => context.push('/get-listed'),
+              ),
             _Item(
               icon: Icons.info_outline,
               label: 'About, privacy and terms',

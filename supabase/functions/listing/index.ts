@@ -63,19 +63,32 @@ ${body}
 }
 
 Deno.serve(async (req) => {
-  const id = new URL(req.url).searchParams.get("id") ?? "";
+  const params = new URL(req.url).searchParams;
+  const id = params.get("id") ?? "";
+  // A pre-built listing, shown to its owner before it is public (plan.md
+  // Phase 10). Read through prospect_preview(), which returns only the
+  // listing whose secret token matches.
+  const preview = params.get("preview") ?? "";
+  const isUuid = (s: string) => /^[0-9a-f-]{36}$/i.test(s);
   // Only a uuid reaches the database query string.
-  if (!/^[0-9a-f-]{36}$/i.test(id)) {
+  if (!isUuid(preview ? preview : id)) {
     return page("Not found", `<div class="card"><h1>Listing not found</h1></div>`);
   }
 
   const url = Deno.env.get("SUPABASE_URL")!;
   const key = Deno.env.get("SUPABASE_ANON_KEY")!;
-  const res = await fetch(
-    `${url}/rest/v1/businesses?id=eq.${id}` +
-      "&select=name,category,area,description,phone,whatsapp,photos",
-    { headers: { apikey: key, authorization: `Bearer ${key}` } },
-  );
+  const headers = { apikey: key, authorization: `Bearer ${key}` };
+  const res = preview
+    ? await fetch(`${url}/rest/v1/rpc/prospect_preview`, {
+      method: "POST",
+      headers: { ...headers, "content-type": "application/json" },
+      body: JSON.stringify({ p_token: preview }),
+    })
+    : await fetch(
+      `${url}/rest/v1/businesses?id=eq.${id}` +
+        "&select=name,category,area,description,phone,whatsapp,photos",
+      { headers },
+    );
   const rows = res.ok ? await res.json() : [];
   const b = rows[0];
   if (!b) {
@@ -94,7 +107,7 @@ Deno.serve(async (req) => {
     `Hi, I found you on Dadliplug (${b.name}). Are you open today?`,
   );
 
-  const meta = `
+  const meta = (preview ? `<meta name="robots" content="noindex,nofollow">` : "") + `
 <meta property="og:type" content="website">
 <meta property="og:title" content="${esc(b.name)}">
 <meta property="og:description" content="${esc(summary + (description ? " — " + description : ""))}">
@@ -102,6 +115,7 @@ ${photo ? `<meta property="og:image" content="${esc(photo)}">` : ""}
 <meta name="description" content="${esc(description || summary)}">`;
 
   const body = `
+${preview ? `<div class="card" style="border-color:#f59e0b;background:#fffbeb"><b>Preview.</b> This is how your listing will look on Dadliplug. It is not public yet: only people with this link can see it.</div>` : ""}
 ${photo ? `<img class="hero" src="${esc(photo)}" alt="">` : ""}
 <div class="card">
   <h1>${esc(b.name)}</h1>

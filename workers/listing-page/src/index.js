@@ -80,6 +80,26 @@ export default {
         },
       });
     }
+    // /p/<token>: a pre-built listing's private preview for its owner.
+    const previewMatch = url.pathname.match(/^\/p\/([^/]+)\/?$/);
+    if (previewMatch) {
+      if (!UUID.test(previewMatch[1])) {
+        return new Response("Listing not found", { status: 404 });
+      }
+      const upstream = await fetch(`${ORIGIN}?preview=${previewMatch[1]}`);
+      const body = await upstream.text();
+      return new Response(body, {
+        status: body.includes("Listing not found") ? 404 : upstream.ok ? 200 : 502,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          // Private: never cached by Cloudflare or shared caches.
+          "cache-control": "private, no-store",
+          "x-robots-tag": "noindex, nofollow",
+          "x-content-type-options": "nosniff",
+        },
+      });
+    }
+
     const match = url.pathname.match(/^\/l\/([^/]+)\/?$/);
     const id = match ? match[1] : url.searchParams.get("id");
 

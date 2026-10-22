@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/services/seeding_repository.dart';
+import 'package:flutter/services.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -34,6 +36,11 @@ class TeamListingsScreen extends ConsumerWidget {
         backgroundColor: palette.app,
         surfaceTintColor: Colors.transparent,
         actions: [
+          IconButton(
+            tooltip: 'Leads',
+            icon: const Icon(Icons.person_add_alt_outlined),
+            onPressed: () => context.push('/team/leads'),
+          ),
           IconButton(
             tooltip: 'Notices and collections',
             icon: const Icon(Icons.campaign_outlined),
@@ -104,14 +111,77 @@ class TeamListingsScreen extends ConsumerWidget {
   }
 }
 
-class _ListingRow extends StatelessWidget {
+class _ListingRow extends ConsumerWidget {
   const _ListingRow({required this.business, required this.palette});
 
   final Business business;
   final AppPalette palette;
 
+  Future<void> _act(
+    BuildContext context,
+    WidgetRef ref,
+    Future<void> Function(SeedingRepository repo) action,
+    String done,
+  ) async {
+    try {
+      await action(ref.read(seedingRepositoryProvider));
+      ref
+        ..invalidate(teamListingsProvider)
+        ..invalidate(businessListProvider);
+      if (context.mounted) {
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(done)));
+      }
+    } on Object {
+      if (context.mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not do that. Try again.')),
+        );
+      }
+    }
+  }
+
+  Future<void> _onMenu(
+    BuildContext context,
+    WidgetRef ref,
+    String value,
+  ) async {
+    final id = business.id;
+    switch (value) {
+      case 'visit' || 'phone':
+        await _act(
+          context,
+          ref,
+          (r) => r.verify(id, method: value),
+          value == 'visit'
+              ? 'Verified in person today.'
+              : 'Verified by phone today.',
+        );
+      case 'hide':
+        await _act(
+          context,
+          ref,
+          (r) => r.setProspect(id, prospect: true),
+          'Hidden as pre-built. Only the team can see it.',
+        );
+      case 'publish':
+        await _act(
+          context,
+          ref,
+          (r) => r.setProspect(id, prospect: false),
+          '${business.name} is now public.',
+        );
+      case 'preview':
+        await _act(context, ref, (r) async {
+          final url = await r.previewUrl(id);
+          await Clipboard.setData(ClipboardData(text: url));
+        }, 'Preview link copied. Send it to the owner.');
+    }
+  }
+
   @override
-  Widget build(BuildContext context) {
+  Widget build(BuildContext context, WidgetRef ref) {
     final verified = business.lastVerifiedAt;
     final stale =
         verified == null ||
@@ -144,6 +214,14 @@ class _ListingRow extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: Insets.xxs),
+                    if (business.isProspect)
+                      Text(
+                        'Pre-built, hidden from customers',
+                        style: AppText.caption.copyWith(
+                          color: palette.warn,
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
                     Text(
                       '${business.category.shortLabel} · ${business.tier.label}'
                       '${business.hasLocation ? '' : ' · no pin'}',
@@ -162,7 +240,34 @@ class _ListingRow extends StatelessWidget {
                   ],
                 ),
               ),
-              Icon(Icons.chevron_right, color: palette.muted),
+              PopupMenuButton<String>(
+                tooltip: 'Verify, publish, preview',
+                onSelected: (v) => _onMenu(context, ref, v),
+                itemBuilder: (_) => [
+                  const PopupMenuItem(
+                    value: 'visit',
+                    child: Text('Verified in person today'),
+                  ),
+                  const PopupMenuItem(
+                    value: 'phone',
+                    child: Text('Verified by phone today'),
+                  ),
+                  if (business.isProspect) ...[
+                    const PopupMenuItem(
+                      value: 'preview',
+                      child: Text('Copy preview link for the owner'),
+                    ),
+                    const PopupMenuItem(
+                      value: 'publish',
+                      child: Text('Publish to customers'),
+                    ),
+                  ] else
+                    const PopupMenuItem(
+                      value: 'hide',
+                      child: Text('Hide as pre-built'),
+                    ),
+                ],
+              ),
             ],
           ),
         ),

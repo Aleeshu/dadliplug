@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/features/more/get_listed_screen.dart';
+import 'package:antigua_business_map/features/team_admin/leads_screen.dart';
 import 'package:antigua_business_map/features/more/legal_screens.dart';
 import 'package:antigua_business_map/features/team_admin/content_screen.dart';
 import 'package:antigua_business_map/core/routing/app_tabs.dart';
@@ -316,6 +318,7 @@ GoRouter _buildRouter({
           routes: [
             GoRoute(path: 'billing', builder: (c, s) => const BillingScreen()),
             GoRoute(path: 'content', builder: (c, s) => const ContentScreen()),
+            GoRoute(path: 'leads', builder: (c, s) => const LeadsScreen()),
             GoRoute(path: 'ranking', builder: (c, s) => const RankingScreen()),
             GoRoute(
               path: 'spotlight',
@@ -380,6 +383,7 @@ GoRouter _buildRouter({
       ),
     ),
     GoRoute(path: '/about', builder: (c, s) => const AboutScreen()),
+    GoRoute(path: '/get-listed', builder: (c, s) => const GetListedScreen()),
     GoRoute(
       path: Routes.profile,
       builder: (c, s) => ProfileScreen(session: session),

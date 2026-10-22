@@ -648,16 +648,31 @@ through to a confirmed session.
 - Decide the essentials-layer question (section 15) with real reactions rather
   than on paper.
 
+**Tools built (2026-10-22):** "Get your business listed" in the app records
+each owner's answers (channels, spend, plan, team-or-self upkeep); Team ->
+Listings -> Leads counts them in an Answers tab. Field guide:
+docs/validation/interview-guide.md. Decision rules, set before the answers:
+docs/validation/pricing-test.md. **The twenty conversations are still to do.**
+
 Placed here deliberately. Every phase before it has been engineering, and not
 one has been commercial. Launching at Phase 10 with pricing and positioning
 already fixed and unvalidated is the risk this phase exists to remove.
 
 ### Phase 10 — Seed content and field testing (week 17)
-- Onboard the first 5–10 businesses; verify listings in person
-- **Pre-built listings for the sales pipeline**
+- Onboard the first 5–10 businesses; verify listings in person — tools ✅:
+  Team -> Listings -> ⋮ -> "Verified in person / by phone today", logged with
+  who and how (listing_verifications)
+- **Pre-built listings for the sales pipeline** ✅ — hidden from customers
+  (is_prospect), private preview link for the owner (/p/<token>), Publish
+  when they sign up
 - **WhatsApp intake**: a number businesses text for hours changes and closures
-- 3-day trials with the seed businesses
-- Bulk import for the first listings; photo cleanup on upload
+  ✅ — "Tell the team on WhatsApp" on the owner dashboard; set TEAM_WHATSAPP
+  in .env
+- 3-day trials with the seed businesses (Team -> Billing -> Start trial)
+- Bulk import for the first listings ✅ — scripts/import_listings.py, from
+  scripts/listings_template.csv; checks every row, imports as pre-built.
+  Photo cleanup on upload: open — photos are still URLs; in-app upload with
+  resizing needs an image-picker plugin
 
 ### Phase 11 — Release (weeks 18–19)
 - **Done ahead of time (2026-10-22):** delete account in the app (both stores

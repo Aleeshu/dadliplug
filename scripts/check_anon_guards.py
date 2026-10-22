@@ -52,6 +52,7 @@ GUARDED: dict[str, dict[str, object]] = {
     "snapshot_ranks": {},
     "refresh_review_totals": {"p_business": NOBODY},
     "delete_my_account": {},
+    "verify_listing": {"p_business": NOBODY, "p_method": "visit"},
 }
 
 
