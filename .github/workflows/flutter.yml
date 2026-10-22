@@ -51,6 +51,12 @@ jobs:
           cache: true
 
       - run: flutter pub get
+      # The Firebase config is gitignored; CI gets it from a repository
+      # secret. The build fails without it (com.google.gms.google-services).
+      - name: Write google-services.json
+        env:
+          GOOGLE_SERVICES_JSON: ${{ secrets.GOOGLE_SERVICES_JSON }}
+        run: printf '%s' "$GOOGLE_SERVICES_JSON" > android/app/google-services.json
       # Debug build only. Release builds need a keystore and are done
       # deliberately, not on every push.
       - run: flutter build apk --debug
@@ -67,9 +73,14 @@ jobs:
           channel: stable
           cache: true
 
+      # CocoaPods, not Swift Package Manager. SPM resolves the whole
+      # firebase-ios-sdk package, whose 13.x needs gtm-session-fetcher >= 4,
+      # while GoogleSignIn 9.x needs < 4: no solution. CocoaPods resolves only
+      # the pods used (FirebaseMessaging), which do not conflict.
+      - run: flutter config --no-enable-swift-package-manager
       - run: flutter pub get
       # No codesign. Confirms the iOS build compiles; signing needs the Apple
-      # team credentials, which are still undecided in the plan.
+      # Developer account (docs/ios-release.md).
       - run: flutter build ios --debug --no-codesign
 
   # iOS builds only on macOS runners. This job exists to fail loudly on a Mac
