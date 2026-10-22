@@ -1,3 +1,6 @@
+import 'package:antigua_business_map/features/discovery/ad_screen.dart';
+import 'package:antigua_business_map/features/discovery/feed_screen.dart';
+import 'package:antigua_business_map/features/business_admin/redeem_deal_screen.dart';
 import 'package:antigua_business_map/features/business_admin/pin_editor_screen.dart';
 import 'package:antigua_business_map/features/more/get_listed_screen.dart';
 import 'package:antigua_business_map/features/team_admin/leads_screen.dart';
@@ -253,6 +256,10 @@ GoRouter _buildRouter({
           },
         ),
         GoRoute(
+          path: '/business/redeem',
+          builder: (c, s) => const RedeemDealScreen(),
+        ),
+        GoRoute(
           path: '/business/pin',
           builder: (c, s) => PinEditorScreen(businessId: businessIdFor(s)),
         ),
@@ -392,6 +399,11 @@ GoRouter _buildRouter({
     GoRoute(
       path: Routes.profile,
       builder: (c, s) => ProfileScreen(session: session),
+    ),
+    GoRoute(path: '/feed', builder: (c, s) => const FeedScreen()),
+    GoRoute(
+      path: '/ad/:id',
+      builder: (c, s) => AdScreen(adId: s.pathParameters['id']!),
     ),
     GoRoute(
       path: '/collection/:id',

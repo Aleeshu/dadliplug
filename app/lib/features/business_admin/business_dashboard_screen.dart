@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/services/report_repository.dart';
+import 'package:intl/intl.dart';
 import 'package:antigua_business_map/core/config/app_config.dart';
 import 'package:url_launcher/url_launcher.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
@@ -124,6 +126,8 @@ class BusinessDashboardScreen extends ConsumerWidget {
             else ...[
               _PlanBanner(business: business),
               const SizedBox(height: Insets.md),
+              _ThisMonth(businessId: business.id),
+              const SizedBox(height: Insets.md),
               _SpecialCard(business: business),
               const SizedBox(height: Insets.md),
               _RankCard(business: business),
@@ -161,6 +165,12 @@ class BusinessDashboardScreen extends ConsumerWidget {
               title: 'Events',
               body: 'Put something on the island calendar.',
               onTap: () => context.go('/business/events$q'),
+            ),
+            _Tool(
+              icon: Icons.local_offer_outlined,
+              title: 'Redeem a deal',
+              body: "Enter or scan a customer's deal code at the till.",
+              onTap: () => context.push('/business/redeem'),
             ),
             _Tool(
               icon: Icons.push_pin_outlined,
@@ -407,6 +417,86 @@ class _PlanBanner extends StatelessWidget {
             ),
           ),
         ],
+      ),
+    );
+  }
+}
+
+/// The four numbers that prove the subscription is working (Business Plan
+/// 2), month to date, customers only. Tapping opens the full report.
+class _ThisMonth extends ConsumerWidget {
+  const _ThisMonth({required this.businessId});
+
+  final String businessId;
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final report = ref
+        .watch(
+          monthlyReportProvider((businessId: businessId, monthsBack: 0)),
+        )
+        .value;
+    if (report == null) return const SizedBox.shrink();
+
+    Widget tile(String label, int value) => Expanded(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            NumberFormat.decimalPattern().format(value),
+            style: AppText.numericLarge.copyWith(color: palette.ink),
+          ),
+          Text(label, style: AppText.caption.copyWith(color: palette.muted)),
+        ],
+      ),
+    );
+
+    return Material(
+      color: palette.surface,
+      borderRadius: BorderRadius.circular(Corners.xl),
+      child: InkWell(
+        borderRadius: BorderRadius.circular(Corners.xl),
+        onTap: () => context.push('/business/report?business=$businessId'),
+        child: Container(
+          padding: const EdgeInsets.all(Insets.xl),
+          decoration: BoxDecoration(
+            borderRadius: BorderRadius.circular(Corners.xl),
+            border: Border.all(color: palette.line),
+          ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Row(
+                children: [
+                  Text(
+                    'This month',
+                    style: AppText.titleMedium.copyWith(color: palette.ink),
+                  ),
+                  const Spacer(),
+                  Text(
+                    'Full report ›',
+                    style: AppText.labelMedium.copyWith(color: palette.red),
+                  ),
+                ],
+              ),
+              const SizedBox(height: Insets.md),
+              Row(
+                children: [
+                  tile('Ad views', report.adViews),
+                  tile('Ads opened', report.adOpens),
+                ],
+              ),
+              const SizedBox(height: Insets.md),
+              Row(
+                children: [
+                  tile('WhatsApp enquiries', report.whatsappTaps),
+                  tile('Deals redeemed', report.redemptions),
+                ],
+              ),
+            ],
+          ),
+        ),
       ),
     );
   }

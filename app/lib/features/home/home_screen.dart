@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/features/discovery/feed_screen.dart';
+import 'package:antigua_business_map/services/feed.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -68,6 +70,7 @@ class HomeScreen extends ConsumerWidget {
             SizedBox(height: Insets.giant),
             _CategoryRow(),
             SizedBox(height: Insets.giant),
+            _FreshSection(),
             _FeaturedSection(),
             _SpotlightSection(),
             _CollectionsSection(),
@@ -416,6 +419,58 @@ class _SpotlightSection extends ConsumerWidget {
   }
 }
 
+/// "Fresh in Antigua": the newest posts, first thing on Home (Business Plan
+/// 2: residents open the app to see what is new). Hidden when empty.
+class _FreshSection extends ConsumerWidget {
+  const _FreshSection();
+
+  @override
+  Widget build(BuildContext context, WidgetRef ref) {
+    final palette = context.palette;
+    final items = ref.watch(feedProvider(null)).value ?? const <FeedItem>[];
+    if (items.isEmpty) return const SizedBox.shrink();
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: Insets.xl),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Padding(
+            padding: const EdgeInsets.fromLTRB(Insets.huge, 0, Insets.md, 0),
+            child: Row(
+              children: [
+                Text(
+                  'Fresh in Antigua',
+                  style: AppText.titleLarge.copyWith(color: palette.ink),
+                ),
+                const Spacer(),
+                TextButton(
+                  onPressed: () => context.push('/feed'),
+                  child: Text(
+                    'See all ›',
+                    style: AppText.labelMedium.copyWith(color: palette.red),
+                  ),
+                ),
+              ],
+            ),
+          ),
+          Padding(
+            padding: const EdgeInsets.symmetric(horizontal: Insets.huge),
+            child: Column(
+              children: [
+                for (final item in items.take(4)) ...[
+                  FeedCard(item: item),
+                  const SizedBox(height: Insets.sm),
+                ],
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 /// The team's collections ("Best pepperpot"), as tappable tiles.
 class _CollectionsSection extends ConsumerWidget {
   const _CollectionsSection();
@@ -550,7 +605,7 @@ class _OffersSection extends ConsumerWidget {
                   letterSpacing: 1.5,
                 ),
               ),
-              onTap: () => context.push('/listing/${offer.businessId}'),
+              onTap: () => context.push('/ad/${offer.id}'),
             ),
         ],
       ),

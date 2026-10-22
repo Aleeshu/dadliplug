@@ -313,8 +313,7 @@ class BusinessAdsScreen extends ConsumerWidget {
                           ),
                         ),
                         child: InkWell(
-                          onTap: () =>
-                              context.push('/listing/${ad.businessId}'),
+                          onTap: () => context.push('/ad/${ad.id}'),
                           borderRadius: BorderRadius.circular(Corners.md),
                           child: Column(
                             crossAxisAlignment: CrossAxisAlignment.start,

@@ -780,6 +780,40 @@ function for the whole "we maintain the accuracy" promise.
 - Pre-trip mode: international visitors browse and save before they arrive.
   Connects to the international promotion in section 1.
 
+## 14d. Business Plan 2 (2026-10-22)
+
+External advice positioning Dadliplug as *Antigua's local promotion and
+discovery app, not another business directory*. Its "strongest combination",
+and where each stands:
+
+1. **A feed of fresh advertisements** ✅ — "Fresh in Antigua" first on Home,
+   and a full Feed screen with category filters: ads, deals, today's specials,
+   announcements from the last two weeks, and the week's events, newest
+   first. Featured businesses' posts are labelled **Sponsored** and get the
+   first slot of every five; everything else is strictly by time.
+2. **Measurable results for paying businesses** ✅ — a "This month" card on
+   the owner dashboard (ad views, ads opened, WhatsApp enquiries, deals
+   redeemed), and the monthly report adds ad opens and shares per ad,
+   directions taps, and the best ad of the month.
+3. **Deals that bring people in** ✅ — "Claim this deal" gives each resident
+   their own 6-character code and QR; the business redeems it once at the
+   till (Redeem a deal, typed or scanned). Offers carry the business's terms.
+4. **WhatsApp sharing that spreads ads** ✅ — every ad and deal has its own
+   page and a public link (/a/<id>) that opens in any browser and invites
+   the install; shares are counted.
+5. **Bulletin board and events calendar** — the events calendar and the
+   business announcements board exist. The PDF's community board (Jobs,
+   Items for Sale, Community Notices, Business Opportunities) is **not
+   built**: section 14a says not on day one, because of the moderation load.
+   **Decide on purpose.**
+
+Also open from the PDF, as decisions rather than code:
+- **Tiers.** The PDF's Starter / Growth / Premium (EC$25 / 50 / 100) match our
+  prices but differ in what each includes: ad limits per tier, and deals from
+  the middle tier (deals are Featured-only today). Decide after Phase 9.
+- **Founding Business network** (50–100 businesses before launch), resident
+  rewards, and weekly social media features: business work for Phase 10/12.
+
 ## 15. Open decisions
 
 ### Conflicts worth deciding on purpose

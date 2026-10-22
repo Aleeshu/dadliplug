@@ -55,7 +55,7 @@ class OffersScreen extends ConsumerWidget {
                   borderRadius: BorderRadius.circular(Corners.xxl),
                   child: InkWell(
                     borderRadius: BorderRadius.circular(Corners.xxl),
-                    onTap: () => context.push('/listing/${offer.businessId}'),
+                    onTap: () => context.push('/ad/${offer.id}'),
                     child: Container(
                       padding: const EdgeInsets.all(Insets.huge),
                       decoration: BoxDecoration(

@@ -843,7 +843,10 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
             if (hasLocation)
               Expanded(
                 child: OutlinedButton.icon(
-                  onPressed: () => context.go('/map?focus=${b.id}'),
+                  onPressed: () {
+                    _recorder.record(b.id, EngagementKind.directions);
+                    context.go('/map?focus=${b.id}');
+                  },
                   icon: const Icon(Icons.directions, size: 18),
                   label: const Text('Get Directions'),
                 ),
@@ -1191,6 +1194,14 @@ class _AdCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    // Opens the ad's own page: to share it, or claim the deal.
+    return GestureDetector(
+      onTap: () => context.push('/ad/${ad.id}'),
+      child: _body(context),
+    );
+  }
+
+  Widget _body(BuildContext context) {
     final palette = context.palette;
 
     return Container(

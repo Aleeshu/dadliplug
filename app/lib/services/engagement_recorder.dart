@@ -8,7 +8,16 @@ enum EngagementKind {
   view('view'),
   call('call'),
   whatsapp('whatsapp'),
-  adView('ad_view');
+  adView('ad_view'),
+
+  /// Someone opened an ad's own page, not only scrolled past it.
+  adOpen('ad_open'),
+
+  /// Someone shared an ad, usually to WhatsApp.
+  adShare('ad_share'),
+
+  /// Someone asked for directions to the business.
+  directions('directions');
 
   const EngagementKind(this.wire);
 

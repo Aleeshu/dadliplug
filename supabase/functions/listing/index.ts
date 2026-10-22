@@ -62,9 +62,68 @@ ${body}
   });
 }
 
+// One advertisement or deal, for a link shared on WhatsApp or social media:
+// readable by anyone, then an invitation to install (Business Plan 2). Read
+// with the publishable key, so an ad from a hidden listing 404s here too.
+async function adPage(adId: string, url: string, key: string): Promise<Response> {
+  const headers = { apikey: key, authorization: `Bearer ${key}` };
+  const res = await fetch(
+    `${url}/rest/v1/business_ads?id=eq.${adId}` +
+      "&select=title,body,image_url,starts_at,ends_at,offer_code,offer_terms," +
+      "businesses(id,name,area,phone,whatsapp)",
+    { headers },
+  );
+  const rows = res.ok ? await res.json() : [];
+  const ad = rows[0];
+  const now = Date.now();
+  const live = ad &&
+    Date.parse(ad.starts_at) <= now &&
+    (!ad.ends_at || Date.parse(ad.ends_at) > now);
+  if (!live || !ad.businesses) {
+    return page("Not found", `<div class="card"><h1>This advertisement has ended</h1>
+<p class="muted">Find what is on now in the Dadliplug app.</p></div>`);
+  }
+  const b = ad.businesses;
+  const wa = String(b.whatsapp ?? "").replace(/[^0-9]/g, "");
+  const waText = encodeURIComponent(`Hi, I saw "${ad.title}" on Dadliplug.`);
+  const until = ad.ends_at
+    ? new Date(ad.ends_at).toLocaleDateString("en-GB", { day: "numeric", month: "short", timeZone: "America/Antigua" })
+    : "";
+  const install = Deno.env.get("INSTALL_URL") ?? "";
+  const meta = `
+<meta property="og:type" content="website">
+<meta property="og:title" content="${esc((ad.offer_code ? "Deal: " : "") + ad.title)}">
+<meta property="og:description" content="${esc(b.name + (ad.offer_terms ? " — " + ad.offer_terms : ad.body ? " — " + String(ad.body).slice(0, 200) : ""))}">
+${ad.image_url ? `<meta property="og:image" content="${esc(ad.image_url)}">` : ""}`;
+  const body = `
+${ad.image_url ? `<img class="hero" src="${esc(ad.image_url)}" alt="">` : ""}
+<div class="card">
+  <div class="muted">${esc(b.name)}${b.area ? " · " + esc(b.area) : ""}</div>
+  <h1>${esc(ad.title)}</h1>
+  ${ad.body ? `<p>${esc(ad.body)}</p>` : ""}
+  ${ad.offer_code ? `<p><b>Deal code: ${esc(ad.offer_code)}</b>${ad.offer_terms ? `<br><span class="muted">${esc(ad.offer_terms)}</span>` : ""}</p>` : ""}
+  ${until ? `<p class="muted">Until ${esc(until)}</p>` : ""}
+  ${b.phone ? `<a class="btn call" href="tel:${esc(b.phone)}">Call</a>` : ""}
+  ${wa ? `<a class="btn wa" href="https://wa.me/${wa}?text=${waText}">WhatsApp</a>` : ""}
+</div>
+<div class="card">
+  <b>Get Dadliplug</b>
+  <p class="muted">Every deal and new ad in Antigua, on one map.${ad.offer_code ? " Claim this deal in the app to get your own code for the till." : ""}</p>
+  ${install ? `<a class="btn call" href="${esc(install)}">Get the app</a>` : `<span class="muted">Coming soon to Google Play and the App Store.</span>`}
+</div>`;
+  return page(`${ad.title} — ${b.name} — Dadliplug`, body, meta);
+}
+
 Deno.serve(async (req) => {
   const params = new URL(req.url).searchParams;
   const id = params.get("id") ?? "";
+  const adId = params.get("ad") ?? "";
+  if (adId) {
+    if (!/^[0-9a-f-]{36}$/i.test(adId)) {
+      return page("Not found", `<div class="card"><h1>Not found</h1></div>`);
+    }
+    return adPage(adId, Deno.env.get("SUPABASE_URL")!, Deno.env.get("SUPABASE_ANON_KEY")!);
+  }
   // A pre-built listing, shown to its owner before it is public (plan.md
   // Phase 10). Read through prospect_preview(), which returns only the
   // listing whose secret token matches.

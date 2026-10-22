@@ -280,7 +280,7 @@ class _SavedOffers extends ConsumerWidget {
           itemBuilder: (context, i) {
             final o = offers[i];
             return InkWell(
-              onTap: () => context.push('/listing/${o.businessId}'),
+              onTap: () => context.push('/ad/${o.id}'),
               borderRadius: BorderRadius.circular(Corners.xxl),
               child: Container(
                 padding: const EdgeInsets.all(Insets.huge),

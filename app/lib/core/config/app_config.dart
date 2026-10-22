@@ -41,6 +41,12 @@ abstract final class AppConfig {
   /// Public web page for a listing, for social bios and link previews.
   /// Served by the Cloudflare Worker in `workers/listing-page`, which passes
   /// through the Supabase `listing` function as HTML.
+  /// Public web page for one advertisement or deal: opens in any browser,
+  /// so a WhatsApp share works for someone without the app, and invites them
+  /// to install it (Business Plan 2).
+  static String publicAdUrl(String adId) =>
+      'https://dadliplug-listing.listing-page.workers.dev/a/$adId';
+
   static String publicListingUrl(String businessId) =>
       'https://dadliplug-listing.listing-page.workers.dev/l/$businessId';
 

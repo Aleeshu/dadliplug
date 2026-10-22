@@ -80,6 +80,26 @@ export default {
         },
       });
     }
+    // /a/<ad-id>: one advertisement or deal, shared on WhatsApp or social.
+    const adMatch = url.pathname.match(/^\/a\/([^/]+)\/?$/);
+    if (adMatch) {
+      if (!UUID.test(adMatch[1])) {
+        return new Response("Not found", { status: 404 });
+      }
+      const upstream = await fetch(`${ORIGIN}?ad=${adMatch[1]}`, {
+        cf: { cacheTtl: 300, cacheEverything: true },
+      });
+      const body = await upstream.text();
+      return new Response(body, {
+        status: body.includes("<h1>Not found</h1>") ? 404 : upstream.ok ? 200 : 502,
+        headers: {
+          "content-type": "text/html; charset=utf-8",
+          "cache-control": "public, max-age=300",
+          "x-content-type-options": "nosniff",
+        },
+      });
+    }
+
     // /p/<token>: a pre-built listing's private preview for its owner.
     const previewMatch = url.pathname.match(/^\/p\/([^/]+)\/?$/);
     if (previewMatch) {

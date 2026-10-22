@@ -23,6 +23,7 @@ class BusinessAd {
     this.endsAt,
     this.views = 0,
     this.offerCode,
+    this.offerTerms,
   });
 
   final String id;
@@ -41,6 +42,10 @@ class BusinessAd {
   final String? offerCode;
 
   bool get isOffer => offerCode != null && offerCode!.isNotEmpty;
+
+  /// The business's conditions on an offer, e.g. "Mon–Thu lunch, one per
+  /// person". Shown with the claimed code at the till.
+  final String? offerTerms;
 
   /// Whether the ad is still running.
   ///
@@ -208,7 +213,7 @@ class BusinessContentRepository {
         .from('business_ads')
         .select(
           'id, business_id, title, body, image_url, link_url, '
-          'starts_at, ends_at, views, offer_code, businesses (id, name)',
+          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
         )
         .eq('business_id', businessId)
         .order('starts_at', ascending: false);
@@ -220,13 +225,44 @@ class BusinessContentRepository {
   ///
   /// Filtered to live in the query, so an ended offer is never shown with a
   /// code the till will no longer honour.
+  /// Every advertisement running now, newest first: the raw material of the
+  /// Home feed. RLS hides ads of listings that are not public.
+  Future<List<BusinessAd>> loadLiveAds({DateTime? now}) async {
+    final at = (now ?? DateTime.now()).toUtc().toIso8601String();
+    final rows = await _require
+        .from('business_ads')
+        .select(
+          'id, business_id, title, body, image_url, link_url, '
+          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
+        )
+        .lte('starts_at', at)
+        .or('ends_at.is.null,ends_at.gt.$at')
+        .order('starts_at', ascending: false)
+        .limit(200);
+    return _foldAds(rows);
+  }
+
+  /// One advertisement, for its own page and shared links.
+  Future<BusinessAd?> loadAd(String id) async {
+    final rows = await _require
+        .from('business_ads')
+        .select(
+          'id, business_id, title, body, image_url, link_url, '
+          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
+        )
+        .eq('id', id)
+        .limit(1);
+    final ads = _foldAds(rows);
+    return ads.isEmpty ? null : ads.first;
+  }
+
   Future<List<BusinessAd>> loadOffers({DateTime? now}) async {
     final at = (now ?? DateTime.now()).toUtc().toIso8601String();
     final rows = await _require
         .from('business_ads')
         .select(
           'id, business_id, title, body, image_url, link_url, '
-          'starts_at, ends_at, views, offer_code, businesses (id, name)',
+          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
         )
         .not('offer_code', 'is', null)
         .lte('starts_at', at)
@@ -552,6 +588,7 @@ class BusinessContentRepository {
           endsAt: DateTime.tryParse(raw['ends_at']?.toString() ?? ''),
           views: (raw['views'] as num?)?.toInt() ?? 0,
           offerCode: raw['offer_code']?.toString(),
+          offerTerms: raw['offer_terms']?.toString(),
         ),
       );
     }
@@ -733,3 +770,13 @@ String generateOfferCode({Random? random}) {
   final rng = random ?? Random.secure();
   return List.generate(6, (_) => alphabet[rng.nextInt(alphabet.length)]).join();
 }
+
+final liveAdsProvider = FutureProvider<List<BusinessAd>>(
+  (ref) => ref.watch(businessContentRepositoryProvider).loadLiveAds(),
+);
+
+// Inferred: the family type is only nameable via riverpod/src.
+// ignore: specify_nonobvious_property_types
+final adProvider = FutureProvider.family<BusinessAd?, String>(
+  (ref, id) => ref.watch(businessContentRepositoryProvider).loadAd(id),
+);

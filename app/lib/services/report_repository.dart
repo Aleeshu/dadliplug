@@ -19,6 +19,8 @@ class AdPerformance {
     required this.views,
     required this.wasRunning,
     this.redemptions = 0,
+    this.opens = 0,
+    this.shares = 0,
   });
 
   final String adId;
@@ -28,6 +30,16 @@ class AdPerformance {
   /// Times the offer code was redeemed at the till this month. Zero for an ad
   /// with no code.
   final int redemptions;
+
+  /// Times someone opened the ad's own page, not only scrolled past it.
+  final int opens;
+
+  /// Times it was shared, usually to WhatsApp.
+  final int shares;
+
+  /// Ranks ads for "best this month": what most brought people in. A
+  /// redemption is a visit; an open or share is interest; a view is sight.
+  int get strength => redemptions * 100 + (opens + shares) * 10 + views;
 
   /// Whether the ad was live for any part of the month. A zero-view ad that
   /// never ran is different from one that ran and was ignored.
@@ -92,6 +104,7 @@ class MonthlyReport {
     required this.reviews,
     required this.verifiedReviews,
     required this.newVisits,
+    this.directions = 0,
   });
 
   final String businessId;
@@ -116,6 +129,21 @@ class MonthlyReport {
 
   /// Total views across every advertisement.
   int get adViews => ads.fold(0, (sum, ad) => sum + ad.views);
+
+  /// Times customers asked for directions to the business.
+  final int directions;
+
+  /// Opens across every advertisement ("offer clicks").
+  int get adOpens => ads.fold(0, (sum, ad) => sum + ad.opens);
+
+  /// Deals redeemed at the till across every advertisement.
+  int get redemptions => ads.fold(0, (sum, ad) => sum + ad.redemptions);
+
+  /// The ad that did most this month, or null when none did anything.
+  AdPerformance? get bestAd {
+    final ranked = [...ads]..sort((a, b) => b.strength.compareTo(a.strength));
+    return ranked.isEmpty || ranked.first.strength == 0 ? null : ranked.first;
+  }
 
   /// The month as a label, e.g. "June 2026".
   String get label => _monthNames[month.month - 1];
@@ -209,6 +237,7 @@ class ReportRepository {
       _eventCount(businessId, 'call', from, to),
       _eventCount(businessId, 'whatsapp', from, to),
       _visitCount(businessId, from, to),
+      _eventCount(businessId, 'directions', from, to),
     ]);
     final reviews = results[1] as StarBreakdown;
 
@@ -222,6 +251,7 @@ class ReportRepository {
       reviews: reviews,
       verifiedReviews: reviews.total,
       newVisits: results[5] as int,
+      directions: results[6] as int,
     );
   }
 
@@ -249,30 +279,32 @@ class ReportRepository {
       final id = raw['id']?.toString();
       if (id == null) continue;
 
-      final views = await _require
-          .from('engagement_events')
-          .select('id')
-          .eq('ad_id', id)
-          .eq('kind', 'ad_view')
-          .gte('occurred_at', from.toIso8601String())
-          .lt('occurred_at', to.toIso8601String())
-          .count(CountOption.exact);
+      Future<int> count(String kind) async =>
+          (await _require
+                  .from('engagement_events')
+                  .select('id')
+                  .eq('ad_id', id)
+                  .eq('kind', kind)
+                  .gte('occurred_at', from.toIso8601String())
+                  .lt('occurred_at', to.toIso8601String())
+                  .count(CountOption.exact))
+              .count;
 
-      final redemptions = await _require
-          .from('engagement_events')
-          .select('id')
-          .eq('ad_id', id)
-          .eq('kind', 'redemption')
-          .gte('occurred_at', from.toIso8601String())
-          .lt('occurred_at', to.toIso8601String())
-          .count(CountOption.exact);
+      final counts = await Future.wait([
+        count('ad_view'),
+        count('redemption'),
+        count('ad_open'),
+        count('ad_share'),
+      ]);
 
       ads.add(
         AdPerformance(
           adId: id,
           title: raw['title']?.toString() ?? 'Untitled',
-          views: views.count,
-          redemptions: redemptions.count,
+          views: counts[0],
+          redemptions: counts[1],
+          opens: counts[2],
+          shares: counts[3],
           wasRunning: true,
         ),
       );

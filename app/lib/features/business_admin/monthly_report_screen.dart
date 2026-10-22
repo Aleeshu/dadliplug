@@ -121,6 +121,30 @@ class MonthlyReportScreen extends ConsumerWidget {
               const SizedBox(height: Insets.xl),
               Text('ADVERTISEMENTS', style: AppText.sectionLabel),
               const SizedBox(height: Insets.sm),
+              if (report.bestAd case final best?) ...[
+                Container(
+                  padding: const EdgeInsets.all(Insets.md),
+                  decoration: BoxDecoration(
+                    color: palette.goodBg,
+                    borderRadius: BorderRadius.circular(Corners.md),
+                  ),
+                  child: Row(
+                    children: [
+                      Icon(Icons.emoji_events_outlined, color: palette.good),
+                      const SizedBox(width: Insets.sm),
+                      Expanded(
+                        child: Text(
+                          'Best this month: ${best.title}',
+                          style: AppText.titleSmall.copyWith(
+                            color: palette.good,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: Insets.sm),
+              ],
               if (report.ads.isEmpty)
                 Text(
                   'No advertisements ran this month. An advertisement is '
@@ -155,11 +179,17 @@ class MonthlyReportScreen extends ConsumerWidget {
                 value: '${report.whatsappTaps}',
                 palette: palette,
               ),
+              _Line(
+                icon: Icons.directions_outlined,
+                label: 'Asked for directions',
+                value: '${report.directions}',
+                palette: palette,
+              ),
 
               const SizedBox(height: Insets.xl),
               Text(
-                'This is also sent to you on WhatsApp at the end of each '
-                'month, so you do not need to remember to open it.',
+                "Counts customers only: your own taps and the team's are "
+                'never included. A signed-in customer counts once an hour.',
                 style: AppText.caption.copyWith(color: palette.muted),
               ),
             ],
@@ -332,6 +362,11 @@ class _AdRow extends StatelessWidget {
               backgroundColor: palette.line,
               valueColor: AlwaysStoppedAnimation(palette.red),
             ),
+          ),
+          const SizedBox(height: Insets.xs),
+          Text(
+            '${ad.views} views · ${ad.opens} opened · ${ad.shares} shared',
+            style: AppText.caption.copyWith(color: palette.muted),
           ),
           if (ad.redemptions > 0) ...[
             const SizedBox(height: Insets.xs),
