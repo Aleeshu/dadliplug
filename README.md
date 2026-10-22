@@ -62,7 +62,9 @@ supabase/
   migrations/               schema, RLS, functions, pg_cron jobs
   functions/listing/        public listing page and owner preview
   functions/push/           Firebase Cloud Messaging sender
+backend/README.md           the Supabase project: ref, region, how to apply migrations
 workers/listing-page/       Cloudflare Worker: /l/<id>, /p/<token>, legal pages
+ops/                        manual team processes (onboarding, moderation); to write up
 scripts/
   build-apk.ps1             Android build with dart-defines from .env
   import_listings.py        CSV -> pre-built listings, checked first
