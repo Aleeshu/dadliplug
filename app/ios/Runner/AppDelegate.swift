@@ -8,16 +8,29 @@ import UIKit
     _ application: UIApplication,
     didFinishLaunchingWithOptions launchOptions: [UIApplication.LaunchOptionsKey: Any]?
   ) -> Bool {
-    // GMSApiKey in Info.plist expands $(GOOGLE_MAPS_API_KEY), which is not yet
-    // set by any iOS build. Until it is, the map will not load on iOS.
-    if let key = Bundle.main.object(forInfoDictionaryKey: "GMSApiKey") as? String,
-       !key.isEmpty {
-      GMSServices.provideAPIKey(key)
-    }
     return super.application(application, didFinishLaunchingWithOptions: launchOptions)
   }
 
   func didInitializeImplicitFlutterEngine(_ engineBridge: FlutterImplicitEngineBridge) {
     GeneratedPluginRegistrant.register(with: engineBridge.pluginRegistry)
+
+    // The Maps key comes from the app (main.dart), which gets it from .env as
+    // a dart-define, the same source Android uses. Dart sends it before the
+    // first map is created; GMSServices needs it before any GMSMapView.
+    guard let registrar = engineBridge.pluginRegistry.registrar(forPlugin: "DadliplugMapsKey")
+    else { return }
+    let channel = FlutterMethodChannel(
+      name: "dadliplug/maps",
+      binaryMessenger: registrar.messenger()
+    )
+    channel.setMethodCallHandler { call, result in
+      guard call.method == "setApiKey", let key = call.arguments as? String, !key.isEmpty
+      else {
+        result(FlutterMethodNotImplemented)
+        return
+      }
+      GMSServices.provideAPIKey(key)
+      result(nil)
+    }
   }
 }

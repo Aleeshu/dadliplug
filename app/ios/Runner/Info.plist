@@ -18,10 +18,8 @@
 	<string>Used only to scan a business's visit code at the till, so you can review it. No photos are taken or kept.</string>
 	<key>NSLocationWhenInUseUsageDescription</key>
 	<string>Used only to sort businesses by distance when you choose Near me. Your location is never stored.</string>
-	<key>GMSApiKey</key>
-	<string>$(GOOGLE_MAPS_API_KEY)</string>
 	<key>CFBundleName</key>
-	<string>islandads</string>
+	<string>Dadliplug</string>
 	<key>CFBundlePackageType</key>
 	<string>APPL</string>
 	<key>CFBundleShortVersionString</key>

@@ -1,3 +1,5 @@
+import 'package:flutter/services.dart';
+
 import 'dart:async';
 
 import 'package:antigua_business_map/core/config/app_config.dart';
@@ -22,6 +24,21 @@ const String _audienceAskedKey = 'audience_asked';
 
 Future<void> main() async {
   WidgetsFlutterBinding.ensureInitialized();
+
+  // iOS reads the Maps key from the app, not from Info.plist: the key lives
+  // in .env and reaches the app as a dart-define, exactly as on Android, so
+  // there is one place to set it. Must run before any map is created.
+  if (!kIsWeb &&
+      defaultTargetPlatform == TargetPlatform.iOS &&
+      AppConfig.googleMapsApiKey.isNotEmpty) {
+    try {
+      await const MethodChannel(
+        'dadliplug/maps',
+      ).invokeMethod<void>('setApiKey', AppConfig.googleMapsApiKey);
+    } on PlatformException catch (e) {
+      debugPrint('Maps key not set on iOS: $e');
+    }
+  }
 
   const isRelease = kReleaseMode;
 

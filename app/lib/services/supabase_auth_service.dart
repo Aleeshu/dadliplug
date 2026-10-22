@@ -195,10 +195,10 @@ class SupabaseAuthService implements AuthService {
   /// `serverClientId` fails at runtime with an error that reads like a network
   /// problem rather than a configuration one.
   Future<void> initializeGoogleSignIn() async {
-    if (AppConfig.googleSignInClientId.isEmpty) return;
+    if (AppConfig.googleSignInAppClientId.isEmpty) return;
 
     await _ensureGoogleSignIn().initialize(
-      clientId: AppConfig.googleSignInClientId,
+      clientId: AppConfig.googleSignInAppClientId,
       serverClientId: AppConfig.googleSignInServerClientId.isEmpty
           ? null
           : AppConfig.googleSignInServerClientId,

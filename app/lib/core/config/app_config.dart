@@ -8,6 +8,8 @@
 /// `service_role` key, which bypasses RLS entirely.
 library;
 
+import 'package:flutter/foundation.dart';
+
 abstract final class AppConfig {
   static const String appName = 'Dadliplug';
 
@@ -88,6 +90,20 @@ abstract final class AppConfig {
     'GOOGLE_SIGN_IN_CLIENT_ID',
   );
 
+  /// From an **iOS** OAuth client for bundle id com.dadliplug.app, in the same
+  /// Google Cloud project as the Web client. iPhones use this in place of
+  /// [googleSignInClientId]; its reversed form is the URL scheme in
+  /// ios/Runner/Info.plist (docs/ios-release.md).
+  static const String googleSignInIosClientId = String.fromEnvironment(
+    'GOOGLE_SIGN_IN_IOS_CLIENT_ID',
+  );
+
+  /// The client id that identifies this app on the platform it runs on.
+  static String get googleSignInAppClientId =>
+      defaultTargetPlatform == TargetPlatform.iOS
+      ? googleSignInIosClientId
+      : googleSignInClientId;
+
   /// From the **Web application** OAuth client. Required for Android sign-in.
   static const String googleSignInServerClientId = String.fromEnvironment(
     'GOOGLE_SIGN_IN_WEB_CLIENT_ID',
@@ -99,7 +115,8 @@ abstract final class AppConfig {
   /// something that reads like a network error, so it is better to hide the
   /// button than to offer one that cannot work.
   static bool get hasGoogleSignIn =>
-      googleSignInClientId.isNotEmpty && googleSignInServerClientId.isNotEmpty;
+      googleSignInAppClientId.isNotEmpty &&
+      googleSignInServerClientId.isNotEmpty;
 
   /// How long a trial listing stays live without payment, and how long a
   /// lapsed business keeps its listing before removal.
