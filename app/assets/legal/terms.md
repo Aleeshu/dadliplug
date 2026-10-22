@@ -17,10 +17,10 @@ These terms cover using Dadliplug, as a customer or as a business. By using the 
 - Businesses can reply, and can ask us to look at a review. Anyone can report a review. The team decides on reports and may remove reviews that break these rules.
 - You can hide a person's reviews from yourself at any time.
 
-## Rank and Featured
+## Rank and paid placement
 
 - A business's rank comes from its ratings, how many reviews it has, and customer activity. It cannot be bought.
-- The Featured page, the Spotlight board and the verified badge are paid placements. The badge means the business pays for a Featured listing. It does not mean we vouch for its quality.
+- The Featured page, the Spotlight board, "Sponsored" posts in the feed and the verified badge are paid placements. The badge means the business pays for the Premium plan. It does not mean we vouch for its quality.
 
 ## Listings and accuracy
 
@@ -28,7 +28,7 @@ The team keeps listings as accurate as it can, but hours and details change. Che
 
 ## For businesses
 
-- **Plans.** Growing, Basic and Featured, billed monthly in EC dollars and paid by bank transfer. Prices are agreed with the team.
+- **Plans.** Starter (EC$25 a month: one running advertisement), Growth (EC$50: five running advertisements, deals, results tracking, moving your pin) and Premium (EC$100: unlimited advertisements, the Featured page, Spotlight and Sponsored posts), billed monthly in EC dollars and paid by bank transfer. Prices are agreed with the team.
 - **Free trial.** 3 days on any plan, with every tool unlocked.
 - **Missed payment.** When a trial or a paid period ends without payment, the listing stays up, marked overdue, for 7 days. Pay in that window and everything continues as before. After 7 days the listing is hidden from the app. Its content is kept so it can be restored if you pay later.
 - **Claiming a listing.** To manage a listing, claim it in the app. The team confirms by calling the number on the listing.

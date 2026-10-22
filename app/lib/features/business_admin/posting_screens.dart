@@ -29,6 +29,7 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
   final _body = TextEditingController();
   final _link = TextEditingController();
   final _code = TextEditingController();
+  final _terms = TextEditingController();
   DateTime? _endsAt;
   bool _posting = false;
   String? _error;
@@ -39,6 +40,7 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
     _body.dispose();
     _link.dispose();
     _code.dispose();
+    _terms.dispose();
     super.dispose();
   }
 
@@ -60,6 +62,7 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
             linkUrl: _link.text,
             endsAt: _endsAt,
             offerCode: _code.text,
+            offerTerms: _terms.text,
           );
       if (!mounted) return;
       ref.invalidate(businessAdsProvider(widget.businessId));
@@ -82,15 +85,16 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    // Offer codes are a Featured perk; the database enforces it too. Hidden
+    // Deals are Growth and Premium; the database enforces it too. Hidden
     // until the listing has loaded rather than shown and then refused.
-    final canOffer =
-        ref
-            .watch(singleBusinessProvider(widget.businessId))
-            .value
-            ?.tier
-            .holdsFeaturedSlot ??
-        false;
+    final business = ref.watch(singleBusinessProvider(widget.businessId)).value;
+    final canOffer = business?.canPostDeals ?? false;
+    final limit = business?.liveAdLimit;
+    final running =
+        (ref.watch(businessAdsProvider(widget.businessId)).value ??
+                const <BusinessAd>[])
+            .where((a) => a.endsAt == null || a.endsAt!.isAfter(DateTime.now()))
+            .length;
 
     return Scaffold(
       backgroundColor: palette.app,
@@ -106,9 +110,21 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
           children: [
             Text(
               'Advertisements sit at the top of your listing, above your '
-              'description. Customers see the running ones first.',
+              'description, and in the Fresh in Antigua feed.',
               style: AppText.bodyMedium.copyWith(color: palette.muted),
             ),
+            if (business != null && limit != null) ...[
+              const SizedBox(height: Insets.sm),
+              Text(
+                '$running of $limit running '
+                '${limit == 1 ? 'advertisement' : 'advertisements'} on '
+                '${(business.plan ?? business.tier).label}.'
+                '${running >= limit ? ' End one to post another, or move up a plan.' : ''}',
+                style: AppText.bodyMedium.copyWith(
+                  color: running >= limit ? palette.bad : palette.muted,
+                ),
+              ),
+            ],
             const SizedBox(height: Insets.lg),
             _Field(
               controller: _title,
@@ -175,10 +191,17 @@ class _PostAdScreenState extends ConsumerState<PostAdScreen> {
                 ],
               ),
               Text(
-                'With a code this becomes an offer. Customers say the code at '
-                'the till, and you tap "Redeemed" on the ad so it counts in '
-                'your monthly report.',
+                'With a code this becomes a deal. Customers claim it in the '
+                'app for their own code, which you redeem at the till (Redeem '
+                'a deal), so every visit counts in your monthly report.',
                 style: AppText.caption.copyWith(color: palette.muted),
+              ),
+              const SizedBox(height: Insets.md),
+              _Field(
+                controller: _terms,
+                label: 'Deal terms (optional)',
+                hint: 'Mon to Thu lunch, one per person',
+                maxLength: 200,
               ),
             ],
             const SizedBox(height: Insets.lg),

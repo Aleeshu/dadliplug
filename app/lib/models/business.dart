@@ -35,10 +35,13 @@ enum SubscriptionTier {
 }
 
 extension SubscriptionTierX on SubscriptionTier {
+  /// The plan's name as owners see it. Renamed 2026-10-22 (Business Plan 2):
+  /// growing is Starter, basic is Growth, featured is Premium. The stored
+  /// values did not change, so billing history and every rule still hold.
   String get label => switch (this) {
-    SubscriptionTier.growing => 'Growing',
-    SubscriptionTier.basic => 'Basic',
-    SubscriptionTier.featured => 'Featured',
+    SubscriptionTier.growing => 'Starter',
+    SubscriptionTier.basic => 'Growth',
+    SubscriptionTier.featured => 'Premium',
     SubscriptionTier.trial => 'Trial',
     SubscriptionTier.overdue => 'Overdue',
     SubscriptionTier.delisted => 'Delisted',
@@ -330,6 +333,24 @@ class Business {
   /// Basic and Featured may move their pin and give it a photo; a trial gets
   /// every paid tool. Growing keeps the default pin (plan.md section 3). The
   /// database enforces the same rule (protect_pin_fields).
+  /// Deals (offer codes, claimable codes): Growth and Premium, and trials.
+  /// The database enforces the same rule (plan_allows).
+  bool get canPostDeals =>
+      tier == SubscriptionTier.trial ||
+      (plan ?? tier) == SubscriptionTier.basic ||
+      (plan ?? tier) == SubscriptionTier.featured;
+
+  /// How many advertisements may run at once, or null for no limit:
+  /// Starter 1, Growth 5, Premium and trials unlimited (live_ad_limit).
+  int? get liveAdLimit {
+    if (tier == SubscriptionTier.trial) return null;
+    return switch (plan ?? tier) {
+      SubscriptionTier.featured => null,
+      SubscriptionTier.basic => 5,
+      _ => 1,
+    };
+  }
+
   bool get canCustomisePin =>
       tier == SubscriptionTier.trial ||
       (plan ?? tier) == SubscriptionTier.basic ||

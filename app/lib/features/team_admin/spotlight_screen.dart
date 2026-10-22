@@ -129,7 +129,7 @@ class _SpotlightScreenState extends ConsumerState<SpotlightScreen> {
               ),
               const SizedBox(height: Insets.xs),
               Text(
-                'Featured plans go first, least recently shown first; Basic '
+                'Premium plans go first, least recently shown first; Growth '
                 'plans fill empty slots. Score only breaks ties.',
                 style: caption,
               ),

@@ -88,6 +88,15 @@ part of the pitch, not a concession.
 
 ## 3. Pricing detail
 
+> **Changed 2026-10-22 (Business Plan 2, section 14d).** The plans are now
+> **Starter** (EC$25, stored `growing`), **Growth** (EC$50, stored `basic`)
+> and **Premium** (EC$100, stored `featured`). What changed besides the names:
+> live advertisements are capped at **1 / 5 / unlimited**, and **deals** come
+> with Growth as well as Premium. Moving the pin and a photo pin stay
+> Growth and above; the Featured page, Spotlight priority, Sponsored feed
+> slots and the badge stay Premium. Both limits are enforced in the database
+> (`live_ad_limit`, `plan_allows`). The detail below keeps the old names.
+
 Three tiers. All prices EC$, per business, per month. All negotiable — see the
 currency note in section 2.
 

@@ -448,11 +448,13 @@ class BusinessContentRepository {
     String? linkUrl,
     DateTime? endsAt,
     String? offerCode,
+    String? offerTerms,
   }) async {
     final cleanTitle = title.trim();
     if (cleanTitle.isEmpty) {
       throw const InvalidContentException('An advertisement needs a title.');
     }
+    final terms = offerTerms?.trim();
     final code = normaliseOfferCode(offerCode);
     if (code != null && !isValidOfferCode(code)) {
       throw const InvalidContentException(
@@ -460,17 +462,26 @@ class BusinessContentRepository {
       );
     }
 
-    await _require.from('business_ads').insert({
-      'business_id': businessId,
-      'title': cleanTitle,
-      'body': body.trim(),
-      if (imageUrl != null && imageUrl.trim().isNotEmpty)
-        'image_url': imageUrl.trim(),
-      if (linkUrl != null && linkUrl.trim().isNotEmpty)
-        'link_url': linkUrl.trim(),
-      'ends_at': endsAt?.toUtc().toIso8601String(),
-      'offer_code': ?code,
-    });
+    try {
+      await _require.from('business_ads').insert({
+        'business_id': businessId,
+        'title': cleanTitle,
+        'body': body.trim(),
+        if (imageUrl != null && imageUrl.trim().isNotEmpty)
+          'image_url': imageUrl.trim(),
+        if (linkUrl != null && linkUrl.trim().isNotEmpty)
+          'link_url': linkUrl.trim(),
+        'ends_at': endsAt?.toUtc().toIso8601String(),
+        'offer_code': ?code,
+        if (code != null && terms != null && terms.isNotEmpty)
+          'offer_terms': terms,
+      });
+    } on PostgrestException catch (error) {
+      // The plan's limits (live ads, deals) are enforced by the database;
+      // its message says what to do, so show it rather than "no signal".
+      if (error.code == '23514') throw InvalidContentException(error.message);
+      rethrow;
+    }
   }
 
   /// Ends a running advertisement without deleting it.

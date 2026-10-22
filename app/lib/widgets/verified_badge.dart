@@ -14,7 +14,7 @@ class VerifiedBadge extends StatelessWidget {
   final double size;
 
   static const String meaning =
-      'Featured listing. The business pays for this placement; it is not a '
+      'Premium listing. The business pays for this placement; it is not a '
       'rating of quality.';
 
   /// The badge for [business], or nothing when its tier does not carry one.

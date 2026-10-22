@@ -305,11 +305,20 @@ class _Answers extends StatelessWidget {
         ),
         Text(
           'Of those who named a plan: ${pct(summary.shareAtLeast('basic'))} '
-          'would take Basic or above, ${pct(summary.shareAtLeast('featured'))} '
-          'Featured.',
+          'would take Growth or above, ${pct(summary.shareAtLeast('featured'))} '
+          'Premium.',
           style: muted,
         ),
-        bars('Plan they lean to', summary.byPlan),
+        // Stored as growing/basic/featured; shown by the plans' names.
+        bars('Plan they lean to', {
+          for (final e in summary.byPlan.entries)
+            switch (e.key) {
+              'growing' => 'Starter',
+              'basic' => 'Growth',
+              'featured' => 'Premium',
+              _ => 'Not sure',
+            }: e.value,
+        }),
         bars(
           'Who keeps the listing (plan.md 15, decision 1)',
           summary.byMaintenance,

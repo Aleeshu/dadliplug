@@ -122,13 +122,13 @@ class _PinEditorScreenState extends ConsumerState<PinEditorScreen> {
         Icon(Icons.push_pin_outlined, size: 40, color: palette.muted),
         const SizedBox(height: Insets.md),
         Text(
-          'Moving your pin is part of Basic and Featured',
+          'Moving your pin is part of Growth and Premium',
           style: AppText.titleLarge.copyWith(color: palette.ink),
         ),
         const SizedBox(height: Insets.sm),
         Text(
-          'On Growing the team places your pin and moves it whenever you ask. '
-          'Basic and Featured let you move it yourself at any time and use '
+          'On Starter the team places your pin and moves it whenever you ask. '
+          'Growth and Premium let you move it yourself at any time and use '
           'one of your photos as the pin, so it stands out on the map.',
           style: AppText.bodyLarge.copyWith(color: palette.muted),
         ),

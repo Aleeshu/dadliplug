@@ -244,18 +244,18 @@ class _GetListedScreenState extends ConsumerState<GetListedScreen> {
                   for (final (value, title, detail) in const [
                     (
                       'growing',
-                      r'Growing, EC$25 a month',
-                      'Your pin, listing, photos, hours and reviews.',
+                      r'Starter, EC$25 a month',
+                      'Your listing, pin, photos, hours, reviews and one running ad.',
                     ),
                     (
                       'basic',
-                      r'Basic, EC$50 a month',
-                      'Plus your own pin image, moving your pin, and monthly reports.',
+                      r'Growth, EC$50 a month',
+                      'Five running ads, deals, results tracking, and your own pin.',
                     ),
                     (
                       'featured',
-                      r'Featured, EC$100 a month',
-                      'Plus the Featured page, a verified badge and offer codes.',
+                      r'Premium, EC$100 a month',
+                      'Unlimited ads, the Featured page, Spotlight and a badge.',
                     ),
                     ('unsure', 'Not sure yet', 'We can talk it through.'),
                   ])

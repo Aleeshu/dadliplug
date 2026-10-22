@@ -36,7 +36,7 @@ void main() {
       now: now,
     );
     expect(s.title, 'Free trial');
-    expect(s.detail, contains('Featured'));
+    expect(s.detail, contains('Premium'));
     expect(s.detail, contains('in 2 days'));
     expect(s.tone, BillingTone.warn);
   });
@@ -71,7 +71,7 @@ void main() {
       ),
       now: now,
     );
-    expect(far.title, 'Basic plan');
+    expect(far.title, 'Growth plan');
     expect(far.detail, startsWith('Paid until'));
     expect(far.tone, BillingTone.ok);
 

@@ -131,6 +131,10 @@ Developer account). See `docs/ios-release.md`.
 
 ## Pricing
 
-EC$25 Growing, EC$50 Basic, EC$100 Featured per month, paid by bank transfer;
-3-day trial on any plan; 7-day hold before a lapsed listing is hidden. Still
+Starter EC$25 (one running ad), Growth EC$50 (five ads, deals, results
+tracking, movable photo pin), Premium EC$100 (unlimited ads, Featured page,
+Spotlight, Sponsored feed slots) per month, paid by bank transfer; 3-day
+trial on any plan; 7-day hold before a lapsed listing is hidden. Renamed
+from Growing / Basic / Featured on 2026-10-22; the database still stores the
+old values. Still
 to be tested with owners (Phase 9, `docs/validation/pricing-test.md`).

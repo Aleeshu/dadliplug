@@ -48,7 +48,7 @@ class FeaturedScreen extends ConsumerWidget {
                   const SizedBox(width: Insets.md),
                   Expanded(
                     child: Text(
-                      'These businesses pay for a Featured listing. They are '
+                      'These businesses pay for the Premium plan. They are '
                       'ordered by ratings and activity, not by what they '
                       'pay.',
                       style: AppText.bodyMedium.copyWith(color: palette.muted),

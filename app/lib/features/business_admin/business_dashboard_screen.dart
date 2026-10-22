@@ -177,7 +177,7 @@ class BusinessDashboardScreen extends ConsumerWidget {
               title: 'Your map pin',
               body:
                   'Move it to your door, and use a photo as the pin '
-                  '(Basic and Featured).',
+                  '(Growth and Premium).',
               onTap: () => context.push('/business/pin$q'),
             ),
             _Tool(
@@ -717,7 +717,7 @@ class _RankCard extends ConsumerWidget {
           ),
           const SizedBox(height: Insets.sm),
           Text(
-            'Rank is earned, never bought: a Featured plan puts you on the '
+            'Rank is earned, never bought: Premium puts you on the '
             'Featured page, not higher here.',
             style: AppText.caption.copyWith(color: palette.muted),
           ),
