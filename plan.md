@@ -468,7 +468,7 @@ code: device checks, owner conversations, onboarding, and store paperwork.
 | --- | --- | --- |
 | 0 Decisions and paperwork | ✅ | Apple Developer account not yet opened (needed for iOS) |
 | 1 Scaffold | ✅ | — |
-| 2 Auth and accounts | ✅ | Google sign-in on a real phone under com.dadliplug.app; three more team admin accounts |
+| 2 Auth and accounts | ✅ | Google sign-in on a real phone under com.dadliplug.app. Four team admins exist (2026-10-22) |
 | 3 Map core | ✅ | — |
 | 4 Business listings | ✅ | — |
 | 5 Discovery | ✅ | — |
