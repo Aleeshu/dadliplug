@@ -54,3 +54,6 @@ GoogleService-Info.plist
 
 # Cloudflare Wrangler local state (account ids, caches).
 .wrangler/
+
+# Python bytecode from running scripts/
+__pycache__/
