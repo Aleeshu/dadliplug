@@ -428,6 +428,10 @@ class _PinPickerMapState extends State<PinPickerMap> {
     // Satellite with labels: the owner recognises their own roof and car park
     // far more easily than a road map with no buildings.
     mapType: MapType.hybrid,
+    // Same as the main map: none of Google's business pins, so an owner
+    // placing their pin is not looking at competitors' (or Google's stale
+    // data about their own place).
+    style: IslandAdsMapState._mapStyle,
     onTap: _move,
     markers: {
       Marker(
