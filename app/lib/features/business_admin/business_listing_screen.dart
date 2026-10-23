@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/business_admin/location_picker_screen.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -454,38 +455,10 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
                   label: const Text('Move your pin on the map'),
                 ),
               ),
-            // Left blank for a business with no walk-in location; it then
-            // has no pin.
-            if (widget.isTeam)
-              Row(
-                children: [
-                  Expanded(
-                    child: _field(
-                      _latitude,
-                      'Latitude',
-                      palette,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
-                      ),
-                      validator: (v) => _coordinate(v, 16.9, 17.8),
-                    ),
-                  ),
-                  const SizedBox(width: Insets.md),
-                  Expanded(
-                    child: _field(
-                      _longitude,
-                      'Longitude',
-                      palette,
-                      keyboardType: const TextInputType.numberWithOptions(
-                        decimal: true,
-                        signed: true,
-                      ),
-                      validator: (v) => _coordinate(v, -62.0, -61.6),
-                    ),
-                  ),
-                ],
-              ),
+            // The team, and every new listing, picks the spot on a map rather
+            // than typing coordinates. No pin is right for an online-only
+            // business.
+            if (widget.isTeam) _locationTile(palette),
             const SizedBox(height: Insets.md),
 
             _Header('Contact', palette),
@@ -695,15 +668,76 @@ class _BusinessListingScreenState extends ConsumerState<BusinessListingScreen> {
     );
   }
 
-  /// Empty is fine (the team may not have a pin yet). Otherwise it must be a
-  /// number on Antigua or Barbuda, so a swapped latitude and longitude cannot
-  /// drop a pin in the Atlantic.
-  String? _coordinate(String? value, double min, double max) {
-    final text = value?.trim() ?? '';
-    if (text.isEmpty) return null;
-    final n = double.tryParse(text);
-    if (n == null || n < min || n > max) return 'Not on Antigua or Barbuda.';
-    return null;
+  ({double latitude, double longitude})? get _pickedLocation {
+    final lat = double.tryParse(_latitude.text.trim());
+    final lng = double.tryParse(_longitude.text.trim());
+    return lat == null || lng == null ? null : (latitude: lat, longitude: lng);
+  }
+
+  Future<void> _chooseLocation() async {
+    final picked = await LocationPickerScreen.pick(
+      context,
+      initial: _pickedLocation,
+    );
+    if (picked == null || !mounted) return;
+    setState(() {
+      _latitude.text = picked.latitude.toStringAsFixed(6);
+      _longitude.text = picked.longitude.toStringAsFixed(6);
+    });
+  }
+
+  Widget _locationTile(AppPalette palette) {
+    final at = _pickedLocation;
+    return Container(
+      margin: const EdgeInsets.only(bottom: Insets.md),
+      padding: const EdgeInsets.all(Insets.md),
+      decoration: BoxDecoration(
+        color: palette.surface,
+        borderRadius: BorderRadius.circular(Corners.md),
+        border: Border.all(color: palette.line),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              Icon(
+                at == null ? Icons.location_off_outlined : Icons.place,
+                color: at == null ? palette.muted : palette.red,
+              ),
+              const SizedBox(width: Insets.sm),
+              Expanded(
+                child: Text(
+                  at == null
+                      ? 'No pin yet. Online-only businesses have none.'
+                      : 'Pin placed on the map',
+                  style: AppText.bodyMedium.copyWith(color: palette.ink),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: Insets.sm),
+          Wrap(
+            spacing: Insets.sm,
+            children: [
+              FilledButton.tonalIcon(
+                onPressed: _chooseLocation,
+                icon: const Icon(Icons.map_outlined, size: 18),
+                label: Text(at == null ? 'Choose on the map' : 'Move pin'),
+              ),
+              if (at != null)
+                TextButton(
+                  onPressed: () => setState(() {
+                    _latitude.clear();
+                    _longitude.clear();
+                  }),
+                  child: const Text('Remove pin'),
+                ),
+            ],
+          ),
+        ],
+      ),
+    );
   }
 
   Widget _field(

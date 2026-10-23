@@ -126,10 +126,19 @@ abstract final class AppTheme {
         border: border(p.line),
       ),
 
+      // A selected chip is filled with the ink colour, so its label must
+      // flip to the background colour. With one label colour for both
+      // states, dark mode drew selected chips white on white (ink is white
+      // there); light mode only worked because the default flipped it.
       chipTheme: ChipThemeData(
         backgroundColor: p.surface,
         selectedColor: p.ink,
-        labelStyle: AppText.labelMedium.copyWith(color: p.ink),
+        checkmarkColor: p.app,
+        labelStyle: WidgetStateTextStyle.resolveWith(
+          (states) => AppText.labelMedium.copyWith(
+            color: states.contains(WidgetState.selected) ? p.app : p.ink,
+          ),
+        ),
         secondaryLabelStyle: AppText.labelMedium.copyWith(color: p.app),
         side: BorderSide(color: p.line),
         shape: const StadiumBorder(),
