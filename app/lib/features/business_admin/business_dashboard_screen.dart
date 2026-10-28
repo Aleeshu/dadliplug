@@ -167,6 +167,12 @@ class BusinessDashboardScreen extends ConsumerWidget {
               onTap: () => context.go('/business/events$q'),
             ),
             _Tool(
+              icon: Icons.forum_outlined,
+              title: 'Messages',
+              body: 'Questions from customers, answered in the app.',
+              onTap: () => context.push('/business/messages$q'),
+            ),
+            _Tool(
               icon: Icons.event_seat_outlined,
               title: 'Bookings',
               body: 'Table requests to confirm, and switching bookings on.',

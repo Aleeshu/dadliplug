@@ -54,6 +54,12 @@ void main() {
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
+    // More has grown; scroll to Sign in as a person would.
+    await tester.scrollUntilVisible(
+      find.text('Sign in'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 
@@ -74,6 +80,11 @@ void main() {
     // Open the account to verify the signed-in email is displayed
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
+    await tester.scrollUntilVisible(
+      find.text('Your account'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Your account'));
     await tester.pumpAndSettle();
 
@@ -93,6 +104,12 @@ void main() {
     await tester.tap(find.text('More'));
     await tester.pumpAndSettle();
 
+    // More has grown; scroll to Sign in as a person would.
+    await tester.scrollUntilVisible(
+      find.text('Sign in'),
+      200,
+      scrollable: find.byType(Scrollable).last,
+    );
     await tester.tap(find.text('Sign in'));
     await tester.pumpAndSettle();
 

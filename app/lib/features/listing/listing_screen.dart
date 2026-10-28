@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/services/messages.dart';
 import 'package:antigua_business_map/features/bookings/booking_screens.dart';
 import 'package:antigua_business_map/services/bookings.dart';
 import 'package:antigua_business_map/features/events/event_widgets.dart';
@@ -856,6 +857,48 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
     );
   }
 
+  Future<void> _messageChoice(Business b, {required bool hasWhatsApp}) async {
+    void openChat() {
+      if (ref.read(messagesRepositoryProvider).currentUserId == null) {
+        context.push('/sign-in');
+        return;
+      }
+      context.push(
+        '/messages/new?business=${b.id}&title=${Uri.encodeComponent(b.name)}',
+      );
+    }
+
+    if (!hasWhatsApp) {
+      openChat();
+      return;
+    }
+    final choice = await showModalBottomSheet<String>(
+      context: context,
+      builder: (c) => SafeArea(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            ListTile(
+              leading: const Icon(Icons.forum_outlined),
+              title: const Text('Message in Dadliplug'),
+              subtitle: const Text(
+                'Chat here; the business replies in the app',
+              ),
+              onTap: () => Navigator.pop(c, 'app'),
+            ),
+            ListTile(
+              leading: const Icon(Icons.chat),
+              title: const Text('WhatsApp'),
+              onTap: () => Navigator.pop(c, 'whatsapp'),
+            ),
+          ],
+        ),
+      ),
+    );
+    if (choice == 'app') openChat();
+    if (choice == 'whatsapp') _whatsApp(b);
+  }
+
   Widget _buildActionStrip(
     BuildContext context,
     Business b,
@@ -893,18 +936,18 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                   label: const Text('Call'),
                 ),
               ),
-            if (hasPhone && (hasWhatsApp || hasLocation))
-              const SizedBox(width: Insets.sm),
-            if (hasWhatsApp)
-              Expanded(
-                child: OutlinedButton.icon(
-                  style: outlined,
-                  onPressed: () => _whatsApp(b),
-                  icon: const Icon(Icons.chat_outlined, size: 18),
-                  label: const Text('Message'),
-                ),
+            if (hasPhone) const SizedBox(width: Insets.sm),
+            // In-app messages, with WhatsApp offered alongside when the
+            // business has it (2026-10-28 redesign).
+            Expanded(
+              child: OutlinedButton.icon(
+                style: outlined,
+                onPressed: () => _messageChoice(b, hasWhatsApp: hasWhatsApp),
+                icon: const Icon(Icons.chat_outlined, size: 18),
+                label: const Text('Message'),
               ),
-            if (hasWhatsApp && hasLocation) const SizedBox(width: Insets.sm),
+            ),
+            if (hasLocation) const SizedBox(width: Insets.sm),
             if (hasLocation)
               Expanded(
                 child: OutlinedButton.icon(

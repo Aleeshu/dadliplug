@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/messages/messages_screens.dart';
 import 'package:antigua_business_map/features/bookings/booking_screens.dart';
 import 'package:antigua_business_map/features/discovery/community_board_screen.dart';
 import 'package:antigua_business_map/features/business_admin/create_ad_screen.dart';
@@ -270,6 +271,10 @@ GoRouter _buildRouter({
           },
         ),
         GoRoute(
+          path: '/business/messages',
+          builder: (c, s) => ConversationsScreen(businessId: businessIdFor(s)),
+        ),
+        GoRoute(
           path: '/business/bookings',
           builder: (c, s) =>
               BusinessBookingsScreen(businessId: businessIdFor(s)),
@@ -438,6 +443,27 @@ GoRouter _buildRouter({
     ),
     GoRoute(path: '/feed', builder: (c, s) => const FeedScreen()),
     GoRoute(path: '/bookings', builder: (c, s) => const MyBookingsScreen()),
+    GoRoute(
+      path: '/messages',
+      builder: (c, s) => const ConversationsScreen(),
+      routes: [
+        GoRoute(
+          path: 'new',
+          builder: (c, s) => ChatScreen(
+            title: s.uri.queryParameters['title'] ?? 'Message',
+            businessId: s.uri.queryParameters['business'],
+          ),
+        ),
+        GoRoute(
+          path: ':id',
+          builder: (c, s) => ChatScreen(
+            title: s.uri.queryParameters['title'] ?? 'Message',
+            conversationId: s.pathParameters['id'],
+            asBusiness: s.uri.queryParameters['business'] != null,
+          ),
+        ),
+      ],
+    ),
     GoRoute(
       path: '/board',
       builder: (c, s) => const CommunityBoardScreen(),

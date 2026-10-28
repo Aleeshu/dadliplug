@@ -30,6 +30,13 @@ class MoreScreen extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: Insets.giant),
           children: [
             _Item(
+              icon: Icons.forum_outlined,
+              label: 'Messages',
+              onTap: () => session.isSignedIn
+                  ? context.push('/messages')
+                  : context.push('/sign-in'),
+            ),
+            _Item(
               icon: Icons.event_seat_outlined,
               label: 'My bookings',
               onTap: () => session.isSignedIn

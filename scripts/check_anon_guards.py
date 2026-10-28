@@ -64,6 +64,9 @@ GUARDED: dict[str, dict[str, object]] = {
     },
     "cancel_booking": {"p_booking": NOBODY},
     "answer_booking": {"p_booking": NOBODY, "p_confirm": True},
+    "send_message": {"p_body": "probe", "p_business": NOBODY},
+    "mark_conversation_read": {"p_conversation": NOBODY},
+    "set_conversation_blocked": {"p_conversation": NOBODY, "p_blocked": True},
 }
 
 
