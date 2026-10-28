@@ -24,6 +24,7 @@ class BusinessAd {
     this.views = 0,
     this.offerCode,
     this.offerTerms,
+    this.kind = 'general',
   });
 
   final String id;
@@ -46,6 +47,10 @@ class BusinessAd {
   /// The business's conditions on an offer, e.g. "Mon–Thu lunch, one per
   /// person". Shown with the claimed code at the till.
   final String? offerTerms;
+
+  /// special_offer, new_product, event or general: chosen in the first
+  /// step of the create-ad wizard.
+  final String kind;
 
   /// Whether the ad is still running.
   ///
@@ -213,7 +218,8 @@ class BusinessContentRepository {
         .from('business_ads')
         .select(
           'id, business_id, title, body, image_url, link_url, '
-          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
+          'starts_at, ends_at, views, offer_code, offer_terms, kind, '
+          'businesses (id, name)',
         )
         .eq('business_id', businessId)
         .order('starts_at', ascending: false);
@@ -233,7 +239,8 @@ class BusinessContentRepository {
         .from('business_ads')
         .select(
           'id, business_id, title, body, image_url, link_url, '
-          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
+          'starts_at, ends_at, views, offer_code, offer_terms, kind, '
+          'businesses (id, name)',
         )
         .lte('starts_at', at)
         .or('ends_at.is.null,ends_at.gt.$at')
@@ -248,7 +255,8 @@ class BusinessContentRepository {
         .from('business_ads')
         .select(
           'id, business_id, title, body, image_url, link_url, '
-          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
+          'starts_at, ends_at, views, offer_code, offer_terms, kind, '
+          'businesses (id, name)',
         )
         .eq('id', id)
         .limit(1);
@@ -262,7 +270,8 @@ class BusinessContentRepository {
         .from('business_ads')
         .select(
           'id, business_id, title, body, image_url, link_url, '
-          'starts_at, ends_at, views, offer_code, offer_terms, businesses (id, name)',
+          'starts_at, ends_at, views, offer_code, offer_terms, kind, '
+          'businesses (id, name)',
         )
         .not('offer_code', 'is', null)
         .lte('starts_at', at)
@@ -449,6 +458,7 @@ class BusinessContentRepository {
     DateTime? endsAt,
     String? offerCode,
     String? offerTerms,
+    String kind = 'general',
   }) async {
     final cleanTitle = title.trim();
     if (cleanTitle.isEmpty) {
@@ -473,6 +483,7 @@ class BusinessContentRepository {
           'link_url': linkUrl.trim(),
         'ends_at': endsAt?.toUtc().toIso8601String(),
         'offer_code': ?code,
+        'kind': kind,
         if (code != null && terms != null && terms.isNotEmpty)
           'offer_terms': terms,
       });
@@ -600,6 +611,7 @@ class BusinessContentRepository {
           views: (raw['views'] as num?)?.toInt() ?? 0,
           offerCode: raw['offer_code']?.toString(),
           offerTerms: raw['offer_terms']?.toString(),
+          kind: raw['kind']?.toString() ?? 'general',
         ),
       );
     }

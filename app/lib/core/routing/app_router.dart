@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/business_admin/create_ad_screen.dart';
 import 'package:antigua_business_map/features/more/settings_screen.dart';
 import 'package:antigua_business_map/features/business_admin/plans_screen.dart';
 import 'package:antigua_business_map/features/discovery/businesses_screen.dart';
@@ -320,7 +321,8 @@ GoRouter _buildRouter({
           routes: [
             GoRoute(
               path: 'new',
-              builder: (c, s) => PostAdScreen(businessId: businessIdFor(s)),
+              // The three-step wizard from the 2026-10-28 redesign.
+              builder: (c, s) => CreateAdScreen(businessId: businessIdFor(s)),
             ),
           ],
         ),
