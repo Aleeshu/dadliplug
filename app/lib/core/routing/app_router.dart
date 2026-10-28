@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/bookings/booking_screens.dart';
 import 'package:antigua_business_map/features/discovery/community_board_screen.dart';
 import 'package:antigua_business_map/features/business_admin/create_ad_screen.dart';
 import 'package:antigua_business_map/features/more/settings_screen.dart';
@@ -269,6 +270,11 @@ GoRouter _buildRouter({
           },
         ),
         GoRoute(
+          path: '/business/bookings',
+          builder: (c, s) =>
+              BusinessBookingsScreen(businessId: businessIdFor(s)),
+        ),
+        GoRoute(
           path: '/business/plans',
           builder: (c, s) => PlansScreen(businessId: businessIdFor(s)),
         ),
@@ -431,6 +437,7 @@ GoRouter _buildRouter({
       builder: (c, s) => ProfileScreen(session: session),
     ),
     GoRoute(path: '/feed', builder: (c, s) => const FeedScreen()),
+    GoRoute(path: '/bookings', builder: (c, s) => const MyBookingsScreen()),
     GoRoute(
       path: '/board',
       builder: (c, s) => const CommunityBoardScreen(),

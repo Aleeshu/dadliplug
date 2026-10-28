@@ -351,6 +351,7 @@ class SupabaseBusinessRepository
       specialSoldOut: (map['special_sold_out'] as bool?) ?? false,
       isProspect: (map['is_prospect'] as bool?) ?? false,
       pinImageUrl: map['pin_image_url'] as String?,
+      acceptsBookings: (map['accepts_bookings'] as bool?) ?? false,
       createdAt: _parseDateTime(map['created_at']),
       instagram: _blankToNull(map['instagram']),
       facebook: _blankToNull(map['facebook']),

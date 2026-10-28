@@ -221,6 +221,7 @@ class Business {
     this.specialSoldOut = false,
     this.isProspect = false,
     this.pinImageUrl,
+    this.acceptsBookings = false,
     this.createdAt,
     this.instagram,
     this.facebook,
@@ -329,6 +330,10 @@ class Business {
   /// A photo shown inside the map pin, chosen by the owner. Basic, Featured
   /// and trials only ([canCustomisePin]); ignored on Growing.
   final String? pinImageUrl;
+
+  /// Takes table bookings in the app ("Book a Table"), switched on by the
+  /// owner on the dashboard.
+  final bool acceptsBookings;
 
   /// Basic and Featured may move their pin and give it a photo; a trial gets
   /// every paid tool. Growing keeps the default pin (plan.md section 3). The
@@ -496,6 +501,7 @@ class Business {
     specialSoldOut: specialSoldOut,
     isProspect: isProspect,
     pinImageUrl: pinImageUrl,
+    acceptsBookings: acceptsBookings,
     createdAt: createdAt ?? this.createdAt,
     instagram: instagram ?? this.instagram,
     facebook: facebook ?? this.facebook,

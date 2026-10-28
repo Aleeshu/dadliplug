@@ -167,6 +167,12 @@ class BusinessDashboardScreen extends ConsumerWidget {
               onTap: () => context.go('/business/events$q'),
             ),
             _Tool(
+              icon: Icons.event_seat_outlined,
+              title: 'Bookings',
+              body: 'Table requests to confirm, and switching bookings on.',
+              onTap: () => context.push('/business/bookings$q'),
+            ),
+            _Tool(
               icon: Icons.local_offer_outlined,
               title: 'Redeem a deal',
               body: "Enter or scan a customer's deal code at the till.",

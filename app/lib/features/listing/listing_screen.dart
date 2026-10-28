@@ -1,3 +1,5 @@
+import 'package:antigua_business_map/features/bookings/booking_screens.dart';
+import 'package:antigua_business_map/services/bookings.dart';
 import 'package:antigua_business_map/features/events/event_widgets.dart';
 import 'package:antigua_business_map/features/reviews/reviews_section.dart';
 import 'package:antigua_business_map/features/listing/claim_sheet.dart';
@@ -917,6 +919,22 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
               ),
           ],
         ),
+        // Book a Table, for a business that takes bookings in the app.
+        if (b.acceptsBookings) ...[
+          const SizedBox(height: Insets.sm),
+          FilledButton.icon(
+            style: FilledButton.styleFrom(shape: pill, padding: compact),
+            onPressed: () {
+              if (!ref.read(bookingsRepositoryProvider).isSignedIn) {
+                context.push('/sign-in');
+                return;
+              }
+              BookTableSheet.show(context, b);
+            },
+            icon: const Icon(Icons.event_seat_outlined, size: 18),
+            label: const Text('Book a Table'),
+          ),
+        ],
         if (hasWhatsApp) ...[
           // Quotes for trades, slots for salons, tours, classes, viewings.
           if (requestKindFor(b.category) != null) ...[

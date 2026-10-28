@@ -55,6 +55,15 @@ GUARDED: dict[str, dict[str, object]] = {
     "verify_listing": {"p_business": NOBODY, "p_method": "visit"},
     "claim_deal": {"p_ad": NOBODY},
     "decide_community_post": {"p_post": NOBODY, "p_status": "live"},
+    "request_booking": {
+        "p_business": NOBODY,
+        "p_at": "2030-01-01T12:00:00Z",
+        "p_party": 2,
+        "p_name": "probe",
+        "p_phone": "2685550000",
+    },
+    "cancel_booking": {"p_booking": NOBODY},
+    "answer_booking": {"p_booking": NOBODY, "p_confirm": True},
 }
 
 
