@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/team_admin/board_moderation.dart';
 import 'package:antigua_business_map/core/theme/app_colors.dart';
 import 'package:antigua_business_map/core/theme/app_spacing.dart';
 import 'package:antigua_business_map/core/theme/app_text.dart';
@@ -18,10 +19,17 @@ class ModerationScreen extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return const DefaultTabController(
-      length: 3,
+      length: 4,
       child: Scaffold(
         appBar: _Bar(),
-        body: TabBarView(children: [_QueueTab(), _ClaimsTab(), _AuditTab()]),
+        body: TabBarView(
+          children: [
+            _QueueTab(),
+            _ClaimsTab(),
+            BoardModerationTab(),
+            _AuditTab(),
+          ],
+        ),
       ),
     );
   }
@@ -40,6 +48,7 @@ class _Bar extends StatelessWidget implements PreferredSizeWidget {
       tabs: [
         Tab(text: 'Queue'),
         Tab(text: 'Claims'),
+        Tab(text: 'Board'),
         Tab(text: 'Audit'),
       ],
     ),

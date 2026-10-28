@@ -54,6 +54,7 @@ GUARDED: dict[str, dict[str, object]] = {
     "delete_my_account": {},
     "verify_listing": {"p_business": NOBODY, "p_method": "visit"},
     "claim_deal": {"p_ad": NOBODY},
+    "decide_community_post": {"p_post": NOBODY, "p_status": "live"},
 }
 
 

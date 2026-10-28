@@ -37,7 +37,7 @@ class MoreScreen extends StatelessWidget {
             _Item(
               icon: Icons.campaign_outlined,
               label: 'Bulletin Board',
-              onTap: () => context.go('/announcements'),
+              onTap: () => context.push('/board'),
             ),
             _Item(
               icon: Icons.qr_code_scanner,

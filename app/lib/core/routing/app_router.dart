@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/discovery/community_board_screen.dart';
 import 'package:antigua_business_map/features/business_admin/create_ad_screen.dart';
 import 'package:antigua_business_map/features/more/settings_screen.dart';
 import 'package:antigua_business_map/features/business_admin/plans_screen.dart';
@@ -430,6 +431,14 @@ GoRouter _buildRouter({
       builder: (c, s) => ProfileScreen(session: session),
     ),
     GoRoute(path: '/feed', builder: (c, s) => const FeedScreen()),
+    GoRoute(
+      path: '/board',
+      builder: (c, s) => const CommunityBoardScreen(),
+      routes: [
+        GoRoute(path: 'new', builder: (c, s) => const NewBoardPostScreen()),
+        GoRoute(path: 'mine', builder: (c, s) => const MyBoardPostsScreen()),
+      ],
+    ),
     GoRoute(
       path: '/ad/:id',
       builder: (c, s) => AdScreen(adId: s.pathParameters['id']!),
