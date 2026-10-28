@@ -81,16 +81,17 @@ extension BusinessCategoryX on BusinessCategory {
 
   /// The category's colour, from the design. Used for the icon circle, list
   /// placeholders and pins.
+  // As in the 2026-10-28 redesign's map pins and category circles.
   Color get color => switch (this) {
-    BusinessCategory.food => const Color(0xFFE8253F),
-    BusinessCategory.shopping => const Color(0xFFF59E0B),
-    BusinessCategory.services => const Color(0xFF2E7CF6),
-    BusinessCategory.healthBeauty => const Color(0xFF8B5CF6),
-    BusinessCategory.entertainment => const Color(0xFFEC4899),
-    BusinessCategory.automotive => const Color(0xFF2563EB),
-    BusinessCategory.realEstate => const Color(0xFF16A34A),
-    BusinessCategory.education => const Color(0xFF7C3AED),
-    BusinessCategory.other => const Color(0xFFDB2777),
+    BusinessCategory.food => const Color(0xFFF26B1D),
+    BusinessCategory.shopping => const Color(0xFFE84393),
+    BusinessCategory.services => const Color(0xFF7C4DFF),
+    BusinessCategory.healthBeauty => const Color(0xFFE53950),
+    BusinessCategory.entertainment => const Color(0xFF16A37F),
+    BusinessCategory.automotive => const Color(0xFFE0A100),
+    BusinessCategory.realEstate => const Color(0xFF1E88E5),
+    BusinessCategory.education => const Color(0xFF5E35B1),
+    BusinessCategory.other => const Color(0xFF546E7A),
   };
 
   /// Hue of [color], for the gradient placeholder shown until a business

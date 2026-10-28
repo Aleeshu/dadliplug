@@ -30,9 +30,9 @@ class MoreScreen extends StatelessWidget {
           padding: const EdgeInsets.only(bottom: Insets.giant),
           children: [
             _Item(
-              icon: Icons.event,
-              label: 'Events',
-              onTap: () => context.go('/events'),
+              icon: Icons.favorite_border,
+              label: 'Saved places',
+              onTap: () => context.go('/bookmarks'),
             ),
             _Item(
               icon: Icons.campaign_outlined,

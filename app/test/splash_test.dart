@@ -14,7 +14,7 @@ void main() {
     );
 
     expect(find.byType(SplashScreen), findsOneWidget);
-    expect(find.text('Plug Into Local.'), findsOneWidget);
+    expect(find.text('Local Businesses. Real Opportunities.'), findsOneWidget);
 
     await tester.pump(const Duration(milliseconds: 500));
     await tester.pumpAndSettle();

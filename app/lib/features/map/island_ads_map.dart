@@ -276,7 +276,8 @@ class IslandAdsMapState extends State<IslandAdsMap> {
     );
   }
 
-  /// A red teardrop with a white edge and the category icon in white, or the
+  /// A teardrop in the category's colour, white edge, the category icon in
+  /// white; or the
   /// owner's photo in a circle for Basic and Featured listings that chose one.
   static Future<BitmapDescriptor> _drawPin(PinStyle style, double ratio) async {
     final (category, featured, selected, imageUrl) = style;
@@ -311,7 +312,9 @@ class IslandAdsMapState extends State<IslandAdsMap> {
           ..strokeWidth = edge * 2
           ..strokeJoin = StrokeJoin.round,
       )
-      ..drawPath(drop, Paint()..color = MapPinColors.premium);
+      // Each category its own colour, as in the redesign, so food, shops
+      // and services read apart at a glance before any pin is tapped.
+      ..drawPath(drop, Paint()..color = category.color);
 
     if (featured) {
       canvas.drawCircle(

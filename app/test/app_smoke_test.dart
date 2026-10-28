@@ -37,9 +37,10 @@ void main() {
     await tester.pumpWidget(built.app);
     await tester.pumpAndSettle();
 
-    // Home, Categories, Map, Saved, More. These names are the spec, not a
-    // placeholder set, so a change here is a change to the product.
-    for (final tab in ['Home', 'Categories', 'Map', 'Saved', 'More']) {
+    // Home, Businesses, Map (raised centre), Events, More: the 2026-10-28
+    // redesign. These names are the spec, not a placeholder set, so a change
+    // here is a change to the product.
+    for (final tab in ['Home', 'Businesses', 'Map', 'Events', 'More']) {
       expect(find.text(tab), findsOneWidget, reason: tab);
     }
   });

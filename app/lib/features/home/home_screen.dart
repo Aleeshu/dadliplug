@@ -30,7 +30,7 @@ class HomeScreen extends ConsumerWidget {
     final palette = context.palette;
 
     return Scaffold(
-      backgroundColor: palette.surface,
+      backgroundColor: palette.app,
       body: SafeArea(
         child: ListView(
           padding: const EdgeInsets.only(bottom: Insets.giant),
@@ -89,32 +89,40 @@ class _SearchBar extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
 
+    // A white pill in both themes, as in the redesign: on navy it is the
+    // brightest thing on the screen, which is where search belongs.
+    const fieldInk = Color(0xFF0A1F44);
+    const fieldMuted = Color(0xFF5B6B85);
     return Material(
-      color: palette.app,
+      color: Colors.white,
+      elevation: palette.isDark ? 0 : 1,
+      shadowColor: Colors.black26,
       borderRadius: BorderRadius.circular(Corners.pill),
       child: InkWell(
         borderRadius: BorderRadius.circular(Corners.pill),
         onTap: () => context.push('/search'),
         child: Container(
-          height: 48,
-          padding: const EdgeInsets.symmetric(horizontal: Insets.huge),
+          height: 50,
+          padding: const EdgeInsets.symmetric(horizontal: Insets.xl),
           decoration: BoxDecoration(
             borderRadius: BorderRadius.circular(Corners.pill),
-            border: Border.all(color: palette.line),
+            border: Border.all(
+              color: palette.isDark ? Colors.transparent : palette.line,
+            ),
           ),
-          child: Row(
+          child: const Row(
             children: [
-              Icon(Icons.search, color: palette.muted),
-              const SizedBox(width: Insets.md),
+              Icon(Icons.search, color: fieldMuted),
+              SizedBox(width: Insets.md),
               Expanded(
                 child: Text(
                   'Search businesses, products, services…',
                   maxLines: 1,
                   overflow: TextOverflow.ellipsis,
-                  style: AppText.bodyMedium.copyWith(color: palette.muted),
+                  style: TextStyle(color: fieldMuted, fontSize: 14),
                 ),
               ),
-              Icon(Icons.tune, color: palette.ink, size: 20),
+              Icon(Icons.tune, color: fieldInk, size: 20),
             ],
           ),
         ),

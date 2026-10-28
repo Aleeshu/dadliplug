@@ -14,7 +14,7 @@ class SplashScreen extends StatelessWidget {
 
   /// Shared with `android/.../launch_background.xml` so the native launch
   /// screen and this one meet without a flash.
-  static const Color top = Color(0xFF0565B9);
+  static const Color top = Color(0xFF0A1F44);
 
   @override
   Widget build(BuildContext context) {
@@ -25,14 +25,9 @@ class SplashScreen extends StatelessWidget {
         gradient: LinearGradient(
           begin: Alignment.topCenter,
           end: Alignment.bottomCenter,
-          colors: [
-            top,
-            Color(0xFF3681BA),
-            Color(0xFF0D87B8),
-            Color(0xFF046586),
-            Color(0xFF03293C),
-          ],
-          stops: [0, 0.35, 0.6, 0.8, 1],
+          // Navy, deepening to the bottom (2026-10-28 redesign).
+          colors: [top, Color(0xFF0D2B5C), Color(0xFF071834)],
+          stops: [0, 0.55, 1],
         ),
       ),
       child: SafeArea(
@@ -47,7 +42,7 @@ class SplashScreen extends StatelessWidget {
                   TextSpan(text: 'Dadli'),
                   TextSpan(
                     text: 'plug',
-                    style: TextStyle(color: DadliplugColors.lightGreen),
+                    style: TextStyle(color: DadliplugColors.yellow),
                   ),
                 ],
               ),
@@ -69,9 +64,7 @@ class SplashScreen extends StatelessWidget {
             ),
             Spacer(flex: 4),
             Text(
-              'Discover local businesses.\n'
-              'Find great deals.\n'
-              'Support your community.',
+              'Discover. Support. Grow.',
               textAlign: TextAlign.center,
               style: TextStyle(color: white, fontSize: 16, height: 1.5),
             ),

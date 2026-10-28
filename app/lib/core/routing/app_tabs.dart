@@ -8,11 +8,19 @@ import 'package:flutter/material.dart';
 
 /// A tab in the bottom bar.
 class AppTab {
-  const AppTab({required this.path, required this.label, required this.icon});
+  const AppTab({
+    required this.path,
+    required this.label,
+    required this.icon,
+    this.raised = false,
+  });
 
   final String path;
   final String label;
   final IconData icon;
+
+  /// Drawn as the round button raised above the middle of the bar.
+  final bool raised;
 }
 
 /// Bottom tab sets, per section 6a of plan.md.
@@ -30,12 +38,16 @@ class AppTab {
 abstract final class AppTabs {
   /// Customer navigation.
   static const List<AppTab> user = [
-    // The Dadliplug design (2026-10-15). Events and the Bulletin Board moved
-    // under More to make room for Categories and Map.
+    // The 2026-10-28 redesign: Home, Businesses, the map as the raised
+    // centre button, Events, More. Saved places moved under More.
     AppTab(path: '/', label: 'Home', icon: Icons.home_outlined),
-    AppTab(path: '/categories', label: 'Categories', icon: Icons.grid_view),
-    AppTab(path: '/map', label: 'Map', icon: Icons.map_outlined),
-    AppTab(path: '/bookmarks', label: 'Saved', icon: Icons.favorite_border),
+    AppTab(
+      path: '/categories',
+      label: 'Businesses',
+      icon: Icons.storefront_outlined,
+    ),
+    AppTab(path: '/map', label: 'Map', icon: Icons.place, raised: true),
+    AppTab(path: '/events', label: 'Events', icon: Icons.event_outlined),
     AppTab(path: '/more', label: 'More', icon: Icons.more_horiz),
   ];
 
@@ -151,11 +163,19 @@ class AppTabBar extends StatelessWidget {
           children: [
             for (final tab in tabs)
               Expanded(
-                child: _TabButton(
-                  tab: tab,
-                  isSelected: tab.path == _selectedPath(tabs, currentPath),
-                  onTap: () => onSelect(tab.path),
-                ),
+                child: tab.raised
+                    ? _RaisedTabButton(
+                        tab: tab,
+                        isSelected:
+                            tab.path == _selectedPath(tabs, currentPath),
+                        onTap: () => onSelect(tab.path),
+                      )
+                    : _TabButton(
+                        tab: tab,
+                        isSelected:
+                            tab.path == _selectedPath(tabs, currentPath),
+                        onTap: () => onSelect(tab.path),
+                      ),
               ),
           ],
         ),
@@ -180,6 +200,69 @@ class AppTabBar extends StatelessWidget {
       }
     }
     return best;
+  }
+}
+
+/// The centre tab as a round button in the action colour, lifted above the
+/// bar, as in the redesign.
+class _RaisedTabButton extends StatelessWidget {
+  const _RaisedTabButton({
+    required this.tab,
+    required this.isSelected,
+    required this.onTap,
+  });
+
+  final AppTab tab;
+  final bool isSelected;
+  final VoidCallback onTap;
+
+  @override
+  Widget build(BuildContext context) {
+    final palette = context.palette;
+    return Semantics(
+      selected: isSelected,
+      button: true,
+      label: tab.label,
+      child: GestureDetector(
+        onTap: onTap,
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Transform.translate(
+              offset: const Offset(0, -14),
+              child: Container(
+                width: 56,
+                height: 56,
+                decoration: BoxDecoration(
+                  color: palette.red,
+                  shape: BoxShape.circle,
+                  border: Border.all(color: palette.surface, width: 4),
+                  boxShadow: [
+                    BoxShadow(
+                      color: Colors.black.withValues(alpha: 0.25),
+                      blurRadius: 10,
+                      offset: const Offset(0, 4),
+                    ),
+                  ],
+                ),
+                child: Icon(tab.icon, size: 28, color: palette.onRed),
+              ),
+            ),
+            Transform.translate(
+              offset: const Offset(0, -10),
+              child: Text(
+                tab.label,
+                maxLines: 1,
+                style: AppText.labelMedium.copyWith(
+                  fontSize: 11,
+                  color: isSelected ? palette.ink : palette.muted,
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
   }
 }
 
