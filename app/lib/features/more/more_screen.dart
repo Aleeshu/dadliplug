@@ -89,6 +89,11 @@ class MoreScreen extends StatelessWidget {
                 onTap: () => context.push('/get-listed'),
               ),
             _Item(
+              icon: Icons.settings_outlined,
+              label: 'Settings',
+              onTap: () => context.push('/settings'),
+            ),
+            _Item(
               icon: Icons.info_outline,
               label: 'About, privacy and terms',
               onTap: () => context.push('/about'),

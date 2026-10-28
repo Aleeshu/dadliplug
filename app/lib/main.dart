@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/services/theme_mode.dart';
 import 'package:flutter/services.dart';
 
 import 'dart:async';
@@ -166,17 +167,20 @@ class _AntiguaMapAppState extends State<AntiguaMapApp> {
   @override
   Widget build(BuildContext context) {
     return ProviderScope(
-      child: MaterialApp.router(
-        title: AppConfig.appName,
-        debugShowCheckedModeBanner: false,
-        theme: AppTheme.light,
-        darkTheme: AppTheme.dark,
-        // Follows the device. The prototype supports both, and a business app
-        // gets used in the evening.
-        routerConfig: _router,
-        builder: widget.showSplash
-            ? (context, child) => SplashGate(child: child ?? const SizedBox())
-            : null,
+      child: Consumer(
+        builder: (context, ref, _) => MaterialApp.router(
+          title: AppConfig.appName,
+          debugShowCheckedModeBanner: false,
+          theme: AppTheme.light,
+          darkTheme: AppTheme.dark,
+          // Follows the phone unless changed in Settings: a business app
+          // gets used in the evening.
+          themeMode: ref.watch(themeModeProvider),
+          routerConfig: _router,
+          builder: widget.showSplash
+              ? (context, child) => SplashGate(child: child ?? const SizedBox())
+              : null,
+        ),
       ),
     );
   }

@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/more/settings_screen.dart';
 import 'package:antigua_business_map/features/business_admin/plans_screen.dart';
 import 'package:antigua_business_map/features/discovery/businesses_screen.dart';
 import 'package:antigua_business_map/features/discovery/ad_screen.dart';
@@ -409,6 +410,18 @@ GoRouter _buildRouter({
       ),
     ),
     GoRoute(path: '/about', builder: (c, s) => const AboutScreen()),
+    GoRoute(
+      path: '/settings',
+      builder: (c, s) => SettingsScreen(session: session),
+      routes: [
+        GoRoute(
+          path: 'payments',
+          builder: (c, s) => PaymentHistoryScreen(
+            businessId: s.uri.queryParameters['business'] ?? '',
+          ),
+        ),
+      ],
+    ),
     GoRoute(path: '/get-listed', builder: (c, s) => const GetListedScreen()),
     GoRoute(
       path: Routes.profile,
