@@ -108,7 +108,7 @@ class FeedCard extends StatelessWidget {
   Widget build(BuildContext context) {
     final palette = context.palette;
     final (label, color, bg) = switch (item.kind) {
-      FeedKind.deal => ('DEAL', palette.red, palette.badBg),
+      FeedKind.deal => ('DEAL', palette.goldInk, palette.goldBg),
       FeedKind.ad => ('NEW', palette.blue, palette.blueBg),
       FeedKind.special => ('TODAY', palette.warn, palette.warnBg),
       FeedKind.announcement => ('NEWS', palette.good, palette.goodBg),
@@ -140,15 +140,15 @@ class FeedCard extends StatelessWidget {
                 child: SizedBox(
                   width: 72,
                   height: 72,
+                  // A dead image link falls back to the category tile, never
+                  // the broken-image cross.
                   child: image != null && image.isNotEmpty
-                      ? CachedNetworkImage(imageUrl: image, fit: BoxFit.cover)
-                      : ColoredBox(
-                          color: item.business.category.color,
-                          child: Icon(
-                            item.business.category.icon,
-                            color: Colors.white,
-                          ),
-                        ),
+                      ? CachedNetworkImage(
+                          imageUrl: image,
+                          fit: BoxFit.cover,
+                          errorWidget: (_, _, _) => _CategoryTile(item: item),
+                        )
+                      : _CategoryTile(item: item),
                 ),
               ),
               const SizedBox(width: Insets.md),
@@ -216,4 +216,16 @@ class FeedCard extends StatelessWidget {
       ),
     );
   }
+}
+
+class _CategoryTile extends StatelessWidget {
+  const _CategoryTile({required this.item});
+
+  final FeedItem item;
+
+  @override
+  Widget build(BuildContext context) => ColoredBox(
+    color: item.business.category.color,
+    child: Icon(item.business.category.icon, color: Colors.white),
+  );
 }

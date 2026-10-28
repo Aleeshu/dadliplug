@@ -212,7 +212,9 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
   int _activePhotoIndex = 0;
 
   /// About, Photos or Reviews, as in the design.
-  int _tab = 0;
+  // About, Menu, Gallery, Reviews, Ads (2026-10-28 redesign). Menu and Ads
+  // appear only when there is something in them.
+  String _tab = 'about';
 
   /// Ads already counted on this visit. A rebuild must not count them again;
   /// the server only deduplicates signed-in viewers, so a guest's every
@@ -291,7 +293,34 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
             ),
           ],
           flexibleSpace: FlexibleSpaceBar(
-            background: _buildHeroBackground(b, palette),
+            // The round logo sits on the photo's bottom-left corner, as in
+            // the redesign. Inside the header, because a pinned header is
+            // drawn over the content below it and would hide an overlap.
+            // A business's own logo arrives with photo uploads; until then,
+            // its category on its colour.
+            background: Stack(
+              fit: StackFit.expand,
+              children: [
+                _buildHeroBackground(b, palette),
+                Positioned(
+                  left: Insets.lg,
+                  bottom: Insets.md,
+                  child: Container(
+                    width: 76,
+                    height: 76,
+                    decoration: BoxDecoration(
+                      shape: BoxShape.circle,
+                      color: b.category.color,
+                      border: Border.all(color: Colors.white, width: 3),
+                      boxShadow: const [
+                        BoxShadow(color: Colors.black38, blurRadius: 8),
+                      ],
+                    ),
+                    child: Icon(b.category.icon, color: Colors.white, size: 36),
+                  ),
+                ),
+              ],
+            ),
           ),
         ),
 
@@ -341,26 +370,6 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // The round logo from the redesign. A business's own logo
-                    // arrives with photo uploads; until then, its category.
-                    Container(
-                      width: 64,
-                      height: 64,
-                      decoration: BoxDecoration(
-                        shape: BoxShape.circle,
-                        color: b.category.color,
-                        border: Border.all(color: palette.surface, width: 3),
-                        boxShadow: const [
-                          BoxShadow(color: Colors.black26, blurRadius: 6),
-                        ],
-                      ),
-                      child: Icon(
-                        b.category.icon,
-                        color: Colors.white,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(width: Insets.lg),
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -528,6 +537,8 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
 
                 _ListingTabs(
                   selected: _tab,
+                  hasMenu: b.menu.isNotEmpty,
+                  adCount: liveAds.length,
                   // Reviews it can actually show: verified ones. The
                   // ratings from before Dadliplug have no text to list.
                   reviewCount:
@@ -537,11 +548,11 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                           ?.where((r) => r.isVisible)
                           .length ??
                       0,
-                  onSelect: (i) => setState(() => _tab = i),
+                  onSelect: (t) => setState(() => _tab = t),
                 ),
                 const SizedBox(height: Insets.xl),
 
-                if (_tab == 0) ...[
+                if (_tab == 'about') ...[
                   // Promotional Offer Card
                   if (b.hasOffer) ...[
                     _buildOfferCard(b, palette),
@@ -642,17 +653,6 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                   const SizedBox(height: Insets.xl),
 
                   // Menu or Services
-                  if (b.menu.isNotEmpty) ...[
-                    _SectionHeader(
-                      title: b.category == BusinessCategory.food
-                          ? 'Menu highlights'
-                          : 'Services & pricing',
-                      palette: palette,
-                    ),
-                    const SizedBox(height: Insets.sm),
-                    _buildMenuCard(b, palette),
-                    const SizedBox(height: Insets.xl),
-                  ],
 
                   // Upcoming events. Only ones still to happen: a listing showing
                   // last month's events reads as unmaintained.
@@ -717,13 +717,34 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                   ],
                 ],
 
-                if (_tab == 1) ...[
+                if (_tab == 'menu') ...[
+                  _SectionHeader(
+                    title: b.category == BusinessCategory.food
+                        ? 'Menu'
+                        : 'Services & pricing',
+                    palette: palette,
+                  ),
+                  const SizedBox(height: Insets.sm),
+                  _buildMenuCard(b, palette),
+                  const SizedBox(height: Insets.xl),
+                ],
+
+                if (_tab == 'gallery') ...[
                   _PhotoGrid(business: b),
                   const SizedBox(height: Insets.xl),
                 ],
 
+                if (_tab == 'ads') ...[
+                  for (final ad in liveAds)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: Insets.sm),
+                      child: _AdCard(ad: ad),
+                    ),
+                  const SizedBox(height: Insets.lg),
+                ],
+
                 // Reviews: verified visits only (plan.md sections 7 and 8).
-                if (_tab == 2) ...[
+                if (_tab == 'reviews') ...[
                   ReviewsSection(
                     businessId: b.id,
                     acceptsReviews: b.acceptsReviews,
@@ -1778,58 +1799,68 @@ class _ListingTabs extends StatelessWidget {
     required this.selected,
     required this.reviewCount,
     required this.onSelect,
+    this.hasMenu = false,
+    this.adCount = 0,
   });
 
-  final int selected;
+  final String selected;
   final int reviewCount;
-  final ValueChanged<int> onSelect;
+  final bool hasMenu;
+  final int adCount;
+  final ValueChanged<String> onSelect;
 
   @override
   Widget build(BuildContext context) {
     final palette = context.palette;
-    final labels = [
-      'About',
-      'Photos',
-      if (reviewCount > 0) 'Reviews ($reviewCount)' else 'Reviews',
+    final tabs = [
+      ('about', 'About'),
+      if (hasMenu) ('menu', 'Menu'),
+      ('gallery', 'Gallery'),
+      ('reviews', reviewCount > 0 ? 'Reviews ($reviewCount)' : 'Reviews'),
+      if (adCount > 0) ('ads', 'Ads ($adCount)'),
     ];
 
     return DecoratedBox(
       decoration: BoxDecoration(
         border: Border(bottom: BorderSide(color: palette.line)),
       ),
-      child: Row(
-        children: [
-          for (var i = 0; i < labels.length; i++)
-            Expanded(
-              child: InkWell(
-                onTap: () => onSelect(i),
+      child: SingleChildScrollView(
+        scrollDirection: Axis.horizontal,
+        child: Row(
+          children: [
+            for (final (id, label) in tabs)
+              InkWell(
+                onTap: () => onSelect(id),
                 child: Container(
-                  padding: const EdgeInsets.symmetric(vertical: Insets.lg),
+                  padding: const EdgeInsets.symmetric(
+                    vertical: Insets.lg,
+                    horizontal: Insets.lg,
+                  ),
                   decoration: BoxDecoration(
                     border: Border(
                       bottom: BorderSide(
-                        color: i == selected ? palette.red : Colors.transparent,
+                        color: id == selected
+                            ? palette.red
+                            : Colors.transparent,
                         width: 2.5,
                       ),
                     ),
                   ),
                   child: Text(
-                    labels[i],
-                    textAlign: TextAlign.center,
+                    label,
                     style: AppText.labelLarge.copyWith(
-                      color: i == selected ? palette.red : palette.muted,
+                      color: id == selected ? palette.red : palette.muted,
                     ),
                   ),
                 ),
               ),
-            ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-/// Every photo the listing has, with its caption (and so its credit).
 class _PhotoGrid extends StatelessWidget {
   const _PhotoGrid({required this.business});
 

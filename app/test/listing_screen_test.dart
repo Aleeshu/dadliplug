@@ -169,7 +169,10 @@ void main() {
       expect(find.text('Parking on site'), findsOneWidget);
       expect(find.text('Outdoor seating'), findsOneWidget);
 
-      // 6. Menu items
+      // 6. Menu items, on their own tab (2026-10-28 redesign).
+      await tester.ensureVisible(find.text('Menu'));
+      await tester.tap(find.text('Menu'));
+      await tester.pumpAndSettle();
       expect(find.text('Grilled Mahi Mahi'), findsOneWidget);
       expect(find.text(r'EC$45'), findsOneWidget);
       expect(find.text('Wadadli Beer'), findsOneWidget);
