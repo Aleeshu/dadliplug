@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/discovery/businesses_screen.dart';
 import 'package:antigua_business_map/features/discovery/ad_screen.dart';
 import 'package:antigua_business_map/features/discovery/feed_screen.dart';
 import 'package:antigua_business_map/features/business_admin/redeem_deal_screen.dart';
@@ -211,7 +212,15 @@ GoRouter _buildRouter({
         ),
         GoRoute(
           path: Routes.categories,
-          builder: (c, s) => const CategoriesScreen(),
+          // The Businesses tab (2026-10-28 redesign); the category list is
+          // its sub-page.
+          builder: (c, s) => const BusinessesScreen(),
+          routes: [
+            GoRoute(
+              path: 'all',
+              builder: (c, s) => const CategoriesScreen(),
+            ),
+          ],
         ),
         GoRoute(
           path: Routes.more,
