@@ -21,6 +21,20 @@ class LeaderboardCategoryNotifier extends Notifier<BusinessCategory> {
   set category(BusinessCategory category) => state = category;
 }
 
+/// Which measure the board ranks by.
+class LeaderboardModeNotifier extends Notifier<LeaderboardMode> {
+  @override
+  LeaderboardMode build() => LeaderboardMode.top;
+
+  LeaderboardMode get mode => state;
+  set mode(LeaderboardMode mode) => state = mode;
+}
+
+final leaderboardModeProvider =
+    NotifierProvider<LeaderboardModeNotifier, LeaderboardMode>(
+      LeaderboardModeNotifier.new,
+    );
+
 final leaderboardCategoryProvider =
     NotifierProvider<LeaderboardCategoryNotifier, BusinessCategory>(
       LeaderboardCategoryNotifier.new,
@@ -35,7 +49,8 @@ final leaderboardProvider = Provider<AsyncValue<Leaderboard?>>((ref) {
   final category = ref.watch(leaderboardCategoryProvider);
 
   return businesses.whenData((list) {
-    final board = const LeaderboardService().build(
+    // Every eligible listing, so the other tabs can re-rank them.
+    final board = const LeaderboardService(defaultSize: 1000).build(
       businesses: list,
       category: category,
       // Read the clock once so every business in one build is judged against
@@ -70,6 +85,7 @@ class LeaderboardScreen extends ConsumerWidget {
   Widget build(BuildContext context, WidgetRef ref) {
     final boardAsync = ref.watch(leaderboardProvider);
     final categoriesAsync = ref.watch(leaderboardCategoriesProvider);
+    final mode = ref.watch(leaderboardModeProvider);
     final palette = context.palette;
 
     return Scaffold(
@@ -103,6 +119,9 @@ class LeaderboardScreen extends ConsumerWidget {
 
           final categories =
               categoriesAsync.value ?? const <BusinessCategory>[];
+          final entries = rankBy([
+            for (final e in board.entries) e.business,
+          ], mode);
 
           return RefreshIndicator(
             onRefresh: () async {
@@ -112,14 +131,39 @@ class LeaderboardScreen extends ConsumerWidget {
             child: ListView(
               padding: const EdgeInsets.all(Insets.lg),
               children: [
+                SizedBox(
+                  height: 44,
+                  child: ListView(
+                    scrollDirection: Axis.horizontal,
+                    children: [
+                      for (final m in LeaderboardMode.values)
+                        Padding(
+                          padding: const EdgeInsets.only(right: Insets.sm),
+                          child: ChoiceChip(
+                            label: Text(m.label),
+                            selected: m == mode,
+                            onSelected: (_) =>
+                                ref
+                                        .read(leaderboardModeProvider.notifier)
+                                        .mode =
+                                    m,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(height: Insets.md),
                 Text(
-                  'TOP ${board.entries.length} '
+                  'TOP ${entries.length} '
                   '${board.category.label.toUpperCase()} BUSINESSES',
                   style: AppText.sectionLabel,
                 ),
                 const SizedBox(height: Insets.xs),
                 Text(
-                  'By reviews from people who visited, and views.',
+                  mode == LeaderboardMode.top
+                      ? 'By reviews from people who visited, and views.'
+                      : '${mode.label}, among businesses listed a month or '
+                            'more. Nobody pays for a place here.',
                   style: AppText.bodyMedium.copyWith(color: palette.muted),
                 ),
                 const SizedBox(height: Insets.lg),
@@ -132,14 +176,18 @@ class LeaderboardScreen extends ConsumerWidget {
                   const SizedBox(height: Insets.lg),
                 ],
 
-                for (final entry in board.entries)
-                  _EntryRow(entry: entry, palette: palette),
+                for (final entry in entries)
+                  _EntryRow(
+                    entry: entry,
+                    palette: palette,
+                    metric: mode.describe(entry.business),
+                  ),
 
-                if (board.totalEligible > board.entries.length) ...[
+                if (board.totalEligible > entries.length) ...[
                   const SizedBox(height: Insets.md),
                   Text(
                     '${board.totalEligible} businesses qualify. Showing the '
-                    'top ${board.entries.length}.',
+                    'top ${entries.length}.',
                     style: AppText.caption.copyWith(color: palette.muted),
                   ),
                 ],
@@ -158,10 +206,17 @@ class LeaderboardScreen extends ConsumerWidget {
 }
 
 class _EntryRow extends StatelessWidget {
-  const _EntryRow({required this.entry, required this.palette});
+  const _EntryRow({
+    required this.entry,
+    required this.palette,
+    required this.metric,
+  });
 
   final LeaderboardEntry entry;
   final AppPalette palette;
+
+  /// The figure this tab ranks by, e.g. "1240 views".
+  final String metric;
 
   @override
   Widget build(BuildContext context) {
@@ -229,6 +284,13 @@ class _EntryRow extends StatelessWidget {
                     style: AppText.caption.copyWith(color: palette.muted),
                   ),
                 ],
+              ),
+            ),
+            Text(
+              metric,
+              style: AppText.caption.copyWith(
+                color: palette.ink,
+                fontWeight: FontWeight.w700,
               ),
             ),
             Icon(Icons.chevron_right, color: palette.muted),

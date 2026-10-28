@@ -208,3 +208,56 @@ class Leaderboard {
 
   bool get isEmpty => entries.isEmpty;
 }
+
+/// What a leaderboard tab ranks by (2026-10-28 redesign). Every mode uses
+/// the same eligible listings (grace period, no online-only), so a tab can
+/// change the measure but never let anyone skip the rules.
+enum LeaderboardMode {
+  /// Earned score: rating, reviews and activity (plan.md 5).
+  top('Top Businesses'),
+
+  /// Listing views.
+  viewed('Most Viewed'),
+
+  /// Calls and WhatsApp taps: people who got in touch.
+  clicks('Most Clicks'),
+
+  /// Views, calls and taps, weighted toward getting in touch.
+  engaging('Most Engaging');
+
+  const LeaderboardMode(this.label);
+  final String label;
+
+  int metricOf(Business b) => switch (this) {
+    LeaderboardMode.top => scoreBusiness(b).total,
+    LeaderboardMode.viewed => b.views,
+    LeaderboardMode.clicks => b.calls + b.whatsappTaps,
+    LeaderboardMode.engaging => b.engagement,
+  };
+
+  String describe(Business b) => switch (this) {
+    LeaderboardMode.top => '${scoreBusiness(b).total} points',
+    LeaderboardMode.viewed => '${b.views} views',
+    LeaderboardMode.clicks => '${b.calls + b.whatsappTaps} calls and taps',
+    LeaderboardMode.engaging => '${b.engagement} activity',
+  };
+}
+
+/// The top [size] of [eligible] by [mode], numbered from one. Ties keep the
+/// earned order [eligible] arrives in, so a tab never reshuffles equal
+/// businesses between refreshes.
+List<LeaderboardEntry> rankBy(
+  List<Business> eligible,
+  LeaderboardMode mode, {
+  int size = LeaderboardService.defaultBoardSize,
+}) {
+  final indexed = eligible.indexed.toList()
+    ..sort((a, b) {
+      final byMetric = mode.metricOf(b.$2).compareTo(mode.metricOf(a.$2));
+      return byMetric != 0 ? byMetric : a.$1.compareTo(b.$1);
+    });
+  return [
+    for (final (i, (_, b)) in indexed.take(size).indexed)
+      LeaderboardEntry(business: b, position: i + 1, score: scoreBusiness(b)),
+  ];
+}
