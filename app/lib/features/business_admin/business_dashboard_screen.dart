@@ -448,19 +448,58 @@ class _ThisMonth extends ConsumerWidget {
         )
         .value;
     if (report == null) return const SizedBox.shrink();
+    final last = ref
+        .watch(
+          monthlyReportProvider((businessId: businessId, monthsBack: 1)),
+        )
+        .value;
 
-    Widget tile(String label, int value) => Expanded(
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(
-            NumberFormat.decimalPattern().format(value),
-            style: AppText.numericLarge.copyWith(color: palette.ink),
+    // Last month's total beside each figure, not a percentage: a month in
+    // progress against a whole month would show a "drop" nearly every day.
+    final n = NumberFormat.decimalPattern();
+    Widget tile(IconData icon, String label, int value, int? before) =>
+        Expanded(
+          child: Container(
+            margin: const EdgeInsets.all(4),
+            padding: const EdgeInsets.all(Insets.md),
+            decoration: BoxDecoration(
+              color: palette.app,
+              borderRadius: BorderRadius.circular(Corners.lg),
+              border: Border.all(color: palette.line),
+            ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  children: [
+                    Icon(icon, size: 16, color: palette.red),
+                    const SizedBox(width: 4),
+                    Flexible(
+                      child: Text(
+                        label,
+                        overflow: TextOverflow.ellipsis,
+                        style: AppText.caption.copyWith(color: palette.muted),
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  n.format(value),
+                  style: AppText.numericLarge.copyWith(color: palette.ink),
+                ),
+                if (before != null)
+                  Text(
+                    'Last month ${n.format(before)}',
+                    style: AppText.caption.copyWith(
+                      color: palette.muted,
+                      fontSize: 11,
+                    ),
+                  ),
+              ],
+            ),
           ),
-          Text(label, style: AppText.caption.copyWith(color: palette.muted)),
-        ],
-      ),
-    );
+        );
 
     return Material(
       color: palette.surface,
@@ -490,18 +529,37 @@ class _ThisMonth extends ConsumerWidget {
                   ),
                 ],
               ),
-              const SizedBox(height: Insets.md),
+              const SizedBox(height: Insets.sm),
               Row(
                 children: [
-                  tile('Ad views', report.adViews),
-                  tile('Ads opened', report.adOpens),
+                  tile(
+                    Icons.visibility_outlined,
+                    'Views',
+                    report.listingViews + report.adViews,
+                    last == null ? null : last.listingViews + last.adViews,
+                  ),
+                  tile(
+                    Icons.ads_click,
+                    'Clicks',
+                    report.adOpens + report.directions,
+                    last == null ? null : last.adOpens + last.directions,
+                  ),
                 ],
               ),
-              const SizedBox(height: Insets.md),
               Row(
                 children: [
-                  tile('WhatsApp enquiries', report.whatsappTaps),
-                  tile('Deals redeemed', report.redemptions),
+                  tile(
+                    Icons.chat_bubble_outline,
+                    'Inquiries',
+                    report.calls + report.whatsappTaps,
+                    last == null ? null : last.calls + last.whatsappTaps,
+                  ),
+                  tile(
+                    Icons.local_offer_outlined,
+                    'Deals redeemed',
+                    report.redemptions,
+                    last?.redemptions,
+                  ),
                 ],
               ),
             ],
