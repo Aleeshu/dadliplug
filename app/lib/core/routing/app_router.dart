@@ -1,3 +1,4 @@
+import 'package:antigua_business_map/features/business_admin/plans_screen.dart';
 import 'package:antigua_business_map/features/discovery/businesses_screen.dart';
 import 'package:antigua_business_map/features/discovery/ad_screen.dart';
 import 'package:antigua_business_map/features/discovery/feed_screen.dart';
@@ -263,6 +264,10 @@ GoRouter _buildRouter({
               otherBusinessIds: session.user?.businessIds ?? const [],
             );
           },
+        ),
+        GoRoute(
+          path: '/business/plans',
+          builder: (c, s) => PlansScreen(businessId: businessIdFor(s)),
         ),
         GoRoute(
           path: '/business/redeem',

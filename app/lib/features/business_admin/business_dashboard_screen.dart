@@ -413,6 +413,16 @@ class _PlanBanner extends StatelessWidget {
                     style: AppText.caption.copyWith(color: palette.muted),
                   ),
                 ],
+                Align(
+                  alignment: Alignment.centerLeft,
+                  child: TextButton(
+                    style: TextButton.styleFrom(padding: EdgeInsets.zero),
+                    onPressed: () => context.push(
+                      '/business/plans?business=${business.id}',
+                    ),
+                    child: const Text('View plans ›'),
+                  ),
+                ),
               ],
             ),
           ),
