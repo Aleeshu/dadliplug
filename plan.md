@@ -810,11 +810,11 @@ and where each stands:
 4. **WhatsApp sharing that spreads ads** ✅ — every ad and deal has its own
    page and a public link (/a/<id>) that opens in any browser and invites
    the install; shares are counted.
-5. **Bulletin board and events calendar** — the events calendar and the
-   business announcements board exist. The PDF's community board (Jobs,
-   Items for Sale, Community Notices, Business Opportunities) is **not
-   built**: section 14a says not on day one, because of the moderation load.
-   **Decide on purpose.**
+5. **Bulletin board and events calendar** ✅ — the community board (Jobs,
+   For Sale, Community Notices, Business Opportunities) was built on
+   2026-10-28 at the owner's request, with the moderation 14a asked for:
+   every post approved by the team first, 30-day expiry, five open per
+   person, reports, and a team-only Featured flag for paid promotion.
 
 Also open from the PDF, as decisions rather than code:
 - **Tiers.** The PDF's Starter / Growth / Premium (EC$25 / 50 / 100) match our
@@ -823,7 +823,34 @@ Also open from the PDF, as decisions rather than code:
 - **Founding Business network** (50–100 businesses before launch), resident
   rewards, and weekly social media features: business work for Phase 10/12.
 
+## 14e. Redesign and new features (2026-10-28)
+
+From the owner's mockups:
+- **Look:** navy and yellow (blue actions in light mode), the yellow-pin
+  palm logo and app icon, the Home · Businesses · Map · Events · More bar
+  with the map as the raised centre button, category-coloured pins.
+- **Screens:** Businesses tab with photo rows; business page with one row
+  of Call / Message / Directions, the logo on the photo, and About / Menu /
+  Gallery / Reviews / Ads tabs; Subscription Plans; Settings with a
+  dark/light switch, payment and ad history; leaderboard tabs (Top, Most
+  Viewed, Most Clicks, Most Engaging); dashboard tiles (views, clicks,
+  inquiries, deals) against last month; a three-step create-ad wizard.
+- **Photos from the phone:** resized and compressed before upload; owners
+  upload only into their business's folder (storage RLS).
+- **New features:** community bulletin board (above), Book a Table
+  (owner-enabled, confirm or decline), in-app messages (private to the two
+  sides, block and report, rate-limited).
+- **Not built: card / Apple Pay / PayPal.** Needs a merchant account and an
+  App Store / Google Play billing decision; see section 15.
+
 ## 15. Open decisions
+
+- **Paying in the app (2026-10-28).** The mockups show card, Apple Pay and
+  PayPal. Building it needs (1) a payment provider that pays out to an
+  Antigua business account, and (2) a decision on store rules: Apple and
+  Google may require their own in-app billing for subscriptions sold
+  inside the app. Until then plans are paid by bank transfer, recorded by
+  the team.
 
 ### Conflicts worth deciding on purpose
 
