@@ -6,7 +6,6 @@ import 'package:antigua_business_map/services/push_service.dart';
 import 'package:antigua_business_map/services/requests.dart';
 import 'package:antigua_business_map/services/specials.dart';
 import 'package:antigua_business_map/services/reviews_repository.dart';
-import 'package:antigua_business_map/widgets/category_icon.dart';
 import 'package:antigua_business_map/widgets/offer_code_chip.dart';
 import 'package:antigua_business_map/widgets/verified_badge.dart';
 import 'package:antigua_business_map/core/config/app_config.dart';
@@ -342,8 +341,26 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
                 Row(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    CategoryIcon(category: b.category, size: 52),
-                    const SizedBox(width: Insets.xl),
+                    // The round logo from the redesign. A business's own logo
+                    // arrives with photo uploads; until then, its category.
+                    Container(
+                      width: 64,
+                      height: 64,
+                      decoration: BoxDecoration(
+                        shape: BoxShape.circle,
+                        color: b.category.color,
+                        border: Border.all(color: palette.surface, width: 3),
+                        boxShadow: const [
+                          BoxShadow(color: Colors.black26, blurRadius: 6),
+                        ],
+                      ),
+                      child: Icon(
+                        b.category.icon,
+                        color: Colors.white,
+                        size: 30,
+                      ),
+                    ),
+                    const SizedBox(width: Insets.lg),
                     Expanded(
                       child: Row(
                         crossAxisAlignment: CrossAxisAlignment.start,
@@ -826,6 +843,19 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
     // The map needs coordinates; an address alone cannot be pinned.
     final hasLocation = b.hasLocation;
 
+    // One row of pills, as in the 2026-10-28 redesign: Call filled in the
+    // action colour, Message (WhatsApp) and Directions outlined.
+    final pill = RoundedRectangleBorder(
+      borderRadius: BorderRadius.circular(Corners.pill),
+    );
+    const compact = EdgeInsets.symmetric(horizontal: 8, vertical: 12);
+    final outlined = OutlinedButton.styleFrom(
+      shape: pill,
+      padding: compact,
+      foregroundColor: palette.ink,
+      side: BorderSide(color: palette.line),
+    );
+
     return Column(
       crossAxisAlignment: CrossAxisAlignment.stretch,
       children: [
@@ -834,36 +864,39 @@ class _ListingContentState extends ConsumerState<_ListingContent> {
             if (hasPhone)
               Expanded(
                 child: FilledButton.icon(
+                  style: FilledButton.styleFrom(shape: pill, padding: compact),
                   onPressed: () => _call(b),
                   icon: const Icon(Icons.phone, size: 18),
                   label: const Text('Call'),
                 ),
               ),
-            if (hasPhone && hasLocation) const SizedBox(width: Insets.md),
+            if (hasPhone && (hasWhatsApp || hasLocation))
+              const SizedBox(width: Insets.sm),
+            if (hasWhatsApp)
+              Expanded(
+                child: OutlinedButton.icon(
+                  style: outlined,
+                  onPressed: () => _whatsApp(b),
+                  icon: const Icon(Icons.chat_outlined, size: 18),
+                  label: const Text('Message'),
+                ),
+              ),
+            if (hasWhatsApp && hasLocation) const SizedBox(width: Insets.sm),
             if (hasLocation)
               Expanded(
                 child: OutlinedButton.icon(
+                  style: outlined,
                   onPressed: () {
                     _recorder.record(b.id, EngagementKind.directions);
                     context.go('/map?focus=${b.id}');
                   },
-                  icon: const Icon(Icons.directions, size: 18),
-                  label: const Text('Get Directions'),
+                  icon: const Icon(Icons.directions_outlined, size: 18),
+                  label: const FittedBox(child: Text('Directions')),
                 ),
               ),
           ],
         ),
         if (hasWhatsApp) ...[
-          const SizedBox(height: Insets.md),
-          OutlinedButton.icon(
-            onPressed: () => _whatsApp(b),
-            style: OutlinedButton.styleFrom(
-              foregroundColor: const Color(0xFF128C4A),
-              side: const BorderSide(color: Color(0xFF25D366)),
-            ),
-            icon: const Icon(Icons.chat, size: 18),
-            label: const Text('WhatsApp'),
-          ),
           // Quotes for trades, slots for salons, tours, classes, viewings.
           if (requestKindFor(b.category) != null) ...[
             const SizedBox(height: Insets.md),

@@ -150,8 +150,8 @@ void main() {
 
       // 2. Action buttons
       expect(find.text('Call'), findsOneWidget);
-      expect(find.text('WhatsApp'), findsOneWidget);
-      expect(find.text('Get Directions'), findsOneWidget);
+      expect(find.text('Message'), findsOneWidget);
+      expect(find.text('Directions'), findsOneWidget);
 
       // 3. Special offer banner
       expect(find.text('SPECIAL OFFER'), findsOneWidget);
