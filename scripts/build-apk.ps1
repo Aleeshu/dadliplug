@@ -19,6 +19,7 @@
 
 param(
   [switch]$Release,
+  [switch]$Bundle,
   [switch]$Install,
   [string]$Mirror = ''
 )
@@ -49,8 +50,15 @@ foreach ($key in $required) {
   }
 }
 
-$args = @('build', 'apk')
-if ($Release) { $args += '--release' } else { $args += '--debug' }
+# -Bundle builds the Android App Bundle (.aab) the Play Store takes: always a
+# release build, signed with the upload key from android/key.properties.
+if ($Bundle) {
+  $Release = $true
+  $args = @('build', 'appbundle', '--release')
+} else {
+  $args = @('build', 'apk')
+  if ($Release) { $args += '--release' } else { $args += '--debug' }
+}
 
 foreach ($key in $defines.Keys) {
   if ($key -eq 'SUPABASE_DB_PASSWORD' -or $key -eq 'GOOGLE_SERVICE_ACCOUNT_JSON') {
@@ -89,9 +97,15 @@ $ErrorActionPreference = 'Stop'
 if ($LASTEXITCODE -ne 0) { exit $LASTEXITCODE }
 
 $mode = if ($Release) { 'release' } else { 'debug' }
-$apk = Join-Path $buildRoot "build\app\outputs\flutter-apk\app-$mode.apk"
 $dest = Join-Path $root 'builds'
 New-Item -ItemType Directory -Path $dest -Force | Out-Null
+if ($Bundle) {
+  $aab = Join-Path $buildRoot "build\app\outputs\bundle\release\app-release.aab"
+  Copy-Item $aab (Join-Path $dest "dadliplug-release.aab") -Force
+  Write-Host "AAB: $dest\dadliplug-release.aab"
+  exit 0
+}
+$apk = Join-Path $buildRoot "build\app\outputs\flutter-apk\app-$mode.apk"
 Copy-Item $apk (Join-Path $dest "dadliplug-$mode.apk") -Force
 
 Write-Host "APK: $dest\dadliplug-$mode.apk"

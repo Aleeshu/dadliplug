@@ -177,7 +177,7 @@ class AboutScreen extends StatelessWidget {
   const AboutScreen({super.key});
 
   /// Kept in step with pubspec.yaml by hand; shown to support, not logic.
-  static const version = '0.1.0';
+  static const version = '1.0.0';
 
   @override
   Widget build(BuildContext context) {

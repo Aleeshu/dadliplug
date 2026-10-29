@@ -1,7 +1,7 @@
 name: antigua_business_map
 description: "Map of Antigua businesses, kept current. Paid placement, real reviews."
 publish_to: 'none'
-version: 0.1.0+1
+version: 1.0.0+1
 
 environment:
   sdk: ^3.13.3
