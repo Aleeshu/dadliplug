@@ -1,16 +1,32 @@
-# Cloudflare Worker for public listing pages. Deploy from this folder with
+# Cloudflare Worker for public listing pages and website. Deploy from this folder with
 #   npx wrangler deploy
-# Served at https://dadliplug-listing.<account-subdomain>.workers.dev/l/<id>
+# Served at https://dadliplug-listing.<account-subdomain>.workers.dev and dadliplug.com
 name = "dadliplug-listing"
 main = "src/index.js"
 compatibility_date = "2026-10-01"
 workers_dev = true
+
+assets = { directory = "../../website" }
 
 # The legal pages are the same Markdown files the app bundles, imported as
 # text so the app and the web never disagree.
 rules = [{ type = "Text", globs = ["**/*.md"], fallthrough = true }]
 
 [vars]
-# Shown as the contact line on the legal pages. Set alongside SUPPORT_EMAIL
-# in the app's .env.
-SUPPORT_EMAIL = ""
+# Shown as the contact line on the legal pages, and the inbox that receives
+# every "Get listed" application from the website. Keep it the same as
+# SUPPORT_EMAIL in the app's .env.
+SUPPORT_EMAIL = "dadliplug268@gmail.com"
+# Sender of the lead emails. Must be on dadliplug.com (the domain with
+# Cloudflare Email Routing turned on); it does not need a real mailbox.
+LEAD_FROM_EMAIL = "leads@dadliplug.com"
+SUPABASE_URL = "https://ftenxsusyuiqatnvasny.supabase.co"
+SUPABASE_ANON_KEY = "sb_publishable_MtdX3HFWtG3r6jbaa_ANXA_ckyrvKe6"
+
+# Sends lead notifications through Cloudflare Email Routing. One-time setup in
+# the Cloudflare dashboard: dadliplug.com > Email > Email Routing > enable, then
+# add and verify dadliplug268@gmail.com as a destination address.
+[[send_email]]
+name = "LEAD_EMAIL"
+destination_address = "dadliplug268@gmail.com"
+
